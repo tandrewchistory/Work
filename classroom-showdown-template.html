@@ -494,6 +494,15 @@ footer{
 }
 #answer-text.shown{ display:block; }
 
+#explainer-text{
+  display:none;
+  margin-top:10px;
+  color:var(--ink-soft);
+  font-size:clamp(13.5px, 1.7vw, 15.5px);
+  line-height:1.5;
+}
+#explainer-text.shown{ display:block; }
+
 #award-row{
   margin-top:22px;
   display:none;
@@ -831,11 +840,20 @@ footer{
   background:var(--paper);
 }
 .editor-clue{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.editor-clue-main{
   display:grid;
   grid-template-columns:44px 1fr 1fr;
   gap:10px;
   align-items:start;
 }
+.editor-clue-explainer{
+  margin-left:54px;
+}
+.editor-clue-explainer .field > span{ color:var(--info); }
 .clue-value-label{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
@@ -845,7 +863,8 @@ footer{
   flex-shrink:0;
 }
 @media (max-width: 560px){
-  .editor-clue{ grid-template-columns:1fr; gap:6px; }
+  .editor-clue-main{ grid-template-columns:1fr; gap:6px; }
+  .editor-clue-explainer{ margin-left:0; }
   .clue-value-label{ text-align:left; padding-top:0; }
 }
 #dd-picker{
@@ -945,6 +964,7 @@ footer{
     <div id="clue-value" class="tabular"></div>
     <div id="clue-text"></div>
     <div id="answer-text"></div>
+    <div id="explainer-text"></div>
 
     <div id="award-row">
       <p>Who answered correctly?</p>
@@ -965,7 +985,7 @@ footer{
       <li>Split the class into 2&ndash;6 teams and give each one a name.</li>
       <li>A team picks a category and dollar value from the board.</li>
       <li>Read the clue aloud. Teams race to answer.</li>
-      <li>Click &ldquo;Reveal Response&rdquo; to check the answer, then award points to whichever team got it (or dock points for a wrong guess).</li>
+      <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and all 25 clues &mdash; no code required.</li>
@@ -1002,7 +1022,7 @@ footer{
 <div id="editor-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and all 25 clues for your subject. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and all 25 clues for your subject. Add an optional explainer to any clue for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-body">
       <div class="editor-top-fields">
         <label class="field">
@@ -1053,7 +1073,8 @@ footer{
         clues.push({
           value: VALUES[i],
           clue: "Write your $" + VALUES[i] + " clue here",
-          answer: "Write the answer here"
+          answer: "Write the answer here",
+          explainer: ""
         });
       }
       categories.push({ name: "Category " + (c + 1), clues: clues });
@@ -1094,7 +1115,10 @@ footer{
       var parsed = JSON.parse(raw);
       if (!isValidContent(parsed)) return null;
       parsed.categories.forEach(function(cat, ci){
-        cat.clues.forEach(function(clue, ci2){ clue.value = VALUES[ci2]; });
+        cat.clues.forEach(function(clue, ci2){
+          clue.value = VALUES[ci2];
+          if (typeof clue.explainer !== "string") clue.explainer = "";
+        });
       });
       return parsed;
     } catch (err) {
@@ -1133,6 +1157,7 @@ footer{
   var clueValueEl = document.getElementById("clue-value");
   var clueTextEl = document.getElementById("clue-text");
   var answerTextEl = document.getElementById("answer-text");
+  var explainerTextEl = document.getElementById("explainer-text");
   var revealBtn = document.getElementById("reveal-btn");
   var closeBtn = document.getElementById("close-btn");
   var awardRow = document.getElementById("award-row");
@@ -1330,6 +1355,8 @@ footer{
     clueTextEl.textContent = clue.clue;
     answerTextEl.textContent = clue.answer;
     answerTextEl.classList.remove("shown");
+    explainerTextEl.textContent = clue.explainer || "";
+    explainerTextEl.classList.remove("shown");
     awardRow.classList.remove("shown");
     revealBtn.style.display = "";
     ddBanner.classList.toggle("show", isDaily);
@@ -1399,6 +1426,7 @@ footer{
 
   revealBtn.addEventListener("click", function(){
     answerTextEl.classList.add("shown");
+    if (explainerTextEl.textContent.trim()) explainerTextEl.classList.add("shown");
     awardRow.classList.add("shown");
     revealBtn.style.display = "none";
   });
@@ -1526,6 +1554,9 @@ footer{
         var row = document.createElement("div");
         row.className = "editor-clue";
 
+        var mainRow = document.createElement("div");
+        mainRow.className = "editor-clue-main";
+
         var valueLabel = document.createElement("div");
         valueLabel.className = "clue-value-label tabular";
         valueLabel.textContent = "$" + clue.value;
@@ -1552,9 +1583,27 @@ footer{
         answerField.appendChild(answerSpan);
         answerField.appendChild(answerArea);
 
-        row.appendChild(valueLabel);
-        row.appendChild(clueField);
-        row.appendChild(answerField);
+        mainRow.appendChild(valueLabel);
+        mainRow.appendChild(clueField);
+        mainRow.appendChild(answerField);
+
+        var explainerWrap = document.createElement("div");
+        explainerWrap.className = "editor-clue-explainer";
+        var explainerField = document.createElement("label");
+        explainerField.className = "field";
+        var explainerSpan = document.createElement("span");
+        explainerSpan.textContent = "Explainer (optional)";
+        var explainerArea = document.createElement("textarea");
+        explainerArea.rows = 2;
+        explainerArea.value = clue.explainer || "";
+        explainerArea.placeholder = "Add extra context or a fun fact — shown alongside the answer when it's revealed";
+        explainerArea.addEventListener("input", function(){ clue.explainer = explainerArea.value; });
+        explainerField.appendChild(explainerSpan);
+        explainerField.appendChild(explainerArea);
+        explainerWrap.appendChild(explainerField);
+
+        row.appendChild(mainRow);
+        row.appendChild(explainerWrap);
         wrap.appendChild(row);
       });
 
@@ -1593,6 +1642,7 @@ footer{
         clue.value = VALUES[rowIdx];
         clue.clue = clue.clue.trim() || ("Write your $" + VALUES[rowIdx] + " clue here");
         clue.answer = clue.answer.trim() || "Write the answer here";
+        clue.explainer = (clue.explainer || "").trim();
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
