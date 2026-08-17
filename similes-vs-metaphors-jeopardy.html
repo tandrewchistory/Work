@@ -109,7 +109,6 @@
 }
 
 *{ box-sizing:border-box; }
-html,body{ height:100%; }
 body{
   margin:0;
   min-height:100vh;
@@ -244,7 +243,7 @@ h1{
 
 #category-row{
   display:grid;
-  grid-template-columns:repeat(5, 1fr);
+  grid-template-columns:repeat(5, minmax(0, 1fr));
   gap:14px;
   margin-bottom:14px;
 }
@@ -275,7 +274,7 @@ h1{
 
 #tile-grid{
   display:grid;
-  grid-template-columns:repeat(5, 1fr);
+  grid-template-columns:repeat(5, minmax(0, 1fr));
   gap:10px;
 }
 .tile{
@@ -305,6 +304,28 @@ h1{
 @media (prefers-reduced-motion: reduce){
   .tile{ transition:none; }
   .tile:hover:not(:disabled){ transform:none; }
+}
+
+@media (max-width: 560px){
+  #stage{ padding:20px 10px 36px; gap:16px; }
+  #frame{ padding:10px 8px 16px; border-radius:12px; }
+  #board{ padding:12px 6px 10px; }
+  #category-row{ gap:5px; margin-bottom:8px; }
+  #tile-grid{ gap:5px; }
+  .cat-card{
+    min-height:46px;
+    padding:5px 3px;
+    font-size:clamp(7.6px, 3vw, 10.5px);
+    letter-spacing:0.1px;
+    border-radius:4px;
+  }
+  .cat-card:nth-child(n){ transform:none; }
+  .tile{
+    font-size:clamp(13px, 4.6vw, 19px);
+    border-radius:5px;
+  }
+  .legend{ gap:6px; }
+  .legend-chip{ font-size:11px; padding:4px 9px 4px 6px; }
 }
 
 /* ---------------------------------- teams ---------------------------------- */
@@ -407,6 +428,13 @@ h1{
   color:var(--accent-ink);
 }
 .btn.primary:hover{ filter:brightness(1.06); }
+.btn:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+  background:var(--paper);
+  border-color:var(--paper-edge);
+  color:var(--ink-soft);
+}
 
 footer{
   text-align:center;
@@ -660,6 +688,7 @@ footer{
 
   <div id="controls">
     <button class="btn primary" id="add-team-btn">+ Add Team</button>
+    <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="reset-btn">Reset Game</button>
   </div>
@@ -770,6 +799,7 @@ footer{
       { name: "Team 2", score: 0 }
     ]
   };
+  var history = [];
 
   var catRowEl = document.getElementById("category-row");
   var tileGridEl = document.getElementById("tile-grid");
@@ -789,6 +819,7 @@ footer{
   var ddBanner = document.getElementById("dd-banner");
   var winnerBanner = document.getElementById("winner-banner");
   var howtoOverlay = document.getElementById("howto-overlay");
+  var undoBtn = document.getElementById("undo-btn");
 
   var current = null;
 
@@ -951,14 +982,34 @@ footer{
 
   function awardPoints(team, delta){
     team.score += delta;
-    markUsedAndClose();
+    markUsedAndClose(team, delta);
   }
 
-  function markUsedAndClose(){
+  function markUsedAndClose(team, delta){
     if (current){
       state.used[tileKey(current.catIdx, current.rowIdx)] = true;
+      history.push({ catIdx: current.catIdx, rowIdx: current.rowIdx, team: team || null, delta: delta || 0 });
+      updateUndoState();
     }
     closeModal();
+    renderBoard();
+    renderTeams();
+  }
+
+  function updateUndoState(){
+    undoBtn.disabled = history.length === 0;
+  }
+
+  function undoLast(){
+    if (!history.length) return;
+    var last = history.pop();
+    delete state.used[tileKey(last.catIdx, last.rowIdx)];
+    if (last.team && last.delta && state.teams.indexOf(last.team) !== -1){
+      last.team.score -= last.delta;
+    }
+    updateUndoState();
+    winnerBanner.classList.remove("show");
+    delete winnerBanner.dataset.celebrated;
     renderBoard();
     renderTeams();
   }
@@ -1001,11 +1052,15 @@ footer{
     if (!confirm("Reset the board and all scores?")) return;
     state.used = {};
     state.teams.forEach(function(t){ t.score = 0; });
+    history = [];
+    updateUndoState();
     winnerBanner.classList.remove("show");
     delete winnerBanner.dataset.celebrated;
     renderBoard();
     renderTeams();
   });
+
+  undoBtn.addEventListener("click", undoLast);
 
   document.getElementById("how-to-btn").addEventListener("click", function(){
     howtoOverlay.classList.add("open");
