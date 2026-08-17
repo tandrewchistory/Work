@@ -668,6 +668,76 @@
     .forces-row .f-val { border-left: none; border-top: 1px solid var(--line); }
   }
 
+  /* ---------- British weaknesses & Japanese strengths ---------- */
+  .flip-panel {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 16px 18px 20px;
+  }
+  .flip-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .flip-col {
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    padding: 14px 16px 16px;
+  }
+  .flip-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .flip-flag {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 23px;
+    border: 1px solid var(--ink);
+    display: block;
+  }
+  .flip-head .side-name {
+    font-family: var(--font-display);
+    font-size: 21px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+  .flip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .flip-list li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .flip-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--uk);
+    border: 1.4px solid var(--ink);
+  }
+  .flip-col.jp .flip-list li::before { background: var(--jp); }
+  .flip-list li b { color: var(--ink); }
+
+  @media (max-width: 700px) {
+    .flip-cols { grid-template-columns: 1fr; }
+  }
+
   /* ---------- Quiz ---------- */
   .quiz-panel {
     border: 1px solid var(--line-strong);
@@ -1040,6 +1110,54 @@
     <div class="forces-note">
       <div class="label">A note on the numbers</div>
       Historians don't agree on the exact troop counts. British-side figures (~87,000) count every uniformed soldier in Singapore; Japanese-side figures range from about 30,000 combat troops (the estimate of staff officer Masanobu Tsuji) up to 125,000 once support and construction troops are included (historian S. W. Kirby's estimate). <em>If the defenders were sometimes more than twice the size of the attacking force on paper, what does that suggest about which factors — numbers, or something else — actually decided the battle?</em>
+    </div>
+  </section>
+
+  <section class="flip-panel" aria-label="British weaknesses and Japanese strengths">
+    <div class="timeline-title">Order of Battle, In Depth · Weaknesses &amp; Strengths</div>
+    <p class="forces-intro">The map and the forces table above show what happened. Here's a closer look at why: the specific weaknesses that hollowed out the British defence, and the strengths that let a smaller Japanese force break through.</p>
+
+    <div class="flip-cols">
+      <div class="flip-col uk">
+        <div class="flip-head">
+          <svg class="flip-flag" viewBox="0 0 60 30" aria-hidden="true">
+            <rect width="60" height="30" fill="#0a1f44"/>
+            <line x1="0" y1="0" x2="60" y2="30" stroke="#ffffff" stroke-width="6"/>
+            <line x1="60" y1="0" x2="0" y2="30" stroke="#ffffff" stroke-width="6"/>
+            <line x1="0" y1="0" x2="60" y2="30" stroke="#c8102e" stroke-width="2"/>
+            <line x1="60" y1="0" x2="0" y2="30" stroke="#c8102e" stroke-width="2"/>
+            <rect x="24" y="0" width="12" height="30" fill="#ffffff"/>
+            <rect x="0" y="12" width="60" height="6" fill="#ffffff"/>
+            <rect x="26" y="0" width="8" height="30" fill="#c8102e"/>
+            <rect x="0" y="13" width="60" height="4" fill="#c8102e"/>
+          </svg>
+          <span class="side-name">British Weaknesses</span>
+        </div>
+        <ul class="flip-list">
+          <li><b>Overstretched, and a low priority.</b> British resources were spread thin defending the empire across Europe, Africa and Asia. The RAF in Malaya flew old Brewster Buffalo fighters — nicknamed "flying coffins" — no match for Japan's modern Zeros.</li>
+          <li><b>Too few troops, poorly prepared.</b> There weren't enough troops to hold Malaya's airfields, which fell easily to the Japanese. Local forces raised in a hurry were ill-trained and ill-equipped, and regular troops had no training for jungle warfare or tropical conditions.</li>
+          <li><b>A fractured, unmotivated force.</b> Troops came from Scotland, India and Australia, spoke different languages, and struggled to coordinate — many had little stake in defending a colony that wasn't their home.</li>
+          <li><b>Defences that faced the wrong way.</b> Certain that a land invasion through "impassable" jungle was impossible, planners aimed their big guns at the south and east coasts, against a seaborne attack that never came.</li>
+          <li><b>A naval deterrent lost in two days.</b> Force Z — HMS <i>Prince of Wales</i> and HMS <i>Repulse</i> — sailed out on 8 December 1941 to intercept a Japanese landing at Kuantan and was sunk on 10 December, gutting British naval power and morale.</li>
+        </ul>
+      </div>
+
+      <div class="flip-col jp">
+        <div class="flip-head">
+          <svg class="flip-flag" viewBox="0 0 60 30" aria-hidden="true">
+            <rect width="60" height="30" fill="#ffffff"/>
+            <circle cx="30" cy="15" r="9" fill="#bc002d"/>
+          </svg>
+          <span class="side-name">Japanese Strengths</span>
+        </div>
+        <ul class="flip-list">
+          <li><b>Battle-hardened and well-equipped.</b> Troops arrived fresh from campaigns in China and Indochina, backed by modern aircraft, tanks and warships.</li>
+          <li><b>A commander who could motivate his men.</b> Gen Tomoyuki Yamashita — "the Tiger of Malaya" — drove his forces forward at speed even while outnumbered.</li>
+          <li><b>Months of preparation before a shot was fired.</b> Spies posing as tourists, barbers and fishermen gathered intelligence through 1941; a dedicated jungle-warfare unit under Col Masanobu Tsuji trained troops and produced tip sheets before the invasion began.</li>
+          <li><b>Speed and surprise over brute force.</b> Advancing overland through southern Thailand instead of by sea wrong-footed British planners; light tanks and bicycle infantry carried troops through jungle the British had thought impassable.</li>
+          <li><b>Command of the air and sea.</b> Fighter planes bombed defending forces in support of ground troops, while control of Indochina and the South China Sea kept Japanese supply lines open.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
