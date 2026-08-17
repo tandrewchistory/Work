@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Similes &amp; Metaphors Jeopardy</title>
+<style>
+  :root{
+    --board-blue:#060ce9;
+    --board-blue-dark:#02037a;
+    --tile-blue:#0a1aa8;
+    --gold:#ffcc00;
+    --gold-dim:#e0b400;
+    --ink:#ffffff;
+    --team-bg:#101a4d;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    height:100%;
+    background:radial-gradient(circle at top, #1128b5 0%, #05082e 70%);
+    font-family:"Arial Black", "Helvetica Neue", Arial, sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    padding:16px;
+    gap:16px;
+  }
+  header{
+    text-align:center;
+  }
+  header h1{
+    font-family:Georgia, "Times New Roman", serif;
+    font-weight:900;
+    letter-spacing:2px;
+    font-size:clamp(24px, 4vw, 44px);
+    color:var(--gold);
+    text-shadow:0 3px 0 #7a5a00, 0 6px 14px rgba(0,0,0,0.6);
+    margin:6px 0 2px;
+  }
+  header p{
+    margin:0;
+    color:#cdd3ff;
+    font-family:Georgia, serif;
+    font-style:italic;
+    font-size:14px;
+  }
+
+  /* ---------- Board ---------- */
+  #board-wrap{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #board{
+    width:100%;
+    max-width:1100px;
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:6px;
+    background:var(--board-blue-dark);
+    padding:8px;
+    border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5), inset 0 0 0 3px #000a4d;
+  }
+  .cat{
+    background:var(--tile-blue);
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-weight:700;
+    text-transform:uppercase;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 6px;
+    min-height:64px;
+    border-radius:4px;
+    font-size:clamp(11px, 1.6vw, 16px);
+    line-height:1.25;
+    text-shadow:0 2px 0 #000;
+  }
+  .tile{
+    background:var(--tile-blue);
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-weight:700;
+    font-size:clamp(20px, 3.2vw, 34px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    aspect-ratio:5/3;
+    border-radius:4px;
+    cursor:pointer;
+    text-shadow:0 3px 0 #000;
+    border:none;
+    transition:transform .12s ease, background .2s ease;
+  }
+  .tile:hover:not(.used){
+    transform:scale(1.04);
+    background:#1424c9;
+  }
+  .tile.used{
+    background:#050b3d;
+    color:#1c2668;
+    cursor:default;
+    box-shadow:inset 0 0 0 2px #000a4d;
+  }
+  .tile.daily::after{
+    content:"";
+  }
+
+  /* ---------- Teams ---------- */
+  #teams{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+  }
+  .team{
+    background:var(--team-bg);
+    border:2px solid #2c3aa8;
+    border-radius:8px;
+    padding:10px 14px;
+    min-width:150px;
+    text-align:center;
+    position:relative;
+  }
+  .team.leader{
+    border-color:var(--gold);
+    box-shadow:0 0 14px rgba(255,204,0,0.5);
+  }
+  .team input.team-name{
+    background:transparent;
+    border:none;
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-weight:700;
+    font-size:15px;
+    text-align:center;
+    width:100%;
+    margin-bottom:4px;
+  }
+  .team input.team-name:focus{
+    outline:1px dashed var(--gold);
+  }
+  .team .score{
+    font-size:26px;
+    font-weight:900;
+    font-family:Georgia, serif;
+  }
+  .team .score.neg{ color:#ff7b7b; }
+  .team-buttons{
+    display:flex;
+    gap:6px;
+    justify-content:center;
+    margin-top:6px;
+  }
+  .team-buttons button{
+    background:#1c2c9e;
+    border:1px solid #3a4bd6;
+    color:#fff;
+    border-radius:4px;
+    padding:3px 8px;
+    cursor:pointer;
+    font-size:12px;
+  }
+  .team-buttons button:hover{ background:#2b3fc9; }
+  .remove-team{
+    position:absolute;
+    top:-8px;
+    right:-8px;
+    background:#a30000;
+    color:#fff;
+    border:none;
+    border-radius:50%;
+    width:20px;
+    height:20px;
+    line-height:18px;
+    cursor:pointer;
+    font-size:12px;
+  }
+
+  #controls{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .btn{
+    background:var(--tile-blue);
+    color:var(--gold);
+    border:1px solid #3a4bd6;
+    padding:8px 16px;
+    border-radius:6px;
+    font-family:Georgia, serif;
+    font-weight:700;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .btn:hover{ background:#1424c9; }
+  .btn.secondary{
+    background:transparent;
+    color:#cdd3ff;
+  }
+
+  /* ---------- Modal ---------- */
+  #overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,4,30,0.88);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:20px;
+  }
+  #overlay.open{ display:flex; }
+  #clue-card{
+    background:var(--board-blue);
+    border:4px solid var(--gold);
+    border-radius:14px;
+    width:min(900px, 100%);
+    padding:40px 32px;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  #clue-cat{
+    color:var(--gold-dim);
+    font-family:Georgia, serif;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    font-size:14px;
+    margin-bottom:14px;
+  }
+  #clue-value{
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-weight:900;
+    font-size:20px;
+    margin-bottom:20px;
+  }
+  #clue-text{
+    font-family:Georgia, serif;
+    font-size:clamp(20px, 3vw, 30px);
+    line-height:1.4;
+    min-height:110px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #answer-text{
+    display:none;
+    margin-top:18px;
+    padding-top:18px;
+    border-top:2px dashed rgba(255,204,0,0.4);
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-style:italic;
+    font-size:clamp(17px, 2.4vw, 24px);
+  }
+  #answer-text.shown{ display:block; }
+  .daily-double-banner{
+    display:none;
+    color:var(--gold);
+    font-family:Georgia, serif;
+    font-weight:900;
+    font-size:clamp(22px,4vw,36px);
+    letter-spacing:3px;
+    margin-bottom:10px;
+    text-shadow:0 0 20px rgba(255,204,0,0.7);
+  }
+  .daily-double-banner.show{ display:block; }
+
+  #award-row{
+    margin-top:24px;
+    display:none;
+    flex-direction:column;
+    gap:10px;
+  }
+  #award-row.shown{ display:flex; }
+  #award-row p{
+    margin:0;
+    color:#cdd3ff;
+    font-size:13px;
+  }
+  #award-buttons{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+  }
+  .award-btn{
+    background:#0d1a80;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    font-family:Georgia, serif;
+    font-size:13px;
+  }
+  .award-btn:hover{ background:#132199; }
+  .award-btn.correct{ border-color:#5fe37a; color:#9dffb0; }
+  .award-btn.wrong{ border-color:#ff7b7b; color:#ffb3b3; }
+
+  #modal-actions{
+    margin-top:26px;
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  #winner-banner{
+    display:none;
+    text-align:center;
+    font-family:Georgia, serif;
+    color:var(--gold);
+    font-size:clamp(20px,3.4vw,32px);
+    font-weight:900;
+    text-shadow:0 0 20px rgba(255,204,0,0.8);
+  }
+  #winner-banner.show{ display:block; }
+
+  footer{
+    text-align:center;
+    color:#7c86c9;
+    font-size:11px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Similes &amp; Metaphors Jeopardy</h1>
+    <p>Figure out the figure of speech — for teams of word detectives</p>
+  </header>
+
+  <div id="winner-banner"></div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <div id="teams"></div>
+
+  <div id="controls">
+    <button class="btn" id="add-team-btn">+ Add Team</button>
+    <button class="btn secondary" id="how-to-btn">How to Play</button>
+    <button class="btn secondary" id="reset-btn">Reset Game</button>
+  </div>
+
+  <footer>Click a dollar value to reveal a clue. Click again to reveal the response, then award points to the team that got it.</footer>
+</div>
+
+<div id="overlay">
+  <div id="clue-card">
+    <div class="daily-double-banner" id="dd-banner">Daily Double!</div>
+    <div id="clue-cat"></div>
+    <div id="clue-value"></div>
+    <div id="clue-text"></div>
+    <div id="answer-text"></div>
+
+    <div id="award-row">
+      <p>Who answered correctly?</p>
+      <div id="award-buttons"></div>
+    </div>
+
+    <div id="modal-actions">
+      <button class="btn" id="reveal-btn">Reveal Response</button>
+      <button class="btn secondary" id="close-btn">Close (No Award)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var CATEGORIES = [
+    {
+      name: "Simile or Metaphor?",
+      clues: [
+        { value: 100, clue: "“Her smile was as bright as the sun.”", answer: "What is a simile? (It compares two things using ‘as’.)" },
+        { value: 200, clue: "“Time is a thief.”", answer: "What is a metaphor? (It says one thing IS another.)" },
+        { value: 300, clue: "“The classroom was a zoo during the fire drill.”", answer: "What is a metaphor?" },
+        { value: 400, clue: "“He runs like the wind.”", answer: "What is a simile? (It uses ‘like’.)" },
+        { value: 500, clue: "“Life is a rollercoaster, full of ups and downs.”", answer: "What is a metaphor?" }
+      ]
+    },
+    {
+      name: "Finish the Simile",
+      clues: [
+        { value: 100, clue: "“As busy as a ____.”", answer: "What is ‘bee’?" },
+        { value: 200, clue: "“As quiet as a ____.”", answer: "What is ‘mouse’?" },
+        { value: 300, clue: "“As cold as ____.”", answer: "What is ‘ice’ (or ‘a witch’s heart’)?" },
+        { value: 400, clue: "“He slept like a ____.”", answer: "What is ‘log’ (or ‘baby’)?" },
+        { value: 500, clue: "Similes always compare two unlike things using one of these two words — name both.", answer: "What are ‘like’ and ‘as’?" }
+      ]
+    },
+    {
+      name: "Finish the Metaphor",
+      clues: [
+        { value: 100, clue: "“Her voice was music to my ____.”", answer: "What is ‘ears’?" },
+        { value: 200, clue: "“During recess, the playground turned into a ____.” (fill in a word that makes this a metaphor for wild chaos)", answer: "What is ‘zoo’ (or ‘jungle’ / ‘circus’)?" },
+        { value: 300, clue: "“That scary movie is only the tip of the ____.”", answer: "What is ‘iceberg’?" },
+        { value: 400, clue: "“All the world’s a ____, and all the men and women merely players.” —Shakespeare", answer: "What is ‘stage’?" },
+        { value: 500, clue: "Unlike a simile, a metaphor says one thing ____ another thing, without using ‘like’ or ‘as’.", answer: "What is ‘is’ (directly states it ‘is’ the other thing)?" }
+      ]
+    },
+    {
+      name: "Spot the Comparison",
+      clues: [
+        { value: 100, clue: "“The stars were diamonds scattered across the sky.” What two things are compared?", answer: "What are the stars and diamonds?" },
+        { value: 200, clue: "“My brother eats like a horse.” What two things are compared?", answer: "What are my brother’s eating habits and a horse’s eating habits?" },
+        { value: 300, clue: "“The internet is a superhighway of information.” What two things are compared?", answer: "What are the internet and a superhighway?" },
+        { value: 400, clue: "“Her eyes sparkled like diamonds when she saw the puppy.” What two things are compared?", answer: "What are her eyes and diamonds?" },
+        { value: 500, clue: "“His heart was a block of ice.” Name the figure of speech AND the two things compared.", answer: "What is a metaphor comparing his heart and a block of ice?" }
+      ]
+    },
+    {
+      name: "Similes &amp; Metaphors in the Wild",
+      clues: [
+        { value: 100, clue: "Katy Perry sings, “Baby, you’re a firework.” Simile or metaphor?", answer: "What is a metaphor?" },
+        { value: 200, clue: "Muhammad Ali said, “Float like a butterfly, sting like a bee.” Simile or metaphor?", answer: "What is a simile?" },
+        { value: 300, clue: "Forrest Gump says, “Life is like a box of chocolates.” Simile or metaphor?", answer: "What is a simile?" },
+        { value: 400, clue: "Shakespeare writes, “It is the east, and Juliet is the sun.” Simile or metaphor?", answer: "What is a metaphor?" },
+        { value: 500, clue: "Langston Hughes asks, “Does it dry up like a raisin in the sun?” Simile or metaphor?", answer: "What is a simile?" }
+      ]
+    }
+  ];
+
+  var DAILY_DOUBLE = { cat: 2, idx: 3 };
+
+  var state = {
+    used: {},
+    teams: [
+      { name: "Team 1", score: 0 },
+      { name: "Team 2", score: 0 }
+    ]
+  };
+
+  var boardEl = document.getElementById("board");
+  var teamsEl = document.getElementById("teams");
+  var overlay = document.getElementById("overlay");
+  var clueCatEl = document.getElementById("clue-cat");
+  var clueValueEl = document.getElementById("clue-value");
+  var clueTextEl = document.getElementById("clue-text");
+  var answerTextEl = document.getElementById("answer-text");
+  var revealBtn = document.getElementById("reveal-btn");
+  var closeBtn = document.getElementById("close-btn");
+  var awardRow = document.getElementById("award-row");
+  var awardButtons = document.getElementById("award-buttons");
+  var ddBanner = document.getElementById("dd-banner");
+  var winnerBanner = document.getElementById("winner-banner");
+
+  var current = null; // {catIndex, clueIndex, tileEl, isDaily}
+
+  function tileKey(c, i){ return c + "-" + i; }
+
+  function renderBoard(){
+    boardEl.innerHTML = "";
+    CATEGORIES.forEach(function(cat){
+      var el = document.createElement("div");
+      el.className = "cat";
+      el.textContent = cat.name.replace("&amp;", "&");
+      boardEl.appendChild(el);
+    });
+    CATEGORIES[0].clues.forEach(function(_, rowIdx){
+      CATEGORIES.forEach(function(cat, catIdx){
+        var clue = cat.clues[rowIdx];
+        var key = tileKey(catIdx, rowIdx);
+        var tile = document.createElement("button");
+        tile.className = "tile" + (state.used[key] ? " used" : "");
+        tile.textContent = state.used[key] ? "" : "$" + clue.value;
+        tile.disabled = !!state.used[key];
+        tile.addEventListener("click", function(){ openClue(catIdx, rowIdx, tile); });
+        boardEl.appendChild(tile);
+      });
+    });
+  }
+
+  function renderTeams(){
+    teamsEl.innerHTML = "";
+    var maxScore = Math.max.apply(null, state.teams.map(function(t){ return t.score; }));
+    var anyScoring = state.teams.some(function(t){ return t.score !== 0; });
+
+    state.teams.forEach(function(team, idx){
+      var box = document.createElement("div");
+      box.className = "team" + (anyScoring && team.score === maxScore && maxScore > Math.min.apply(null, state.teams.map(function(t){return t.score;})) ? " leader" : "");
+
+      var nameInput = document.createElement("input");
+      nameInput.className = "team-name";
+      nameInput.value = team.name;
+      nameInput.maxLength = 20;
+      nameInput.addEventListener("input", function(){ team.name = nameInput.value; renderAwardButtons(); });
+      box.appendChild(nameInput);
+
+      var scoreEl = document.createElement("div");
+      scoreEl.className = "score" + (team.score < 0 ? " neg" : "");
+      scoreEl.textContent = "$" + team.score;
+      box.appendChild(scoreEl);
+
+      var btnRow = document.createElement("div");
+      btnRow.className = "team-buttons";
+      var minus = document.createElement("button");
+      minus.textContent = "-100";
+      minus.addEventListener("click", function(){ team.score -= 100; renderTeams(); });
+      var plus = document.createElement("button");
+      plus.textContent = "+100";
+      plus.addEventListener("click", function(){ team.score += 100; renderTeams(); });
+      btnRow.appendChild(minus);
+      btnRow.appendChild(plus);
+      box.appendChild(btnRow);
+
+      if (state.teams.length > 1) {
+        var removeBtn = document.createElement("button");
+        removeBtn.className = "remove-team";
+        removeBtn.textContent = "×";
+        removeBtn.title = "Remove team";
+        removeBtn.addEventListener("click", function(){
+          state.teams.splice(idx, 1);
+          renderTeams();
+        });
+        box.appendChild(removeBtn);
+      }
+
+      teamsEl.appendChild(box);
+    });
+
+    checkWinner();
+  }
+
+  function checkWinner(){
+    var allUsed = CATEGORIES.every(function(cat, catIdx){
+      return cat.clues.every(function(_, rowIdx){ return !!state.used[tileKey(catIdx, rowIdx)]; });
+    });
+    if (allUsed && state.teams.length){
+      var sorted = state.teams.slice().sort(function(a,b){ return b.score - a.score; });
+      var top = sorted[0];
+      var tie = sorted.filter(function(t){ return t.score === top.score; });
+      winnerBanner.classList.add("show");
+      if (tie.length > 1){
+        winnerBanner.textContent = "🏆 It's a tie! " + tie.map(function(t){return t.name;}).join(" & ") + " with $" + top.score;
+      } else {
+        winnerBanner.textContent = "🏆 " + top.name + " wins with $" + top.score + "!";
+      }
+    } else {
+      winnerBanner.classList.remove("show");
+    }
+  }
+
+  function openClue(catIdx, rowIdx, tileEl){
+    if (state.used[tileKey(catIdx, rowIdx)]) return;
+    var cat = CATEGORIES[catIdx];
+    var clue = cat.clues[rowIdx];
+    var isDaily = (catIdx === DAILY_DOUBLE.cat && rowIdx === DAILY_DOUBLE.idx);
+    current = { catIdx: catIdx, rowIdx: rowIdx, tileEl: tileEl, isDaily: isDaily };
+
+    clueCatEl.textContent = cat.name.replace("&amp;", "&");
+    clueValueEl.textContent = "$" + clue.value;
+    clueTextEl.textContent = clue.clue;
+    answerTextEl.textContent = clue.answer;
+    answerTextEl.classList.remove("shown");
+    awardRow.classList.remove("shown");
+    revealBtn.style.display = "";
+    ddBanner.classList.toggle("show", isDaily);
+
+    renderAwardButtons();
+    overlay.classList.add("open");
+  }
+
+  function renderAwardButtons(){
+    awardButtons.innerHTML = "";
+    if (!current) return;
+    var clue = CATEGORIES[current.catIdx].clues[current.rowIdx];
+    state.teams.forEach(function(team){
+      var b = document.createElement("button");
+      b.className = "award-btn correct";
+      b.textContent = "✓ " + team.name + " (+$" + clue.value + ")";
+      b.addEventListener("click", function(){ awardPoints(team, clue.value); });
+      awardButtons.appendChild(b);
+
+      var w = document.createElement("button");
+      w.className = "award-btn wrong";
+      w.textContent = "✗ " + team.name + " (-$" + clue.value + ")";
+      w.addEventListener("click", function(){ awardPoints(team, -clue.value); });
+      awardButtons.appendChild(w);
+    });
+  }
+
+  function awardPoints(team, delta){
+    team.score += delta;
+    markUsedAndClose();
+  }
+
+  function markUsedAndClose(){
+    if (current){
+      state.used[tileKey(current.catIdx, current.rowIdx)] = true;
+    }
+    closeModal();
+    renderBoard();
+    renderTeams();
+  }
+
+  function closeModal(){
+    overlay.classList.remove("open");
+    current = null;
+  }
+
+  revealBtn.addEventListener("click", function(){
+    answerTextEl.classList.add("shown");
+    awardRow.classList.add("shown");
+    revealBtn.style.display = "none";
+  });
+
+  closeBtn.addEventListener("click", function(){
+    markUsedAndClose();
+  });
+
+  overlay.addEventListener("click", function(e){
+    if (e.target === overlay) markUsedAndClose();
+  });
+
+  document.getElementById("add-team-btn").addEventListener("click", function(){
+    if (state.teams.length >= 6) { alert("Maximum of 6 teams."); return; }
+    state.teams.push({ name: "Team " + (state.teams.length + 1), score: 0 });
+    renderTeams();
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", function(){
+    if (!confirm("Reset the board and all scores?")) return;
+    state.used = {};
+    state.teams.forEach(function(t){ t.score = 0; });
+    winnerBanner.classList.remove("show");
+    renderBoard();
+    renderTeams();
+  });
+
+  document.getElementById("how-to-btn").addEventListener("click", function(){
+    alert(
+      "HOW TO PLAY\n\n" +
+      "1. Split the class into 2–6 teams.\n" +
+      "2. A team picks a category and dollar value.\n" +
+      "3. Read the clue aloud. Teams race to identify whether it's a simile or metaphor, or answer the prompt, phrased as a question (“What is…”).\n" +
+      "4. Click “Reveal Response” to check the answer, then award points to the team that answered (or dock points for a wrong guess).\n" +
+      "5. Watch for the hidden Daily Double — it's worth the same points but only one team gets to answer!\n" +
+      "6. When every tile is used, the highest score wins."
+    );
+  });
+
+  renderBoard();
+  renderTeams();
+})();
+</script>
+</body>
+</html>
