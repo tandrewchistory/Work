@@ -474,6 +474,15 @@ footer{
   font-size:22px;
   margin-bottom:16px;
 }
+#clue-image{
+  display:none;
+  max-width:100%;
+  max-height:min(46vh, 320px);
+  border-radius:10px;
+  margin:0 auto 18px;
+  box-shadow:0 6px 16px rgba(0,0,0,0.18);
+}
+#clue-image.shown{ display:block; }
 #clue-text{
   font-size:clamp(19px, 2.6vw, 26px);
   line-height:1.45;
@@ -854,6 +863,56 @@ footer{
   margin-left:54px;
 }
 .editor-clue-explainer .field > span{ color:var(--info); }
+.editor-clue-image{
+  margin-left:54px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.editor-clue-image-label{
+  font-weight:700;
+  font-size:11.5px;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:var(--info);
+  width:100%;
+}
+.editor-clue-thumb{
+  display:none;
+  width:56px;
+  height:56px;
+  object-fit:cover;
+  border-radius:6px;
+  border:1px solid var(--paper-edge);
+  background:var(--paper);
+}
+.editor-clue-thumb.shown{ display:block; }
+.editor-clue-image input[type="file"]{
+  font-size:12.5px;
+  color:var(--ink-soft);
+  max-width:220px;
+}
+.remove-image-btn{
+  display:none;
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  color:var(--danger);
+  border-radius:5px;
+  padding:4px 9px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+}
+.remove-image-btn.shown{ display:inline-block; }
+.remove-image-btn:hover{ background:var(--danger-soft); }
+.image-error{
+  display:none;
+  width:100%;
+  color:var(--danger);
+  font-size:12px;
+}
+.image-error.shown{ display:block; }
 .clue-value-label{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
@@ -865,6 +924,7 @@ footer{
 @media (max-width: 560px){
   .editor-clue-main{ grid-template-columns:1fr; gap:6px; }
   .editor-clue-explainer{ margin-left:0; }
+  .editor-clue-image{ margin-left:0; }
   .clue-value-label{ text-align:left; padding-top:0; }
 }
 #dd-picker{
@@ -962,6 +1022,7 @@ footer{
     <div class="daily-double-banner" id="dd-banner">Daily Double!</div>
     <div id="clue-cat"></div>
     <div id="clue-value" class="tabular"></div>
+    <img id="clue-image" alt="">
     <div id="clue-text"></div>
     <div id="answer-text"></div>
     <div id="explainer-text"></div>
@@ -1022,7 +1083,7 @@ footer{
 <div id="editor-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and all 25 clues for your subject. Add an optional explainer to any clue for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and all 25 clues for your subject. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-body">
       <div class="editor-top-fields">
         <label class="field">
@@ -1074,7 +1135,8 @@ footer{
           value: VALUES[i],
           clue: "Write your $" + VALUES[i] + " clue here",
           answer: "Write the answer here",
-          explainer: ""
+          explainer: "",
+          image: ""
         });
       }
       categories.push({ name: "Category " + (c + 1), clues: clues });
@@ -1118,6 +1180,7 @@ footer{
         cat.clues.forEach(function(clue, ci2){
           clue.value = VALUES[ci2];
           if (typeof clue.explainer !== "string") clue.explainer = "";
+          if (typeof clue.image !== "string") clue.image = "";
         });
       });
       return parsed;
@@ -1155,6 +1218,7 @@ footer{
   var overlay = document.getElementById("overlay");
   var clueCatEl = document.getElementById("clue-cat");
   var clueValueEl = document.getElementById("clue-value");
+  var clueImageEl = document.getElementById("clue-image");
   var clueTextEl = document.getElementById("clue-text");
   var answerTextEl = document.getElementById("answer-text");
   var explainerTextEl = document.getElementById("explainer-text");
@@ -1352,6 +1416,13 @@ footer{
 
     clueCatEl.textContent = cat.name;
     clueValueEl.textContent = "$" + clue.value;
+    if (clue.image) {
+      clueImageEl.src = clue.image;
+      clueImageEl.classList.add("shown");
+    } else {
+      clueImageEl.removeAttribute("src");
+      clueImageEl.classList.remove("shown");
+    }
     clueTextEl.textContent = clue.clue;
     answerTextEl.textContent = clue.answer;
     answerTextEl.classList.remove("shown");
@@ -1511,6 +1582,38 @@ footer{
   });
 
   /* ---------------- board editor ---------------- */
+
+  /* Resizes/compresses an uploaded image client-side before it's stored as a
+     data URI (in the content object and, if available, localStorage) — keeps
+     25 clue images from blowing past storage quota. */
+  function compressImageFile(file, maxDim, cb){
+    if (!file.type || file.type.indexOf("image/") !== 0){ cb(null); return; }
+    var reader = new FileReader();
+    reader.onerror = function(){ cb(null); };
+    reader.onload = function(e){
+      var img = new Image();
+      img.onerror = function(){ cb(null); };
+      img.onload = function(){
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width * scale));
+        var h = Math.max(1, Math.round(img.height * scale));
+        var canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        var isPng = file.type === "image/png";
+        var dataUrl = canvas.toDataURL(isPng ? "image/png" : "image/jpeg", 0.85);
+        if (isPng && dataUrl.length > 600000){
+          dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        }
+        cb(dataUrl);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function refreshDDCatOptions(){
     var prevValue = ddCatSelect.value;
     ddCatSelect.innerHTML = "";
@@ -1587,6 +1690,56 @@ footer{
         mainRow.appendChild(clueField);
         mainRow.appendChild(answerField);
 
+        var imageWrap = document.createElement("div");
+        imageWrap.className = "editor-clue-image";
+        var imageLabel = document.createElement("span");
+        imageLabel.className = "editor-clue-image-label";
+        imageLabel.textContent = "Clue Image (optional)";
+        var thumb = document.createElement("img");
+        thumb.className = "editor-clue-thumb" + (clue.image ? " shown" : "");
+        thumb.alt = "";
+        if (clue.image) thumb.src = clue.image;
+        var fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/*";
+        var removeImageBtn = document.createElement("button");
+        removeImageBtn.type = "button";
+        removeImageBtn.className = "remove-image-btn" + (clue.image ? " shown" : "");
+        removeImageBtn.textContent = "Remove image";
+        var imageErr = document.createElement("span");
+        imageErr.className = "image-error";
+        imageErr.textContent = "Couldn't load that image — try a different file.";
+
+        fileInput.addEventListener("change", function(){
+          var file = fileInput.files && fileInput.files[0];
+          fileInput.value = "";
+          if (!file) return;
+          imageErr.classList.remove("shown");
+          compressImageFile(file, 900, function(dataUrl){
+            if (!dataUrl) {
+              imageErr.classList.add("shown");
+              return;
+            }
+            clue.image = dataUrl;
+            thumb.src = dataUrl;
+            thumb.classList.add("shown");
+            removeImageBtn.classList.add("shown");
+          });
+        });
+        removeImageBtn.addEventListener("click", function(){
+          clue.image = "";
+          thumb.removeAttribute("src");
+          thumb.classList.remove("shown");
+          removeImageBtn.classList.remove("shown");
+          imageErr.classList.remove("shown");
+        });
+
+        imageWrap.appendChild(imageLabel);
+        imageWrap.appendChild(thumb);
+        imageWrap.appendChild(fileInput);
+        imageWrap.appendChild(removeImageBtn);
+        imageWrap.appendChild(imageErr);
+
         var explainerWrap = document.createElement("div");
         explainerWrap.className = "editor-clue-explainer";
         var explainerField = document.createElement("label");
@@ -1603,6 +1756,7 @@ footer{
         explainerWrap.appendChild(explainerField);
 
         row.appendChild(mainRow);
+        row.appendChild(imageWrap);
         row.appendChild(explainerWrap);
         wrap.appendChild(row);
       });
@@ -1640,7 +1794,8 @@ footer{
       cat.name = cat.name.trim() || ("Category " + (catIdx + 1));
       cat.clues.forEach(function(clue, rowIdx){
         clue.value = VALUES[rowIdx];
-        clue.clue = clue.clue.trim() || ("Write your $" + VALUES[rowIdx] + " clue here");
+        clue.image = clue.image || "";
+        clue.clue = clue.clue.trim() || (clue.image ? "" : ("Write your $" + VALUES[rowIdx] + " clue here"));
         clue.answer = clue.answer.trim() || "Write the answer here";
         clue.explainer = (clue.explainer || "").trim();
       });
