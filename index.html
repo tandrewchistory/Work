@@ -61,15 +61,17 @@
     --ink-faint: #85795c;
     --line: #c6b689;
     --line-strong: #a2926a;
-    --water: #bdccc4;
-    --land: #ddcd9a;
-    --johor: #cdd0b1;
-    --accent: #a35f22;
-    --accent-strong: #7c4416;
-    --danger: #8c3224;
-    --command: #a3841c;
-    --aftermath: #3c6a5e;
-    --shadow: rgba(60, 46, 20, 0.28);
+    --water: #c1cdc4;
+    --land: #d3c495;
+    --johor: #c9cbb2;
+    --accent: #8d6034;
+    --accent-strong: #6b481f;
+    --danger: #833c31;
+    --command: #8a7434;
+    --aftermath: #4b6862;
+    --uk: #3f5872;
+    --jp: #9c4530;
+    --shadow: rgba(60, 46, 20, 0.24);
     --focus: #1f5cb0;
 
     --font-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
@@ -90,11 +92,13 @@
       --water: #101e1c;
       --land: #262415;
       --johor: #1c1e13;
-      --accent: #dc9a44;
-      --accent-strong: #f0b568;
-      --danger: #d1685a;
-      --command: #e0b93f;
-      --aftermath: #63a396;
+      --accent: #c99655;
+      --accent-strong: #dbae72;
+      --danger: #b56a58;
+      --command: #b89f52;
+      --aftermath: #5f8479;
+      --uk: #7fa0c2;
+      --jp: #c97a5e;
       --shadow: rgba(0, 0, 0, 0.55);
       --focus: #6fa8f5;
     }
@@ -112,11 +116,13 @@
     --water: #101e1c;
     --land: #262415;
     --johor: #1c1e13;
-    --accent: #dc9a44;
-    --accent-strong: #f0b568;
-    --danger: #d1685a;
-    --command: #e0b93f;
-    --aftermath: #63a396;
+    --accent: #c99655;
+    --accent-strong: #dbae72;
+    --danger: #b56a58;
+    --command: #b89f52;
+    --aftermath: #5f8479;
+    --uk: #7fa0c2;
+    --jp: #c97a5e;
     --shadow: rgba(0, 0, 0, 0.55);
     --focus: #6fa8f5;
   }
@@ -301,40 +307,55 @@
   .pin {
     position: absolute;
     transform: translate(-50%, -100%);
-    width: 30px;
-    height: 38px;
+    width: 26px;
+    height: 44px;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 2px;
-    filter: drop-shadow(0 2px 3px var(--shadow));
+    flex-direction: column;
+    align-items: center;
     transition: transform 0.15s ease;
   }
-  .pin:hover, .pin:focus-visible { transform: translate(-50%, -100%) scale(1.12); }
+  .pin:hover, .pin:focus-visible { transform: translate(-50%, -100%) scale(1.07); }
+  .pin .medallion {
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    box-shadow: 0 1px 2px var(--shadow);
+    flex: 0 0 auto;
+  }
   .pin .num {
     font-family: var(--font-mono);
     font-weight: 600;
-    font-size: 12px;
+    font-size: 10.5px;
     color: var(--surface);
     position: relative;
     z-index: 2;
   }
-  .pin svg.marker { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .pin[data-cat="advance"] .marker-fill { fill: var(--accent); }
-  .pin[data-cat="battle"] .marker-fill { fill: var(--danger); }
-  .pin[data-cat="command"] .marker-fill { fill: var(--command); }
-  .pin[data-cat="aftermath"] .marker-fill { fill: var(--aftermath); }
-  .pin.active .marker-fill { fill: var(--ink); }
-  .pin[data-cat="command"] .num, .pin.active .num { color: var(--surface); }
-
-  .pin::after {
-    content: "";
-    position: absolute;
-    left: 50%; top: 100%;
-    width: 8px; height: 8px;
-    transform: translate(-50%, -60%) rotate(45deg);
-    background: transparent;
+  .pin .stem {
+    width: 1.5px;
+    flex: 1 1 auto;
+    background: var(--ink);
+    opacity: 0.5;
+    margin: 1px 0;
   }
+  .pin .foot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: 1.4px solid var(--surface);
+    flex: 0 0 auto;
+  }
+  .pin[data-cat="advance"] .medallion { background: var(--accent); }
+  .pin[data-cat="battle"] .medallion { background: var(--danger); }
+  .pin[data-cat="command"] .medallion { background: var(--command); }
+  .pin[data-cat="aftermath"] .medallion { background: var(--aftermath); }
+  .pin.active .medallion { background: var(--ink); }
+  .pin[data-cat="command"] .num, .pin.active .num { color: var(--surface); }
 
   .legend {
     display: flex;
@@ -533,6 +554,117 @@
   .tl-item.active .tl-name { color: var(--surface); }
   .tl-item:hover:not(.active) { border-color: var(--ink-soft); }
 
+  /* ---------- Forces compared ---------- */
+  .forces-panel {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 16px 18px 20px;
+  }
+  .forces-intro {
+    margin: 4px 0 16px;
+    max-width: 66ch;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .forces-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 2px;
+  }
+  .forces-col-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 12px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+  }
+  .forces-col-head .flag {
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    border: 1.5px solid var(--ink);
+  }
+  .forces-col-head.uk .flag { background: var(--uk); }
+  .forces-col-head.jp .flag { background: var(--jp); }
+  .forces-col-head .side-name {
+    font-family: var(--font-display);
+    font-size: 19px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+  .forces-col-head .side-cmd {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+
+  .forces-table { display: flex; flex-direction: column; margin-top: 10px; }
+  .forces-row {
+    display: grid;
+    grid-template-columns: 128px 1fr 1fr;
+    border-top: 1px solid var(--line);
+  }
+  .forces-row:last-child { border-bottom: 1px solid var(--line); }
+  .forces-row .f-label {
+    padding: 11px 10px 11px 2px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: flex-start;
+  }
+  .forces-row .f-val {
+    position: relative;
+    padding: 11px 12px 11px 26px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    border-left: 1px solid var(--line);
+  }
+  .forces-row .f-val::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 15px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--uk);
+    border: 1.4px solid var(--ink);
+  }
+  .forces-row .f-val.jp::before { background: var(--jp); }
+  .forces-row .f-val b { color: var(--ink); }
+
+  .forces-note {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px dashed var(--line-strong);
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .forces-note .label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 5px;
+  }
+  .forces-note em { color: var(--ink); font-style: italic; }
+
+  @media (max-width: 700px) {
+    .forces-cols { grid-template-columns: 1fr; }
+    .forces-row { grid-template-columns: 1fr; }
+    .forces-row .f-label { padding: 10px 10px 2px; }
+    .forces-row .f-val { border-left: none; border-top: 1px solid var(--line); }
+  }
+
   /* ---------- Why panel (dialog) ---------- */
   .backdrop {
     position: fixed;
@@ -697,6 +829,76 @@
   <section class="timeline-panel">
     <div class="timeline-title">Campaign Timeline · 31 Jan – 15 Feb 1942</div>
     <div class="timeline" id="timeline"></div>
+  </section>
+
+  <section class="forces-panel" aria-label="Comparison of British and Japanese forces">
+    <div class="timeline-title">Order of Battle · Forces Compared</div>
+    <p class="forces-intro">On paper the defenders often outnumbered the attackers. So why did they lose? Compare the two sides factor by factor below.</p>
+
+    <div class="forces-cols">
+      <div class="forces-col-head uk">
+        <span class="flag" aria-hidden="true"></span>
+        <div>
+          <div class="side-name">British &amp; Commonwealth Forces</div>
+          <div class="side-cmd">Lt-Gen Arthur Percival</div>
+        </div>
+      </div>
+      <div class="forces-col-head jp">
+        <span class="flag" aria-hidden="true"></span>
+        <div>
+          <div class="side-name">Japanese 25th Army</div>
+          <div class="side-cmd">Gen Tomoyuki Yamashita, "the Tiger of Malaya"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="forces-table">
+      <div class="forces-row">
+        <div class="f-label">Composition</div>
+        <div class="f-val">British, Indian, Australian and local volunteer units — including survivors of the Malayan campaign and raw reinforcements, some of whom had <b>never fired a rifle</b>.</div>
+        <div class="f-val jp">3 infantry divisions, 4 tank regiments, 2 air divisions and 5 air brigades — troops <b>battle-hardened</b> from campaigns in China and Indochina.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Personnel</div>
+        <div class="f-val"><b>~75,000–87,000</b> men (British estimates count every uniformed soldier).</div>
+        <div class="f-val jp"><b>~30,000–125,000</b> men, depending on the source — see note below.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Artillery</div>
+        <div class="f-val">262 guns, plus fixed coastal artillery batteries.</div>
+        <div class="f-val jp">About 400 guns, of which 168 were used in the assault on Singapore itself.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Tanks</div>
+        <div class="f-val"><b>None</b> in Malaya until a handful arrived too late to matter.</div>
+        <div class="f-val jp">About 120 tanks and armoured carriers.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Aircraft</div>
+        <div class="f-val">~158 aircraft, mostly obsolete Brewster Buffalo fighters — nicknamed "flying coffins".</div>
+        <div class="f-val jp">~560–620 aircraft, including the modern, highly manoeuvrable Mitsubishi Zero.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Training &amp; morale</div>
+        <div class="f-val">Mixed nationalities and languages made coordination hard; many were untrained for jungle warfare and had little stake in defending a colony that wasn't home.</div>
+        <div class="f-val jp">Unified command and high morale, sharpened by a string of swift victories on the way down Malaya.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Strategy</div>
+        <div class="f-val">Static "Fortress Singapore": coastal guns and defences faced the sea, on the assumption a land attack through "impassable" jungle was impossible.</div>
+        <div class="f-val jp">A fast-moving surprise invasion overland through Malaya by bicycle and light tank, backed by months of pre-war spying and a dedicated jungle-warfare research unit.</div>
+      </div>
+      <div class="forces-row">
+        <div class="f-label">Naval &amp; air power</div>
+        <div class="f-val">Lost its only two capital ships, HMS <i>Prince of Wales</i> and HMS <i>Repulse</i>, on 10 Dec 1941 — no further reinforcements could reach Singapore in time.</div>
+        <div class="f-val jp">Full command of the air and sea by February 1942, with supply lines running freely through Indochina and the South China Sea.</div>
+      </div>
+    </div>
+
+    <div class="forces-note">
+      <div class="label">A note on the numbers</div>
+      Historians don't agree on the exact troop counts. British-side figures (~87,000) count every uniformed soldier in Singapore; Japanese-side figures range from about 30,000 combat troops (the estimate of staff officer Masanobu Tsuji) up to 125,000 once support and construction troops are included (historian S. W. Kirby's estimate). <em>If the defenders were sometimes more than twice the size of the attacking force on paper, what does that suggest about which factors — numbers, or something else — actually decided the battle?</em>
+    </div>
   </section>
 
   <footer>Coastline reconstructed to approximate 1942: Marina Bay, East Coast Park, Changi Airport, Tuas and Jurong did not yet exist — all built by later land reclamation. An approximation for teaching, not a surveyed historical map.</footer>
@@ -865,13 +1067,6 @@ const REASONS = [
 
   var activeId = null;
 
-  function pinSvg() {
-    return '<svg class="marker" viewBox="0 0 30 38" aria-hidden="true">' +
-      '<path class="marker-fill" d="M15 0C6.7 0 0 6.6 0 14.7 0 25.5 15 38 15 38s15-12.5 15-23.3C30 6.6 23.3 0 15 0z"/>' +
-      '<circle cx="15" cy="14.5" r="9.3" fill="none" stroke="rgba(0,0,0,0.18)" stroke-width="1"/>' +
-      '</svg>';
-  }
-
   function buildPins() {
     SITES.forEach(function (site, i) {
       var btn = document.createElement("button");
@@ -882,7 +1077,9 @@ const REASONS = [
       btn.style.left = (site.x / 1000 * 100) + "%";
       btn.style.top = (site.y / 700 * 100) + "%";
       btn.setAttribute("aria-label", (i + 1) + ". " + site.name + " — " + site.date);
-      btn.innerHTML = pinSvg() + '<span class="num">' + (i + 1) + "</span>";
+      btn.innerHTML =
+        '<span class="medallion"><span class="num">' + (i + 1) + "</span></span>" +
+        '<span class="stem"></span><span class="foot"></span>';
       btn.addEventListener("click", function () { select(site.id); });
       pinLayer.appendChild(btn);
     });
