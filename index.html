@@ -668,6 +668,76 @@
     .forces-row .f-val { border-left: none; border-top: 1px solid var(--line); }
   }
 
+  /* ---------- Flip side: British strengths & Japanese weaknesses ---------- */
+  .flip-panel {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 16px 18px 20px;
+  }
+  .flip-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .flip-col {
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    padding: 14px 16px 16px;
+  }
+  .flip-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .flip-flag {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 23px;
+    border: 1px solid var(--ink);
+    display: block;
+  }
+  .flip-head .side-name {
+    font-family: var(--font-display);
+    font-size: 21px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+  .flip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .flip-list li {
+    position: relative;
+    padding-left: 20px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .flip-list li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--uk);
+    border: 1.4px solid var(--ink);
+  }
+  .flip-col.jp .flip-list li::before { background: var(--jp); }
+  .flip-list li b { color: var(--ink); }
+
+  @media (max-width: 700px) {
+    .flip-cols { grid-template-columns: 1fr; }
+  }
+
   /* ---------- Quiz ---------- */
   .quiz-panel {
     border: 1px solid var(--line-strong);
@@ -1040,6 +1110,53 @@
     <div class="forces-note">
       <div class="label">A note on the numbers</div>
       Historians don't agree on the exact troop counts. British-side figures (~87,000) count every uniformed soldier in Singapore; Japanese-side figures range from about 30,000 combat troops (the estimate of staff officer Masanobu Tsuji) up to 125,000 once support and construction troops are included (historian S. W. Kirby's estimate). <em>If the defenders were sometimes more than twice the size of the attacking force on paper, what does that suggest about which factors — numbers, or something else — actually decided the battle?</em>
+    </div>
+  </section>
+
+  <section class="flip-panel" aria-label="British strengths and Japanese weaknesses">
+    <div class="timeline-title">Re-Reading the Record · The Flip Side</div>
+    <p class="forces-intro">Most accounts of this battle focus on British weaknesses and Japanese strengths — that's why Singapore fell. But the same sources also show real British strengths, and Japanese vulnerabilities that nearly cost them the victory.</p>
+
+    <div class="flip-cols">
+      <div class="flip-col uk">
+        <div class="flip-head">
+          <svg class="flip-flag" viewBox="0 0 60 30" aria-hidden="true">
+            <rect width="60" height="30" fill="#0a1f44"/>
+            <line x1="0" y1="0" x2="60" y2="30" stroke="#ffffff" stroke-width="6"/>
+            <line x1="60" y1="0" x2="0" y2="30" stroke="#ffffff" stroke-width="6"/>
+            <line x1="0" y1="0" x2="60" y2="30" stroke="#c8102e" stroke-width="2"/>
+            <line x1="60" y1="0" x2="0" y2="30" stroke="#c8102e" stroke-width="2"/>
+            <rect x="24" y="0" width="12" height="30" fill="#ffffff"/>
+            <rect x="0" y="12" width="60" height="6" fill="#ffffff"/>
+            <rect x="26" y="0" width="8" height="30" fill="#c8102e"/>
+            <rect x="0" y="13" width="60" height="4" fill="#c8102e"/>
+          </svg>
+          <span class="side-name">British Strengths</span>
+        </div>
+        <ul class="flip-list">
+          <li><b>A genuine fortress, built at real cost.</b> A modern naval base at Sembawang, military airfields at Tengah, Sembawang and Seletar, coastal gun positions at Labrador Park and Fort Siloso, and an extensive underground bunker network — including the Battle Box command centre at Fort Canning.</li>
+          <li><b>More men and guns on paper.</b> Around 75,000–87,000 troops and 262 field guns plus coastal artillery — comfortably outnumbering the roughly 30,000 Japanese combat troops recorded by staff officer Masanobu Tsuji.</li>
+          <li><b>Denying the enemy resources.</b> Engineers destroyed the naval base on 27–30 January 1942 so Japan couldn't use it, and blew a gap in the Causeway that briefly slowed the advance.</li>
+          <li><b>Pockets of fierce, committed resistance.</b> The 1st Malay Regiment's last stand at Bukit Chandu under Lt Adnan bin Saidi, and Chinese volunteers who fought alongside British troops to defend the supply depots at Bukit Timah.</li>
+        </ul>
+      </div>
+
+      <div class="flip-col jp">
+        <div class="flip-head">
+          <svg class="flip-flag" viewBox="0 0 60 30" aria-hidden="true">
+            <rect width="60" height="30" fill="#ffffff"/>
+            <circle cx="30" cy="15" r="9" fill="#bc002d"/>
+          </svg>
+          <span class="side-name">Japanese Weaknesses</span>
+        </div>
+        <ul class="flip-list">
+          <li><b>Actually outnumbered.</b> By Tsuji's own count, only around 30,000 combat troops faced a defending force that was, by some estimates, more than twice that size.</li>
+          <li><b>Lightly equipped by design.</b> The speed that let them outrun the British came at a cost — fewer heavy weapons and thin reserves to fall back on.</li>
+          <li><b>Nearly out of supplies by the end.</b> By 15 February, Japanese forces were critically low on ammunition — a fact the British never discovered before they surrendered.</li>
+          <li><b>Winning on a bluff.</b> Gen Yamashita demanded an immediate, unconditional surrender specifically to stop Percival from realising how weak his own position was. Some British commanders wanted to counter-attack instead.</li>
+          <li><b>Living off captured supplies.</b> Retreating British troops often left behind equipment and stores, which Japanese forces relied on to keep their advance moving.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
