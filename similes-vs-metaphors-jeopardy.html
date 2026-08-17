@@ -444,19 +444,6 @@ footer{
   margin:0 auto;
 }
 
-/* ---------------------------------- winner banner ---------------------------------- */
-#winner-banner{
-  display:none;
-  text-align:center;
-  font-family:"Showdown Marker", cursive;
-  font-size:clamp(22px,4vw,36px);
-  color:var(--accent-ink);
-  background:var(--accent-soft);
-  border:2px solid var(--accent);
-  border-radius:10px;
-  padding:14px 20px;
-}
-#winner-banner.show{ display:block; }
 #confetti-canvas{
   position:fixed;
   inset:0;
@@ -650,6 +637,119 @@ footer{
   color:var(--accent);
 }
 #howto-close{ margin-top:22px; }
+
+/* ---------------------------------- victory screen ---------------------------------- */
+#victory-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(15,14,8,0.62);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:55;
+  padding:20px;
+}
+#victory-overlay.open{ display:flex; }
+#victory-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:18px;
+  width:min(480px, 100%);
+  padding:14px 34px 32px;
+  text-align:center;
+  box-shadow:0 30px 80px rgba(0,0,0,0.45);
+  animation:card-in .25s cubic-bezier(.2,.9,.3,1.2);
+}
+@media (prefers-reduced-motion: reduce){
+  #victory-card{ animation:none; }
+}
+.victory-badge{
+  width:112px;
+  height:112px;
+  margin:-30px auto 4px;
+  background:var(--accent);
+  clip-path:polygon(50.0% 0.0%, 59.3% 15.2%, 75.0% 6.7%, 75.5% 24.5%, 93.3% 25.0%, 84.8% 40.7%, 100.0% 50.0%, 84.8% 59.3%, 93.3% 75.0%, 75.5% 75.5%, 75.0% 93.3%, 59.3% 84.8%, 50.0% 100.0%, 40.7% 84.8%, 25.0% 93.3%, 24.5% 75.5%, 6.7% 75.0%, 15.2% 59.3%, 0.0% 50.0%, 15.2% 40.7%, 6.7% 25.0%, 24.5% 24.5%, 25.0% 6.7%, 40.7% 15.2%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:rotate(-5deg);
+  box-shadow:0 8px 18px rgba(0,0,0,0.18);
+}
+.victory-badge span{
+  font-family:"Showdown Marker", cursive;
+  color:var(--accent-ink);
+  font-size:15px;
+  letter-spacing:0.5px;
+  transform:rotate(3deg);
+}
+.victory-eyebrow{
+  margin:2px 0 0;
+  color:var(--ink-soft);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  font-size:12px;
+}
+#victory-title{
+  margin:6px 0 2px;
+  font-family:"Showdown Marker", cursive;
+  font-weight:400;
+  font-size:clamp(26px, 4.6vw, 38px);
+  line-height:1.15;
+  color:var(--ink);
+  text-wrap:balance;
+}
+#victory-score{
+  margin:0 0 20px;
+  font-family:"Showdown Numeral", sans-serif;
+  color:var(--accent);
+  font-size:clamp(24px, 4.2vw, 32px);
+}
+#victory-standings{
+  display:flex;
+  flex-direction:column;
+  border-top:1px dashed var(--paper-edge);
+  margin-bottom:24px;
+}
+.standing-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 2px;
+  border-bottom:1px dashed var(--paper-edge);
+  font-size:14px;
+}
+.standing-rank{
+  font-family:"Showdown Numeral", sans-serif;
+  color:var(--ink-soft);
+  font-size:13px;
+  width:28px;
+  text-align:left;
+  flex-shrink:0;
+}
+.standing-name{
+  flex:1;
+  text-align:left;
+  font-weight:700;
+  color:var(--ink);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.standing-score{
+  font-weight:700;
+  color:var(--ink-soft);
+  flex-shrink:0;
+}
+.standing-row-winner .standing-rank,
+.standing-row-winner .standing-score{ color:var(--accent); }
+.standing-row-winner .standing-name{ color:var(--ink); }
+.victory-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
 </style>
 </head>
 <body>
@@ -669,8 +769,6 @@ footer{
       <span class="legend-chip metaphor"><span class="glyph"><span>=</span></span> <b>Metaphor</b> — is / are</span>
     </div>
   </header>
-
-  <div id="winner-banner" role="status"></div>
 
   <div id="frame-wrap">
     <div id="frame">
@@ -729,6 +827,20 @@ footer{
       <li>When every tile is gone, the highest score wins.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
+  </div>
+</div>
+
+<div id="victory-overlay" role="dialog" aria-labelledby="victory-title">
+  <div id="victory-card">
+    <div class="victory-badge" aria-hidden="true"><span>WINNER</span></div>
+    <p class="victory-eyebrow">Game Over</p>
+    <h2 id="victory-title"></h2>
+    <p id="victory-score" class="tabular"></p>
+    <div id="victory-standings"></div>
+    <div class="victory-actions">
+      <button class="btn primary" id="victory-play-again">Play Again</button>
+      <button class="btn" id="victory-close">Close</button>
+    </div>
   </div>
 </div>
 
@@ -817,11 +929,15 @@ footer{
   var awardRow = document.getElementById("award-row");
   var awardButtons = document.getElementById("award-buttons");
   var ddBanner = document.getElementById("dd-banner");
-  var winnerBanner = document.getElementById("winner-banner");
   var howtoOverlay = document.getElementById("howto-overlay");
   var undoBtn = document.getElementById("undo-btn");
+  var victoryOverlay = document.getElementById("victory-overlay");
+  var victoryTitleEl = document.getElementById("victory-title");
+  var victoryScoreEl = document.getElementById("victory-score");
+  var victoryStandingsEl = document.getElementById("victory-standings");
 
   var current = null;
+  var victoryCelebrated = false;
 
   function tileKey(c, i){ return c + "-" + i; }
 
@@ -912,23 +1028,61 @@ footer{
       return cat.clues.every(function(_, rowIdx){ return !!state.used[tileKey(catIdx, rowIdx)]; });
     });
     if (allUsed && state.teams.length){
-      var sorted = state.teams.slice().sort(function(a,b){ return b.score - a.score; });
-      var top = sorted[0];
-      var tie = sorted.filter(function(t){ return t.score === top.score; });
-      winnerBanner.classList.add("show");
-      if (tie.length > 1){
-        winnerBanner.textContent = "It's a tie! " + tie.map(function(t){return t.name;}).join(" & ") + " with $" + top.score;
-      } else {
-        winnerBanner.textContent = top.name + " wins with $" + top.score + "!";
-        if (!winnerBanner.dataset.celebrated){
-          winnerBanner.dataset.celebrated = "1";
-          launchConfetti();
-        }
+      if (!victoryCelebrated){
+        victoryCelebrated = true;
+        showVictoryScreen();
       }
     } else {
-      winnerBanner.classList.remove("show");
-      delete winnerBanner.dataset.celebrated;
+      victoryCelebrated = false;
+      victoryOverlay.classList.remove("open");
     }
+  }
+
+  function showVictoryScreen(){
+    var sorted = state.teams.slice().sort(function(a,b){ return b.score - a.score; });
+    var top = sorted[0];
+    var tie = sorted.filter(function(t){ return t.score === top.score; });
+
+    if (tie.length > 1){
+      victoryTitleEl.textContent = "It's a Tie!";
+      victoryScoreEl.textContent = tie.map(function(t){ return t.name; }).join(" & ") + " — $" + top.score + " each";
+    } else {
+      victoryTitleEl.textContent = top.name + " Wins!";
+      victoryScoreEl.textContent = "$" + top.score;
+    }
+
+    victoryStandingsEl.innerHTML = "";
+    sorted.forEach(function(team, i){
+      var row = document.createElement("div");
+      row.className = "standing-row" + (team.score === top.score ? " standing-row-winner" : "");
+      var rank = document.createElement("span");
+      rank.className = "standing-rank tabular";
+      rank.textContent = "#" + (i + 1);
+      var name = document.createElement("span");
+      name.className = "standing-name";
+      name.textContent = team.name;
+      var score = document.createElement("span");
+      score.className = "standing-score tabular";
+      score.textContent = "$" + team.score;
+      row.appendChild(rank);
+      row.appendChild(name);
+      row.appendChild(score);
+      victoryStandingsEl.appendChild(row);
+    });
+
+    victoryOverlay.classList.add("open");
+    launchConfetti();
+  }
+
+  function resetGame(){
+    state.used = {};
+    state.teams.forEach(function(t){ t.score = 0; });
+    history = [];
+    updateUndoState();
+    victoryCelebrated = false;
+    victoryOverlay.classList.remove("open");
+    renderBoard();
+    renderTeams();
   }
 
   function openClue(catIdx, rowIdx){
@@ -1008,8 +1162,6 @@ footer{
       last.team.score -= last.delta;
     }
     updateUndoState();
-    winnerBanner.classList.remove("show");
-    delete winnerBanner.dataset.celebrated;
     renderBoard();
     renderTeams();
   }
@@ -1039,6 +1191,7 @@ footer{
     if (e.key === "Escape"){
       if (overlay.classList.contains("open")) markUsedAndClose();
       if (howtoOverlay.classList.contains("open")) howtoOverlay.classList.remove("open");
+      if (victoryOverlay.classList.contains("open")) victoryOverlay.classList.remove("open");
     }
   });
 
@@ -1050,14 +1203,7 @@ footer{
 
   document.getElementById("reset-btn").addEventListener("click", function(){
     if (!confirm("Reset the board and all scores?")) return;
-    state.used = {};
-    state.teams.forEach(function(t){ t.score = 0; });
-    history = [];
-    updateUndoState();
-    winnerBanner.classList.remove("show");
-    delete winnerBanner.dataset.celebrated;
-    renderBoard();
-    renderTeams();
+    resetGame();
   });
 
   undoBtn.addEventListener("click", undoLast);
@@ -1070,6 +1216,16 @@ footer{
   });
   howtoOverlay.addEventListener("click", function(e){
     if (e.target === howtoOverlay) howtoOverlay.classList.remove("open");
+  });
+
+  document.getElementById("victory-play-again").addEventListener("click", function(){
+    resetGame();
+  });
+  document.getElementById("victory-close").addEventListener("click", function(){
+    victoryOverlay.classList.remove("open");
+  });
+  victoryOverlay.addEventListener("click", function(e){
+    if (e.target === victoryOverlay) victoryOverlay.classList.remove("open");
   });
 
   /* ---------------- confetti (winner celebration) ---------------- */
