@@ -750,6 +750,50 @@ footer{
   justify-content:center;
   flex-wrap:wrap;
 }
+
+/* ---------------------------------- confirm dialog ---------------------------------- */
+#confirm-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(15,14,8,0.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:58;
+  padding:20px;
+}
+#confirm-overlay.open{ display:flex; }
+#confirm-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:14px;
+  width:min(400px, 100%);
+  padding:26px 28px 24px;
+  text-align:center;
+  box-shadow:0 30px 70px rgba(0,0,0,0.4);
+}
+.confirm-eyebrow{
+  margin:0 0 6px;
+  color:var(--ink-soft);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  font-size:12px;
+}
+#confirm-message{
+  margin:0 0 22px;
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.5;
+}
+.confirm-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.btn.danger{ border-color:var(--metaphor); color:var(--metaphor); }
+.btn.danger:hover{ background:var(--metaphor-soft); }
 </style>
 </head>
 <body>
@@ -845,6 +889,17 @@ footer{
   </div>
 </div>
 
+<div id="confirm-overlay" role="dialog" aria-labelledby="confirm-message">
+  <div id="confirm-card">
+    <p class="confirm-eyebrow">Are you sure?</p>
+    <p id="confirm-message">Reset the board and all scores? This can&rsquo;t be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn" id="confirm-cancel-btn">Cancel</button>
+      <button class="btn danger" id="confirm-ok-btn">Reset Game</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -853,51 +908,51 @@ footer{
     {
       name: "Simile or Metaphor?",
       clues: [
-        { value: 100, type: "simile",   clue: "“Her smile was as bright as the sun.”", answer: "What is a simile? It compares two things using ‘as’." },
-        { value: 200, type: "simile",   clue: "“He runs like the wind.”", answer: "What is a simile? It uses ‘like’." },
-        { value: 300, type: "metaphor", clue: "“Time is a thief.”", answer: "What is a metaphor? It says one thing IS another." },
-        { value: 400, type: "metaphor", clue: "“The classroom was a zoo during the fire drill.”", answer: "What is a metaphor?" },
-        { value: 500, type: "metaphor", clue: "“Life is a rollercoaster, full of ups and downs.”", answer: "What is a metaphor?" }
+        { value: 100, type: "simile",   clue: "“Her smile was as bright as the sun.”", answer: "What is a simile? The word ‘as’ signals a comparison — her smile isn’t literally the sun, it’s only being compared to one." },
+        { value: 200, type: "simile",   clue: "“He runs like the wind.”", answer: "What is a simile? The word ‘like’ signals a comparison — his speed is being likened to the wind, not equated with it." },
+        { value: 300, type: "metaphor", clue: "“Time is a thief.”", answer: "What is a metaphor? It says time IS a thief — a direct statement, with no ‘like’ or ‘as’ — to suggest time steals moments from us." },
+        { value: 400, type: "metaphor", clue: "“The classroom was a zoo during the fire drill.”", answer: "What is a metaphor? It says the classroom WAS a zoo — not ‘like’ a zoo — to describe how loud and chaotic it got." },
+        { value: 500, type: "metaphor", clue: "“Life is a rollercoaster, full of ups and downs.”", answer: "What is a metaphor? It says life IS a rollercoaster — a direct comparison, without ‘like’ or ‘as’ — to capture its unpredictable highs and lows." }
       ]
     },
     {
       name: "Finish the Simile",
       clues: [
-        { value: 100, type: "simile", clue: "“As busy as a ____.”", answer: "What is ‘bee’?" },
-        { value: 200, type: "simile", clue: "“As quiet as a ____.”", answer: "What is ‘mouse’?" },
-        { value: 300, type: "simile", clue: "“As cold as ____.”", answer: "What is ‘ice’ (or ‘a witch’s heart’)?" },
-        { value: 400, type: "simile", clue: "“He slept like a ____.”", answer: "What is ‘log’ (or ‘baby’)?" },
-        { value: 500, type: null,     clue: "Similes always compare two unlike things using one of these two words — name both.", answer: "What are ‘like’ and ‘as’?" }
+        { value: 100, type: "simile", clue: "“As busy as a ____.”", answer: "What is ‘bee’? ‘As busy as a bee’ is a simile — it uses ‘as’ to compare someone’s nonstop activity to a bee’s constant work." },
+        { value: 200, type: "simile", clue: "“As quiet as a ____.”", answer: "What is ‘mouse’? ‘As quiet as a mouse’ uses ‘as’ to compare someone moving silently to how quietly a mouse creeps around." },
+        { value: 300, type: "simile", clue: "“As cold as ____.”", answer: "What is ‘ice’ (or ‘a witch’s heart’)? ‘As cold as ice’ uses ‘as’ to compare something — often someone’s attitude — to the literal cold of ice." },
+        { value: 400, type: "simile", clue: "“He slept like a ____.”", answer: "What is ‘log’ (or ‘baby’)? ‘Slept like a log’ uses ‘like’ to compare deep, unmoving sleep to a heavy, motionless log." },
+        { value: 500, type: null,     clue: "Similes always compare two unlike things using one of these two words — name both.", answer: "What are ‘like’ and ‘as’? Spotting either word is the fastest way to tell a simile is at work." }
       ]
     },
     {
       name: "Finish the Metaphor",
       clues: [
-        { value: 100, type: "metaphor", clue: "“Her voice was music to my ____.”", answer: "What is ‘ears’?" },
-        { value: 200, type: "metaphor", clue: "“During recess, the playground turned into a ____.” (a word that makes this a metaphor for wild chaos)", answer: "What is ‘zoo’ (or ‘jungle’ / ‘circus’)?" },
-        { value: 300, type: "metaphor", clue: "“That scary movie is only the tip of the ____.”", answer: "What is ‘iceberg’?" },
-        { value: 400, type: "metaphor", clue: "“All the world’s a ____, and all the men and women merely players.” —Shakespeare", answer: "What is ‘stage’?" },
-        { value: 500, type: null,       clue: "Unlike a simile, a metaphor says one thing ____ another thing — without using ‘like’ or ‘as’.", answer: "What is ‘is’? It states directly that one thing IS the other." }
+        { value: 100, type: "metaphor", clue: "“Her voice was music to my ____.”", answer: "What is ‘ears’? Calling her voice ‘music’ — instead of ‘like music’ — makes this a metaphor for how pleasant it sounded." },
+        { value: 200, type: "metaphor", clue: "“During recess, the playground turned into a ____.” (a word that makes this a metaphor for wild chaos)", answer: "What is ‘zoo’ (or ‘jungle’ / ‘circus’)? Saying the playground ‘turned into’ one of these — not ‘was like’ one — makes it a metaphor for the chaos." },
+        { value: 300, type: "metaphor", clue: "“That scary movie is only the tip of the ____.”", answer: "What is ‘iceberg’? ‘The tip of the iceberg’ is a metaphor for a small visible part of a much bigger problem hiding underneath." },
+        { value: 400, type: "metaphor", clue: "“All the world’s a ____, and all the men and women merely players.” —Shakespeare", answer: "What is ‘stage’? Shakespeare says the world IS a stage, a metaphor comparing everyday life to actors performing a play." },
+        { value: 500, type: null,       clue: "Unlike a simile, a metaphor says one thing ____ another thing — without using ‘like’ or ‘as’.", answer: "What is ‘is’? A metaphor states directly that one thing IS the other, which is what makes it feel more forceful than a simile." }
       ]
     },
     {
       name: "Spot the Comparison",
       clues: [
-        { value: 100, type: "simile",   clue: "“My brother eats like a horse.” What two things are compared?", answer: "What are my brother’s eating habits and a horse’s eating habits?" },
-        { value: 200, type: "simile",   clue: "“Her eyes sparkled like diamonds when she saw the puppy.” What two things are compared?", answer: "What are her eyes and diamonds?" },
-        { value: 300, type: "metaphor", clue: "“The stars were diamonds scattered across the sky.” What two things are compared?", answer: "What are the stars and diamonds?" },
-        { value: 400, type: "metaphor", clue: "“The internet is a superhighway of information.” What two things are compared?", answer: "What are the internet and a superhighway?" },
-        { value: 500, type: "metaphor", clue: "“His heart was a block of ice.” Name the figure of speech AND the two things compared.", answer: "What is a metaphor comparing his heart and a block of ice?" }
+        { value: 100, type: "simile",   clue: "“My brother eats like a horse.” What two things are compared?", answer: "What are my brother’s eating habits and a horse’s eating habits? The simile ‘eats like a horse’ compares how much he eats to a horse’s hearty appetite." },
+        { value: 200, type: "simile",   clue: "“Her eyes sparkled like diamonds when she saw the puppy.” What two things are compared?", answer: "What are her eyes and diamonds? The word ‘like’ compares the sparkle in her eyes to the sparkle of a diamond." },
+        { value: 300, type: "metaphor", clue: "“The stars were diamonds scattered across the sky.” What two things are compared?", answer: "What are the stars and diamonds? Saying the stars WERE diamonds — not ‘like’ diamonds — makes this a metaphor for how they glitter." },
+        { value: 400, type: "metaphor", clue: "“The internet is a superhighway of information.” What two things are compared?", answer: "What are the internet and a superhighway? This metaphor compares the internet’s speed and reach to a busy, fast-moving highway." },
+        { value: 500, type: "metaphor", clue: "“His heart was a block of ice.” Name the figure of speech AND the two things compared.", answer: "What is a metaphor comparing his heart and a block of ice? Saying his heart WAS ice — not ‘like’ ice — describes him as cold and unfeeling." }
       ]
     },
     {
       name: "Similes & Metaphors in the Wild",
       clues: [
-        { value: 100, type: "simile",   clue: "Forrest Gump says, “Life is like a box of chocolates.” Simile or metaphor?", answer: "What is a simile?" },
-        { value: 200, type: "metaphor", clue: "Katy Perry sings, “Baby, you’re a firework.” Simile or metaphor?", answer: "What is a metaphor?" },
-        { value: 300, type: "simile",   clue: "Muhammad Ali said, “Float like a butterfly, sting like a bee.” Simile or metaphor?", answer: "What is a simile?" },
-        { value: 400, type: "metaphor", clue: "Shakespeare writes, “It is the east, and Juliet is the sun.” Simile or metaphor?", answer: "What is a metaphor?" },
-        { value: 500, type: "simile",   clue: "Langston Hughes asks, “Does it dry up like a raisin in the sun?” Simile or metaphor?", answer: "What is a simile?" }
+        { value: 100, type: "simile",   clue: "Forrest Gump says, “Life is like a box of chocolates.” Simile or metaphor?", answer: "What is a simile? The word ‘like’ compares life’s unpredictability to never knowing which chocolate you’ll pick." },
+        { value: 200, type: "metaphor", clue: "Katy Perry sings, “Baby, you’re a firework.” Simile or metaphor?", answer: "What is a metaphor? She sings ‘you’re a firework’ — not ‘like a firework’ — to describe someone dazzling and powerful." },
+        { value: 300, type: "simile",   clue: "Muhammad Ali said, “Float like a butterfly, sting like a bee.” Simile or metaphor?", answer: "What is a simile? Both ‘like’ phrases compare his light footwork to a butterfly and his sharp punches to a bee’s sting." },
+        { value: 400, type: "metaphor", clue: "Shakespeare writes, “It is the east, and Juliet is the sun.” Simile or metaphor?", answer: "What is a metaphor? Romeo says Juliet IS the sun — not ‘like’ the sun — a direct comparison to her radiance." },
+        { value: 500, type: "simile",   clue: "Langston Hughes asks, “Does it dry up like a raisin in the sun?” Simile or metaphor?", answer: "What is a simile? The word ‘like’ compares a dried-up, shriveled dream to a raisin left in the sun." }
       ]
     }
   ];
@@ -936,6 +991,10 @@ footer{
   var victoryTitleEl = document.getElementById("victory-title");
   var victoryScoreEl = document.getElementById("victory-score");
   var victoryStandingsEl = document.getElementById("victory-standings");
+  var addTeamBtn = document.getElementById("add-team-btn");
+  var confirmOverlay = document.getElementById("confirm-overlay");
+  var confirmCancelBtn = document.getElementById("confirm-cancel-btn");
+  var confirmOkBtn = document.getElementById("confirm-ok-btn");
 
   var current = null;
   var victoryCelebrated = false;
@@ -968,6 +1027,7 @@ footer{
 
   function renderTeams(){
     teamsEl.innerHTML = "";
+    addTeamBtn.disabled = state.teams.length >= 6;
     var scores = state.teams.map(function(t){ return t.score; });
     var maxScore = Math.max.apply(null, scores);
     var minScore = Math.min.apply(null, scores);
@@ -1193,24 +1253,33 @@ footer{
       if (overlay.classList.contains("open")) markUsedAndClose();
       if (howtoOverlay.classList.contains("open")) howtoOverlay.classList.remove("open");
       if (victoryOverlay.classList.contains("open")) victoryOverlay.classList.remove("open");
+      if (confirmOverlay.classList.contains("open")) confirmOverlay.classList.remove("open");
     }
   });
 
-  document.getElementById("add-team-btn").addEventListener("click", function(){
-    if (state.teams.length >= 6) { alert("Maximum of 6 teams."); return; }
+  addTeamBtn.addEventListener("click", function(){
+    if (state.teams.length >= 6) return;
     state.teams.push({ name: "Team " + (state.teams.length + 1), score: 0 });
     renderTeams();
   });
 
   document.getElementById("reset-btn").addEventListener("click", function(){
-    if (!confirm("Reset the board and all scores?")) return;
+    confirmOverlay.classList.add("open");
+  });
+  confirmCancelBtn.addEventListener("click", function(){
+    confirmOverlay.classList.remove("open");
+  });
+  confirmOkBtn.addEventListener("click", function(){
+    confirmOverlay.classList.remove("open");
     resetGame();
+  });
+  confirmOverlay.addEventListener("click", function(e){
+    if (e.target === confirmOverlay) confirmOverlay.classList.remove("open");
   });
 
   undoBtn.addEventListener("click", undoLast);
 
   document.getElementById("end-game-btn").addEventListener("click", function(){
-    if (!confirm("End the game now and show the winner?")) return;
     victoryCelebrated = true;
     showVictoryScreen();
   });
