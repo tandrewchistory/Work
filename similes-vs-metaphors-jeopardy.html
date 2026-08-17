@@ -787,6 +787,7 @@ footer{
   <div id="controls">
     <button class="btn primary" id="add-team-btn">+ Add Team</button>
     <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
+    <button class="btn" id="end-game-btn">End Game</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="reset-btn">Reset Game</button>
   </div>
@@ -824,7 +825,7 @@ footer{
       <li>Read the clue aloud. Teams race to answer &mdash; identify the simile or metaphor, or solve the prompt.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer, then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
-      <li>When every tile is gone, the highest score wins.</li>
+      <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
   </div>
@@ -1207,6 +1208,12 @@ footer{
   });
 
   undoBtn.addEventListener("click", undoLast);
+
+  document.getElementById("end-game-btn").addEventListener("click", function(){
+    if (!confirm("End the game now and show the winner?")) return;
+    victoryCelebrated = true;
+    showVictoryScreen();
+  });
 
   document.getElementById("how-to-btn").addEventListener("click", function(){
     howtoOverlay.classList.add("open");
