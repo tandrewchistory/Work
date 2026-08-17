@@ -71,6 +71,7 @@
     --aftermath: #4b6862;
     --uk: #3f5872;
     --jp: #9c4530;
+    --correct: #4b6e3d;
     --shadow: rgba(60, 46, 20, 0.24);
     --focus: #1f5cb0;
 
@@ -99,6 +100,7 @@
       --aftermath: #5f8479;
       --uk: #7fa0c2;
       --jp: #c97a5e;
+      --correct: #85b56c;
       --shadow: rgba(0, 0, 0, 0.55);
       --focus: #6fa8f5;
     }
@@ -123,6 +125,7 @@
     --aftermath: #5f8479;
     --uk: #7fa0c2;
     --jp: #c97a5e;
+    --correct: #85b56c;
     --shadow: rgba(0, 0, 0, 0.55);
     --focus: #6fa8f5;
   }
@@ -665,6 +668,145 @@
     .forces-row .f-val { border-left: none; border-top: 1px solid var(--line); }
   }
 
+  /* ---------- Quiz ---------- */
+  .quiz-panel {
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    padding: 16px 18px 20px;
+  }
+  .quiz-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+  }
+  .quiz-progress .bar {
+    flex: 1 1 auto;
+    height: 5px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    position: relative;
+    max-width: 260px;
+  }
+  .quiz-progress .bar-fill {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.25s ease;
+  }
+  .quiz-progress .score {
+    margin-left: auto;
+    color: var(--ink);
+  }
+
+  .quiz-card { max-width: 62ch; }
+  .quiz-q {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 24px;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .quiz-opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    padding: 10px 14px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--ink-soft); }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-opt .letter {
+    flex: 0 0 auto;
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 10.5px;
+    background: var(--surface);
+  }
+  .quiz-opt.correct { border-color: var(--correct); background: color-mix(in srgb, var(--correct) 18%, var(--surface-2)); }
+  .quiz-opt.correct .letter { background: var(--correct); color: var(--surface); border-color: var(--correct); }
+  .quiz-opt.incorrect { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, var(--surface-2)); }
+  .quiz-opt.incorrect .letter { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+
+  .quiz-feedback {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border: 1px dashed var(--line-strong);
+    background: var(--surface-2);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+  }
+  .quiz-feedback .verdict {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 5px;
+  }
+  .quiz-feedback.correct .verdict { color: var(--correct); }
+  .quiz-feedback.incorrect .verdict { color: var(--danger); }
+
+  .quiz-next {
+    margin-top: 16px;
+    border: 1px solid var(--accent-strong);
+    color: var(--accent-strong);
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .quiz-next:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+  .quiz-result { max-width: 56ch; }
+  .quiz-result .result-score {
+    font-family: var(--font-display);
+    font-size: clamp(38px, 7vw, 56px);
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .quiz-result .result-msg {
+    margin: 10px 0 18px;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .quiz-retry {
+    border: 1px solid var(--line-strong);
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .quiz-retry:hover { color: var(--ink); border-color: var(--ink-soft); }
+
   /* ---------- Why panel (dialog) ---------- */
   .backdrop {
     position: fixed;
@@ -901,6 +1043,17 @@
     </div>
   </section>
 
+  <section class="quiz-panel" aria-label="Self-check quiz">
+    <div class="timeline-title">Field Test · Check Your Understanding</div>
+    <p class="forces-intro">Twelve questions on the map and the forces above. Answer each one to see how you did — retake it as many times as you like.</p>
+    <div class="quiz-progress">
+      <span id="quizCounter">Question 1 of 12</span>
+      <span class="bar"><span class="bar-fill" id="quizBarFill"></span></span>
+      <span class="score" id="quizScore">Score: 0</span>
+    </div>
+    <div class="quiz-card" id="quizCard"></div>
+  </section>
+
   <footer>Coastline reconstructed to approximate 1942: Marina Bay, East Coast Park, Changi Airport, Tuas and Jurong did not yet exist — all built by later land reclamation. An approximation for teaching, not a surveyed historical map.</footer>
 </div>
 
@@ -1054,6 +1207,111 @@ const REASONS = [
   }
 ];
 
+const QUIZ = [
+  {
+    q: "On what date did the British formally surrender to the Japanese?",
+    options: ["8 December 1941", "31 January 1942", "15 February 1942", "9 February 1942"],
+    correct: 2,
+    explain: "The surrender was signed on 15 February 1942 — the date is still marked in Singapore today as Total Defence Day."
+  },
+  {
+    q: "Where was the British surrender formally signed?",
+    options: ["Fort Canning", "The Ford Motor Factory", "Alexandra Hospital", "Changi Prison"],
+    correct: 1,
+    explain: "Lt-Gen Percival surrendered to Gen Yamashita in the boardroom of the Ford Motor Factory at Bukit Timah."
+  },
+  {
+    q: "Who commanded the British Empire forces defending Singapore?",
+    options: ["Winston Churchill", "Tomoyuki Yamashita", "Arthur Percival", "Adnan bin Saidi"],
+    correct: 2,
+    explain: "Lt-Gen Arthur Percival was the overall commander of British, Indian, Australian and local forces in Singapore."
+  },
+  {
+    q: "Which unit defended Bukit Chandu (Pasir Panjang Ridge) almost to the last man?",
+    options: ["The 1st Malay Regiment", "The Argyll and Sutherland Highlanders", "The Australian 22nd Brigade", "The Royal Air Force"],
+    correct: 0,
+    explain: "Led by Lt Adnan bin Saidi, C Company of the 1st Malay Regiment held Bukit Chandu under heavy attack before being overrun."
+  },
+  {
+    q: "Why did blowing up the Causeway fail to stop the Japanese advance for long?",
+    options: [
+      "It was never actually destroyed",
+      "Japanese engineers repaired a crossing within about a week",
+      "The Japanese simply swam across",
+      "British troops rebuilt it by mistake"
+    ],
+    correct: 1,
+    explain: "The gap only delayed the Japanese by roughly a week — hardly the setback the British had hoped for."
+  },
+  {
+    q: "Why did the defending forces have so little air cover during the battle?",
+    options: [
+      "Pilots refused to fly",
+      "Most aircraft were outdated, outnumbered, or already lost before the final battle",
+      "Bad weather grounded every plane",
+      "Singapore had no airfields at all"
+    ],
+    correct: 1,
+    explain: "By the time the battle for the island began, Allied air power had already been largely destroyed or withdrawn."
+  },
+  {
+    q: "Which two British warships were sunk on 10 December 1941, badly damaging naval power and morale?",
+    options: [
+      "HMS Ark Royal & HMS Hood",
+      "HMS Prince of Wales & HMS Repulse",
+      "HMS Exeter & HMS Dorsetshire",
+      "HMS Illustrious & HMS Warspite"
+    ],
+    correct: 1,
+    explain: "Their loss off the coast of Malaya removed Britain's only major naval deterrent in the region."
+  },
+  {
+    q: "Roughly how many Allied troops became prisoners of war after the surrender?",
+    options: ["8,000", "30,000", "80,000", "200,000"],
+    correct: 2,
+    explain: "Around 80,000 British, Indian and Australian troops were taken prisoner — the largest surrender in British military history."
+  },
+  {
+    q: "Why were Singapore's coastal guns of little use against the actual Japanese attack?",
+    options: [
+      "They ran out of ammunition on day one",
+      "They were mainly positioned to defend against an attack by sea, not the invasion overland from the north",
+      "They had been sabotaged by spies",
+      "They were too old to fire at all"
+    ],
+    correct: 1,
+    explain: "British planners expected a seaborne attack from the south — the Japanese instead came by land from the north."
+  },
+  {
+    q: "What nickname did British pilots give their obsolete Brewster Buffalo fighters?",
+    options: ["Flying tigers", "Flying coffins", "Iron birds", "Sky ghosts"],
+    correct: 1,
+    explain: "The Buffalo was outclassed by Japan's Mitsubishi Zero, earning it this grim nickname among the pilots who flew it."
+  },
+  {
+    q: "What advantage did Japan hold in the air?",
+    options: [
+      "Japan had no aircraft at all, only ships",
+      "The Mitsubishi Zero was faster and far more manoeuvrable than the defenders' fighters",
+      "Japanese planes could only fly at night",
+      "Japan borrowed all its aircraft from Germany"
+    ],
+    correct: 1,
+    explain: "The Zero gave Japan clear air superiority over Malaya and Singapore for most of the campaign."
+  },
+  {
+    q: "What happened to most Allied POWs in the days after the surrender?",
+    options: [
+      "They were released immediately",
+      "They were marched to Changi, which became a major POW camp",
+      "They were shipped straight back to Britain",
+      "They joined the Japanese army"
+    ],
+    correct: 1,
+    explain: "Changi held tens of thousands of Allied POWs for the rest of the war, becoming one of the Occupation's defining sites."
+  }
+];
+
 (function () {
   "use strict";
 
@@ -1197,6 +1455,103 @@ const REASONS = [
   buildPins();
   buildTimeline();
   buildWhy();
+
+  // ---------- Quiz ----------
+  var quizCard = document.getElementById("quizCard");
+  var quizCounter = document.getElementById("quizCounter");
+  var quizBarFill = document.getElementById("quizBarFill");
+  var quizScoreEl = document.getElementById("quizScore");
+  var LETTERS = ["A", "B", "C", "D", "E"];
+
+  var quizIndex = 0;
+  var quizScore = 0;
+  var quizAnswered = false;
+
+  function renderQuiz() {
+    if (quizIndex >= QUIZ.length) {
+      renderQuizResult();
+      return;
+    }
+    var item = QUIZ[quizIndex];
+    quizAnswered = false;
+
+    quizCounter.textContent = "Question " + (quizIndex + 1) + " of " + QUIZ.length;
+    quizBarFill.style.width = (quizIndex / QUIZ.length * 100) + "%";
+    quizScoreEl.textContent = "Score: " + quizScore;
+
+    var optsHtml = item.options.map(function (opt, i) {
+      return '<button type="button" class="quiz-opt" data-i="' + i + '">' +
+        '<span class="letter">' + LETTERS[i] + '</span><span>' + opt + '</span></button>';
+    }).join("");
+
+    quizCard.innerHTML =
+      '<p class="quiz-q">' + item.q + '</p>' +
+      '<div class="quiz-options">' + optsHtml + '</div>' +
+      '<div id="quizFeedbackSlot"></div>';
+
+    Array.prototype.forEach.call(quizCard.querySelectorAll(".quiz-opt"), function (btn) {
+      btn.addEventListener("click", function () { answerQuiz(parseInt(btn.dataset.i, 10)); });
+    });
+  }
+
+  function answerQuiz(choice) {
+    if (quizAnswered) return;
+    quizAnswered = true;
+    var item = QUIZ[quizIndex];
+    var isCorrect = choice === item.correct;
+    if (isCorrect) quizScore++;
+    quizScoreEl.textContent = "Score: " + quizScore;
+    quizBarFill.style.width = ((quizIndex + 1) / QUIZ.length * 100) + "%";
+
+    Array.prototype.forEach.call(quizCard.querySelectorAll(".quiz-opt"), function (btn) {
+      var i = parseInt(btn.dataset.i, 10);
+      btn.disabled = true;
+      if (i === item.correct) btn.classList.add("correct");
+      else if (i === choice) btn.classList.add("incorrect");
+    });
+
+    var slot = document.getElementById("quizFeedbackSlot");
+    var isLast = quizIndex === QUIZ.length - 1;
+    slot.innerHTML =
+      '<div class="quiz-feedback ' + (isCorrect ? "correct" : "incorrect") + '">' +
+        '<span class="verdict">' + (isCorrect ? "Correct" : "Not quite") + '</span>' +
+        item.explain +
+      '</div>' +
+      '<button type="button" class="quiz-next" id="quizNextBtn">' + (isLast ? "See my score →" : "Next question →") + '</button>';
+
+    document.getElementById("quizNextBtn").addEventListener("click", function () {
+      quizIndex++;
+      renderQuiz();
+    });
+  }
+
+  function renderQuizResult() {
+    quizCounter.textContent = "Complete";
+    quizBarFill.style.width = "100%";
+    quizScoreEl.textContent = "Score: " + quizScore;
+
+    var pct = Math.round(quizScore / QUIZ.length * 100);
+    var msg;
+    if (pct === 100) msg = "Full marks — you've got the fall of Singapore down cold.";
+    else if (pct >= 75) msg = "Strong result. Skim the intelligence reports above for the ones you missed.";
+    else if (pct >= 50) msg = "A solid start — revisit the map markers and the forces comparison, then try again.";
+    else msg = "Worth another pass: work through each numbered marker on the map, then retake the test.";
+
+    quizCard.innerHTML =
+      '<div class="quiz-result">' +
+        '<div class="result-score">' + quizScore + ' / ' + QUIZ.length + '</div>' +
+        '<p class="result-msg">' + msg + '</p>' +
+        '<button type="button" class="quiz-retry" id="quizRetryBtn">Retake the test</button>' +
+      '</div>';
+
+    document.getElementById("quizRetryBtn").addEventListener("click", function () {
+      quizIndex = 0;
+      quizScore = 0;
+      renderQuiz();
+    });
+  }
+
+  renderQuiz();
 })();
 
 </script>
