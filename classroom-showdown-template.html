@@ -783,6 +783,26 @@ footer{
 }
 .field input[type="text"]:focus,
 .field textarea:focus{ border-color:var(--focus); }
+.color-field-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.color-field-row input[type="color"]{
+  width:44px;
+  height:34px;
+  padding:2px;
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  background:var(--board);
+  cursor:pointer;
+}
+.color-field-row #editor-accent-hex{
+  color:var(--ink-soft);
+  font-size:13px;
+  text-transform:uppercase;
+}
 .editor-top-fields{
   display:flex;
   flex-direction:column;
@@ -1111,7 +1131,7 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board — or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick an accent color to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -1127,6 +1147,14 @@ footer{
         <label class="field">
           <span>Tagline</span>
           <input type="text" id="editor-tagline-input" maxlength="140">
+        </label>
+        <label class="field">
+          <span>Accent Color</span>
+          <div class="color-field-row">
+            <input type="color" id="editor-accent-input">
+            <span id="editor-accent-hex" class="tabular"></span>
+            <button type="button" class="btn" id="editor-accent-reset-btn">Reset to Default</button>
+          </div>
         </label>
       </div>
       <div id="editor-size-row">
@@ -1185,9 +1213,12 @@ footer{
       title: "Classroom Showdown",
       tagline: "A build-your-own trivia board for any subject — customize every category and clue in the editor.",
       categories: categories,
-      dailyDouble: { cat: 2, idx: 2 }
+      dailyDouble: { cat: 2, idx: 2 },
+      accentColor: ""
     };
   }
+
+  function isValidHexColor(v){ return typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v); }
 
   var DEFAULT_CONTENT = makeDefaultContent();
   var STORAGE_KEY = "classroom-showdown-content-v1";
@@ -1250,6 +1281,7 @@ footer{
           if (typeof clue.image !== "string") clue.image = "";
         });
       });
+      if (!isValidHexColor(parsed.accentColor)) parsed.accentColor = "";
       return parsed;
     } catch (err) {
       return null;
@@ -1309,6 +1341,9 @@ footer{
   var editorOverlay = document.getElementById("editor-overlay");
   var editorTitleInput = document.getElementById("editor-title-input");
   var editorTaglineInput = document.getElementById("editor-tagline-input");
+  var editorAccentInput = document.getElementById("editor-accent-input");
+  var editorAccentHex = document.getElementById("editor-accent-hex");
+  var editorAccentResetBtn = document.getElementById("editor-accent-reset-btn");
   var editorCategoriesEl = document.getElementById("editor-categories");
   var rowRemoveBtn = document.getElementById("row-remove-btn");
   var rowAddBtn = document.getElementById("row-add-btn");
@@ -1330,11 +1365,59 @@ footer{
 
   function tileKey(c, i){ return c + "-" + i; }
 
+  /* ---------------- accent color customization ---------------- */
+  function hexToRgb(hex){
+    var num = parseInt(hex.slice(1), 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+  function rgbToHex(r, g, b){
+    return "#" + [r, g, b].map(function(v){
+      return Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+    }).join("");
+  }
+  function mixHex(hexA, hexB, weightA){
+    var a = hexToRgb(hexA), b = hexToRgb(hexB);
+    return rgbToHex(
+      a.r * weightA + b.r * (1 - weightA),
+      a.g * weightA + b.g * (1 - weightA),
+      a.b * weightA + b.b * (1 - weightA)
+    );
+  }
+  function relativeLuminance(hex){
+    var c = hexToRgb(hex);
+    function lin(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+    return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
+  }
+
+  /* Applies content.accentColor (if set) as the board's --accent, deriving a
+     readable --accent-ink (text/icons on solid accent) by contrast and a
+     --accent-soft tint by blending toward the current theme's --paper — so
+     one user-picked color adapts to both light and dark automatically.
+     Leaving accentColor empty (the default) makes no change at all, so an
+     uncustomized board keeps today's hand-tuned per-theme colors exactly. */
+  function applyAccentColor(){
+    var root = document.documentElement;
+    var hex = content.accentColor;
+    if (!isValidHexColor(hex)){
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--accent-ink");
+      root.style.removeProperty("--accent-soft");
+      return;
+    }
+    var paper = getComputedStyle(root).getPropertyValue("--paper").trim() || "#ffffff";
+    var ink = relativeLuminance(hex) > 0.45 ? "#241a08" : "#fff8ec";
+    root.style.setProperty("--accent", hex);
+    root.style.setProperty("--accent-ink", ink);
+    root.style.setProperty("--accent-soft", mixHex(hex, paper, 0.18));
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyAccentColor);
+
   function renderHeader(){
     gameTitleEl.textContent = content.title;
     gameTaglineEl.textContent = content.tagline;
     gameTaglineEl.style.display = content.tagline ? "" : "none";
     document.title = content.title;
+    applyAccentColor();
   }
 
   function renderBoard(){
@@ -1746,11 +1829,19 @@ footer{
     buildEditorForm();
   }
 
+  var DEFAULT_ACCENT_SWATCH = "#d9720f";
+
+  function refreshAccentField(){
+    editorAccentInput.value = draft.accentColor || DEFAULT_ACCENT_SWATCH;
+    editorAccentHex.textContent = draft.accentColor ? draft.accentColor.toUpperCase() : "Default";
+  }
+
   function buildEditorForm(){
     editorTitleInput.value = draft.title;
     editorTaglineInput.value = draft.tagline;
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
+    refreshAccentField();
 
     var rowCount = draft.categories[0].clues.length;
     rowCountLabel.textContent = String(rowCount);
@@ -1904,6 +1995,7 @@ footer{
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
+    draft.accentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "";
     commitContent(draft);
     closeEditor();
   }
@@ -1918,6 +2010,14 @@ footer{
   editorSaveBtn.addEventListener("click", saveEditor);
   rowAddBtn.addEventListener("click", addRow);
   rowRemoveBtn.addEventListener("click", removeRow);
+  editorAccentInput.addEventListener("input", function(){
+    draft.accentColor = editorAccentInput.value;
+    editorAccentHex.textContent = draft.accentColor.toUpperCase();
+  });
+  editorAccentResetBtn.addEventListener("click", function(){
+    draft.accentColor = "";
+    refreshAccentField();
+  });
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
   });
@@ -1962,6 +2062,7 @@ footer{
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
     rows.push(["Tagline", c.tagline]);
+    rows.push(["Accent Color", c.accentColor || ""]);
     rows.push([]);
     rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double"]);
     c.categories.forEach(function(cat, catIdx){
@@ -2004,11 +2105,12 @@ footer{
     if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
     var rows = parseCSV(text).filter(function(r){ return r.some(function(c){ return (c || "").trim() !== ""; }); });
 
-    var title = null, tagline = null;
+    var title = null, tagline = null, accentColor = null;
     rows.forEach(function(r){
       var label = (r[0] || "").trim().toLowerCase();
       if (label === "title") title = r[1] || "";
       if (label === "tagline") tagline = r[1] || "";
+      if (label === "accent color") accentColor = isValidHexColor((r[1] || "").trim()) ? r[1].trim() : "";
     });
 
     var headerIdx = -1;
@@ -2054,6 +2156,7 @@ footer{
     return {
       title: title,
       tagline: tagline,
+      accentColor: accentColor,
       categories: categories,
       dailyDouble: dailyDouble || { cat: 0, idx: 0 }
     };
@@ -2069,6 +2172,7 @@ footer{
     });
     if (imported.title !== null) draft.title = imported.title;
     if (imported.tagline !== null) draft.tagline = imported.tagline;
+    if (imported.accentColor !== null) draft.accentColor = imported.accentColor;
     draft.categories = imported.categories;
     draft.dailyDouble = imported.dailyDouble;
     buildEditorForm();
