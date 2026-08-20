@@ -783,24 +783,84 @@ footer{
 }
 .field input[type="text"]:focus,
 .field textarea:focus{ border-color:var(--focus); }
-.color-field-row{
+#palette-section{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border:1px solid var(--paper-edge);
+  border-radius:10px;
+  padding:14px;
+  background:var(--board);
+}
+#preset-palette-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.preset-swatch{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  background:none;
+  border:none;
+  padding:3px;
+  cursor:pointer;
+  border-radius:8px;
+}
+.preset-swatch:hover,
+.preset-swatch:focus-visible{ background:var(--accent-soft); }
+.preset-swatch-chip{
+  width:52px;
+  height:36px;
+  border-radius:6px;
+  border:1.5px solid var(--paper-edge);
+  overflow:hidden;
+  display:flex;
+}
+.preset-swatch-chip.active{ border-color:var(--ink); border-width:2px; }
+.preset-swatch-chip span{ flex:1; }
+.preset-swatch-name{
+  font-size:11px;
+  font-weight:700;
+  color:var(--ink-soft);
+}
+#custom-palette-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+  gap:12px;
+  padding-top:4px;
+  border-top:1px dashed var(--paper-edge);
+}
+.custom-swatch{
   display:flex;
   align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
+  gap:8px;
 }
-.color-field-row input[type="color"]{
-  width:44px;
-  height:34px;
+.custom-swatch input[type="color"]{
+  width:38px;
+  height:32px;
   padding:2px;
   border:1px solid var(--paper-edge);
   border-radius:6px;
-  background:var(--board);
+  background:var(--paper);
   cursor:pointer;
+  flex-shrink:0;
 }
-.color-field-row #editor-accent-hex{
+.custom-swatch-labels{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  min-width:0;
+}
+.custom-swatch-name{
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--ink);
+}
+.custom-swatch-hex{
+  font-size:11px;
   color:var(--ink-soft);
-  font-size:13px;
   text-transform:uppercase;
 }
 .editor-top-fields{
@@ -1131,7 +1191,7 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick an accent color to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick a color palette (or customize every color yourself) to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -1148,14 +1208,12 @@ footer{
           <span>Tagline</span>
           <input type="text" id="editor-tagline-input" maxlength="140">
         </label>
-        <label class="field">
-          <span>Accent Color</span>
-          <div class="color-field-row">
-            <input type="color" id="editor-accent-input">
-            <span id="editor-accent-hex" class="tabular"></span>
-            <button type="button" class="btn" id="editor-accent-reset-btn">Reset to Default</button>
-          </div>
-        </label>
+      </div>
+      <div id="palette-section">
+        <span class="field-group-label">Board Colors</span>
+        <div id="preset-palette-row"></div>
+        <div id="custom-palette-grid"></div>
+        <button type="button" class="btn" id="palette-reset-btn">Reset All Colors to Default</button>
       </div>
       <div id="editor-size-row">
         <span class="size-label">Clues per Category</span>
@@ -1194,6 +1252,7 @@ footer{
   var MAX_CATS = 6;
   var MIN_ROWS = 3;
   var MAX_ROWS = 6;
+  var PALETTE_SLOTS = ["background", "board", "card", "text", "accent", "info", "good", "danger"];
 
   function valueForRow(rowIdx){ return (rowIdx + 1) * 100; }
 
@@ -1214,11 +1273,25 @@ footer{
       tagline: "A build-your-own trivia board for any subject — customize every category and clue in the editor.",
       categories: categories,
       dailyDouble: { cat: 2, idx: 2 },
-      accentColor: ""
+      palette: normalizePalette(null)
     };
   }
 
   function isValidHexColor(v){ return typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v); }
+
+  /* Builds a clean {background,board,card,text,accent,info,good,danger}
+     palette, keeping only valid hex values (blank slots mean "use the
+     theme default"). Migrates a pre-palette save's single accentColor into
+     the accent slot, for content saved before this feature existed. */
+  function normalizePalette(raw, legacyAccentColor){
+    var pal = {};
+    PALETTE_SLOTS.forEach(function(slot){
+      var v = raw && raw[slot];
+      pal[slot] = isValidHexColor(v) ? v : "";
+    });
+    if (!pal.accent && isValidHexColor(legacyAccentColor)) pal.accent = legacyAccentColor;
+    return pal;
+  }
 
   var DEFAULT_CONTENT = makeDefaultContent();
   var STORAGE_KEY = "classroom-showdown-content-v1";
@@ -1281,7 +1354,8 @@ footer{
           if (typeof clue.image !== "string") clue.image = "";
         });
       });
-      if (!isValidHexColor(parsed.accentColor)) parsed.accentColor = "";
+      parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
+      delete parsed.accentColor;
       return parsed;
     } catch (err) {
       return null;
@@ -1341,9 +1415,9 @@ footer{
   var editorOverlay = document.getElementById("editor-overlay");
   var editorTitleInput = document.getElementById("editor-title-input");
   var editorTaglineInput = document.getElementById("editor-tagline-input");
-  var editorAccentInput = document.getElementById("editor-accent-input");
-  var editorAccentHex = document.getElementById("editor-accent-hex");
-  var editorAccentResetBtn = document.getElementById("editor-accent-reset-btn");
+  var presetPaletteRow = document.getElementById("preset-palette-row");
+  var customPaletteGrid = document.getElementById("custom-palette-grid");
+  var paletteResetBtn = document.getElementById("palette-reset-btn");
   var editorCategoriesEl = document.getElementById("editor-categories");
   var rowRemoveBtn = document.getElementById("row-remove-btn");
   var rowAddBtn = document.getElementById("row-add-btn");
@@ -1365,7 +1439,9 @@ footer{
 
   function tileKey(c, i){ return c + "-" + i; }
 
-  /* ---------------- accent color customization ---------------- */
+  /* ---------------- palette customization ---------------- */
+  var SEMANTIC_SLOTS = ["accent", "info", "good", "danger"];
+
   function hexToRgb(hex){
     var num = parseInt(hex.slice(1), 16);
     return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
@@ -1388,36 +1464,135 @@ footer{
     function lin(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
     return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
   }
-
-  /* Applies content.accentColor (if set) as the board's --accent, deriving a
-     readable --accent-ink (text/icons on solid accent) by contrast and a
-     --accent-soft tint by blending toward the current theme's --paper — so
-     one user-picked color adapts to both light and dark automatically.
-     Leaving accentColor empty (the default) makes no change at all, so an
-     uncustomized board keeps today's hand-tuned per-theme colors exactly. */
-  function applyAccentColor(){
-    var root = document.documentElement;
-    var hex = content.accentColor;
-    if (!isValidHexColor(hex)){
-      root.style.removeProperty("--accent");
-      root.style.removeProperty("--accent-ink");
-      root.style.removeProperty("--accent-soft");
-      return;
+  function hexToHsl(hex){
+    var rgb = hexToRgb(hex);
+    var r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h, s, l = (max + min) / 2;
+    if (max === min){ h = s = 0; }
+    else {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
     }
-    var paper = getComputedStyle(root).getPropertyValue("--paper").trim() || "#ffffff";
-    var ink = relativeLuminance(hex) > 0.45 ? "#241a08" : "#fff8ec";
-    root.style.setProperty("--accent", hex);
-    root.style.setProperty("--accent-ink", ink);
-    root.style.setProperty("--accent-soft", mixHex(hex, paper, 0.18));
+    return [h * 360, s * 100, l * 100];
   }
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyAccentColor);
+  function hslToHex(h, s, l){
+    h = ((h % 360) + 360) % 360 / 360; s /= 100; l /= 100;
+    var r, g, b;
+    if (s === 0){ r = g = b = l; }
+    else {
+      function hue2rgb(p, q, t){
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      }
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return rgbToHex(r * 255, g * 255, b * 255);
+  }
+
+  function isDarkThemeActive(){
+    var explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit === "dark") return true;
+    if (explicit === "light") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  /* A user picks one hue per surface/text slot; the actual lightness and a
+     saturation cap are fixed per theme so "background" is always light in
+     light mode and dark in dark mode, without asking for two colors. */
+  var SURFACE_TARGETS = {
+    background: { light: { l: 85, maxS: 48 }, dark: { l: 12, maxS: 36 } },
+    board:      { light: { l: 92, maxS: 40 }, dark: { l: 17, maxS: 30 } },
+    card:       { light: { l: 97, maxS: 22 }, dark: { l: 20, maxS: 26 } },
+    text:       { light: { l: 15, maxS: 45 }, dark: { l: 90, maxS: 42 } }
+  };
+  var THEME_DEFAULTS = {
+    light: { board: "#fbfaf5", card: "#ffffff", text: "#2a2b21" },
+    dark:  { board: "#1a2b20", card: "#223327", text: "#f2efe1" }
+  };
+  var THEME_SEMANTIC_DEFAULTS = {
+    light: { accent: "#d9720f", info: "#2f66d0", good: "#2f8f46", danger: "#c8402f" },
+    dark:  { accent: "#f0b93e", info: "#86b3ff", good: "#8fe0a0", danger: "#ff9e88" }
+  };
+
+  function deriveSurfaceHex(hex, slot, dark){
+    if (!isValidHexColor(hex)) return null;
+    var hsl = hexToHsl(hex);
+    var t = SURFACE_TARGETS[slot][dark ? "dark" : "light"];
+    return hslToHex(hsl[0], Math.min(hsl[1], t.maxS), t.l);
+  }
+
+  function setOrClear(root, name, value){
+    if (value) root.style.setProperty(name, value);
+    else root.style.removeProperty(name);
+  }
+
+  /* Applies content.palette (if any slot is set) to the board's CSS custom
+     properties. Each surface/text slot's hue is re-lightened per the current
+     theme (see SURFACE_TARGETS); the four semantic colors (accent/info/
+     good/danger) are used as-is in both themes, matching how a small
+     highlight color already read fine across both in testing. Everything
+     else derived from these (soft tints, ink-on-accent, subtle borders) is
+     recomputed only when a slot it depends on is actually customized — an
+     untouched palette makes zero changes, so an uncustomized board stays
+     pixel-identical to the hand-tuned defaults. */
+  function applyPalette(){
+    var root = document.documentElement;
+    var pal = content.palette || {};
+    var dark = isDarkThemeActive();
+    var defaults = THEME_DEFAULTS[dark ? "dark" : "light"];
+    var semanticDefaults = THEME_SEMANTIC_DEFAULTS[dark ? "dark" : "light"];
+
+    var wallVal = deriveSurfaceHex(pal.background, "background", dark);
+    var boardVal = deriveSurfaceHex(pal.board, "board", dark);
+    var cardVal = deriveSurfaceHex(pal.card, "card", dark);
+    var textVal = deriveSurfaceHex(pal.text, "text", dark);
+
+    setOrClear(root, "--wall", wallVal);
+    setOrClear(root, "--board", boardVal);
+    setOrClear(root, "--paper", cardVal);
+    setOrClear(root, "--ink", textVal);
+
+    var effBoard = boardVal || defaults.board;
+    var effCard = cardVal || defaults.card;
+    var effText = textVal || defaults.text;
+
+    setOrClear(root, "--ink-soft", (textVal || boardVal) ? mixHex(effText, effBoard, 0.7) : null);
+    setOrClear(root, "--board-line", (textVal || boardVal) ? mixHex(effText, effBoard, 0.18) : null);
+    setOrClear(root, "--paper-edge", (textVal || cardVal) ? mixHex(effText, effCard, 0.15) : null);
+
+    SEMANTIC_SLOTS.forEach(function(slot){
+      var cssVar = "--" + slot;
+      var picked = isValidHexColor(pal[slot]) ? pal[slot] : null;
+      setOrClear(root, cssVar, picked);
+      var softBase = picked || semanticDefaults[slot];
+      setOrClear(root, cssVar + "-soft", (picked || cardVal) ? mixHex(softBase, effCard, 0.18) : null);
+      if (slot === "accent"){
+        var ink = picked ? (relativeLuminance(picked) > 0.45 ? "#241a08" : "#fff8ec") : null;
+        setOrClear(root, "--accent-ink", ink);
+      }
+    });
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyPalette);
 
   function renderHeader(){
     gameTitleEl.textContent = content.title;
     gameTaglineEl.textContent = content.tagline;
     gameTaglineEl.style.display = content.tagline ? "" : "none";
     document.title = content.title;
-    applyAccentColor();
+    applyPalette();
   }
 
   function renderBoard(){
@@ -1829,11 +2004,98 @@ footer{
     buildEditorForm();
   }
 
-  var DEFAULT_ACCENT_SWATCH = "#d9720f";
+  var PALETTE_SLOT_META = {
+    background: { label: "Background", fallback: "#efeade" },
+    board:      { label: "Board Surface", fallback: "#fbfaf5" },
+    card:       { label: "Card Surface", fallback: "#ffffff" },
+    text:       { label: "Text", fallback: "#2a2b21" },
+    accent:     { label: "Accent", fallback: "#d9720f" },
+    info:       { label: "Info", fallback: "#2f66d0" },
+    good:       { label: "Correct", fallback: "#2f8f46" },
+    danger:     { label: "Wrong", fallback: "#c8402f" }
+  };
 
-  function refreshAccentField(){
-    editorAccentInput.value = draft.accentColor || DEFAULT_ACCENT_SWATCH;
-    editorAccentHex.textContent = draft.accentColor ? draft.accentColor.toUpperCase() : "Default";
+  var PRESETS = [
+    { name: "Default", surface: "", text: "", accent: "", info: "" },
+    { name: "Ocean", surface: "#3f7fb0", text: "#1c3350", accent: "#1f8ecb", info: "#2f66d0" },
+    { name: "Forest", surface: "#5a8f5f", text: "#1f3320", accent: "#c9a227", info: "#2f8f8a" },
+    { name: "Sunset", surface: "#e08a5f", text: "#5a2f1f", accent: "#d9506e", info: "#5b6fd6" },
+    { name: "Grape", surface: "#8f6fc9", text: "#2f2040", accent: "#7c4fc9", info: "#3a6ea5" },
+    { name: "Slate", surface: "#6f8299", text: "#1f2933", accent: "#4a7fb5", info: "#5c8aa8" },
+    { name: "Rose Gold", surface: "#c9927a", text: "#3f2a1f", accent: "#c9825a", info: "#7d92c4" }
+  ];
+
+  function presetToPalette(preset){
+    return {
+      background: preset.surface, board: preset.surface, card: preset.surface,
+      text: preset.text, accent: preset.accent, info: preset.info,
+      good: "", danger: ""
+    };
+  }
+
+  function paletteMatchesPreset(pal, preset){
+    var expanded = presetToPalette(preset);
+    return PALETTE_SLOTS.every(function(slot){ return (pal[slot] || "") === (expanded[slot] || ""); });
+  }
+
+  function buildPresetRow(){
+    presetPaletteRow.innerHTML = "";
+    PRESETS.forEach(function(preset){
+      var chip = document.createElement("span");
+      chip.className = "preset-swatch-chip" + (paletteMatchesPreset(draft.palette, preset) ? " active" : "");
+      var surfaceHalf = document.createElement("span");
+      surfaceHalf.style.background = preset.surface || PALETTE_SLOT_META.board.fallback;
+      var accentHalf = document.createElement("span");
+      accentHalf.style.background = preset.accent || PALETTE_SLOT_META.accent.fallback;
+      chip.appendChild(surfaceHalf);
+      chip.appendChild(accentHalf);
+
+      var nameEl = document.createElement("span");
+      nameEl.className = "preset-swatch-name";
+      nameEl.textContent = preset.name;
+
+      var btn = makeButton("preset-swatch", "", function(){
+        draft.palette = presetToPalette(preset);
+        buildEditorForm();
+      }, { ariaLabel: preset.name + " color preset" });
+      btn.appendChild(chip);
+      btn.appendChild(nameEl);
+      presetPaletteRow.appendChild(btn);
+    });
+  }
+
+  function buildCustomPaletteGrid(){
+    customPaletteGrid.innerHTML = "";
+    PALETTE_SLOTS.forEach(function(slot){
+      var meta = PALETTE_SLOT_META[slot];
+      var wrap = document.createElement("div");
+      wrap.className = "custom-swatch";
+
+      var input = document.createElement("input");
+      input.type = "color";
+      input.value = draft.palette[slot] || meta.fallback;
+      input.setAttribute("aria-label", meta.label + " color");
+
+      var labels = document.createElement("div");
+      labels.className = "custom-swatch-labels";
+      var nameEl = document.createElement("span");
+      nameEl.className = "custom-swatch-name";
+      nameEl.textContent = meta.label;
+      var hexEl = document.createElement("span");
+      hexEl.className = "custom-swatch-hex";
+      hexEl.textContent = draft.palette[slot] ? draft.palette[slot].toUpperCase() : "Default";
+      labels.appendChild(nameEl);
+      labels.appendChild(hexEl);
+
+      input.addEventListener("input", function(){
+        draft.palette[slot] = input.value;
+        hexEl.textContent = input.value.toUpperCase();
+      });
+
+      wrap.appendChild(input);
+      wrap.appendChild(labels);
+      customPaletteGrid.appendChild(wrap);
+    });
   }
 
   function buildEditorForm(){
@@ -1841,7 +2103,8 @@ footer{
     editorTaglineInput.value = draft.tagline;
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
-    refreshAccentField();
+    buildPresetRow();
+    buildCustomPaletteGrid();
 
     var rowCount = draft.categories[0].clues.length;
     rowCountLabel.textContent = String(rowCount);
@@ -1995,7 +2258,7 @@ footer{
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
-    draft.accentColor = isValidHexColor(draft.accentColor) ? draft.accentColor : "";
+    draft.palette = normalizePalette(draft.palette);
     commitContent(draft);
     closeEditor();
   }
@@ -2010,13 +2273,9 @@ footer{
   editorSaveBtn.addEventListener("click", saveEditor);
   rowAddBtn.addEventListener("click", addRow);
   rowRemoveBtn.addEventListener("click", removeRow);
-  editorAccentInput.addEventListener("input", function(){
-    draft.accentColor = editorAccentInput.value;
-    editorAccentHex.textContent = draft.accentColor.toUpperCase();
-  });
-  editorAccentResetBtn.addEventListener("click", function(){
-    draft.accentColor = "";
-    refreshAccentField();
+  paletteResetBtn.addEventListener("click", function(){
+    draft.palette = normalizePalette(null);
+    buildEditorForm();
   });
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
@@ -2069,7 +2328,9 @@ footer{
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
     rows.push(["Tagline", c.tagline]);
-    rows.push(["Accent Color", c.accentColor || ""]);
+    PALETTE_SLOTS.forEach(function(slot){
+      rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
+    });
     rows.push([]);
     rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double"]);
     c.categories.forEach(function(cat, catIdx){
@@ -2112,12 +2373,22 @@ footer{
     if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
     var rows = parseCSV(text).filter(function(r){ return r.some(function(c){ return (c || "").trim() !== ""; }); });
 
-    var title = null, tagline = null, accentColor = null;
+    var paletteLabelToSlot = {};
+    PALETTE_SLOTS.forEach(function(slot){
+      paletteLabelToSlot[(PALETTE_SLOT_META[slot].label + " Color").toLowerCase()] = slot;
+    });
+
+    var title = null, tagline = null;
+    var palette = {}; // only holds keys for slots whose row was actually present in the file
     rows.forEach(function(r){
       var label = (r[0] || "").trim().toLowerCase();
       if (label === "title") title = r[1] || "";
       if (label === "tagline") tagline = r[1] || "";
-      if (label === "accent color") accentColor = isValidHexColor((r[1] || "").trim()) ? r[1].trim() : "";
+      var slot = paletteLabelToSlot[label];
+      if (slot){
+        var v = (r[1] || "").trim();
+        palette[slot] = isValidHexColor(v) ? v : "";
+      }
     });
 
     var headerIdx = -1;
@@ -2163,7 +2434,7 @@ footer{
     return {
       title: title,
       tagline: tagline,
-      accentColor: accentColor,
+      palette: palette,
       categories: categories,
       dailyDouble: dailyDouble || { cat: 0, idx: 0 }
     };
@@ -2179,7 +2450,9 @@ footer{
     });
     if (imported.title !== null) draft.title = imported.title;
     if (imported.tagline !== null) draft.tagline = imported.tagline;
-    if (imported.accentColor !== null) draft.accentColor = imported.accentColor;
+    PALETTE_SLOTS.forEach(function(slot){
+      if (Object.prototype.hasOwnProperty.call(imported.palette, slot)) draft.palette[slot] = imported.palette[slot];
+    });
     draft.categories = imported.categories;
     draft.dailyDouble = imported.dailyDouble;
     buildEditorForm();
