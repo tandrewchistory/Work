@@ -2059,6 +2059,13 @@ footer{
 
   function buildBoardCSV(c){
     var rows = [];
+    rows.push(["HOW TO EDIT THIS TEMPLATE (read before filling in the table below)"]);
+    rows.push(["This board defaults to " + DEFAULT_CATS + " categories x " + DEFAULT_ROWS + " clues. To resize it before you submit:"]);
+    rows.push(["- Categories: " + MIN_CATS + " to " + MAX_CATS + " allowed. To add one, add a new block of rows below with a new name in column A, matching the row count of the other categories. To remove one, delete that whole block."]);
+    rows.push(["- Clues per category: " + MIN_ROWS + " to " + MAX_ROWS + " allowed. To add one, add a new row to EVERY category's block so they all stay the same length. To remove one, delete a row from EVERY category's block. The Value column is filled in for reference only — the dollar amount is set by row position, not by what you type there."]);
+    rows.push(["- Keep each category's rows together as one unbroken block — don't split a category across two places or leave blank rows inside the table."]);
+    rows.push(["- Daily Double: put \"Yes\" in exactly one row's Daily Double column, and leave every other row blank."]);
+    rows.push([]);
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
     rows.push(["Tagline", c.tagline]);
