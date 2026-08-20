@@ -421,17 +421,20 @@ footer{
 }
 
 /* ---------------------------------- modal ---------------------------------- */
-#overlay{
+/* Shared by every full-screen dialog (clue, how-to, victory, confirm, editor):
+   fixed backdrop, centered content, hidden until .open. Each overlay ID sets
+   only what differs — z-index, and background where its alpha differs. */
+.modal-overlay{
   position:fixed;
   inset:0;
   background:rgba(15,14,8,0.55);
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:50;
   padding:20px;
 }
-#overlay.open{ display:flex; }
+.modal-overlay.open{ display:flex; }
+#overlay{ z-index:50; }
 #clue-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -461,14 +464,14 @@ footer{
   margin-bottom:14px;
 }
 .daily-double-banner.show{ display:inline-block; }
-#clue-cat{
+/* Shared by every small uppercase caption (clue category, eyebrows below). */
+.eyebrow{
   color:var(--ink-soft);
   font-weight:700;
   text-transform:uppercase;
   letter-spacing:1.5px;
-  font-size:12.5px;
-  margin-bottom:8px;
 }
+#clue-cat{ font-size:12.5px; margin-bottom:8px; }
 #clue-value{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
@@ -557,17 +560,7 @@ footer{
 }
 
 /* ---------------------------------- how-to modal ---------------------------------- */
-#howto-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,14,8,0.55);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:60;
-  padding:20px;
-}
-#howto-overlay.open{ display:flex; }
+#howto-overlay{ z-index:60; }
 #howto-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -600,17 +593,7 @@ footer{
 #howto-close{ margin-top:22px; }
 
 /* ---------------------------------- victory screen ---------------------------------- */
-#victory-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,14,8,0.62);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:55;
-  padding:20px;
-}
-#victory-overlay.open{ display:flex; }
+#victory-overlay{ z-index:55; background:rgba(15,14,8,0.62); }
 #victory-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -643,14 +626,7 @@ footer{
   letter-spacing:0.5px;
   transform:rotate(3deg);
 }
-.victory-eyebrow{
-  margin:2px 0 0;
-  color:var(--ink-soft);
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.5px;
-  font-size:12px;
-}
+.victory-eyebrow{ margin:2px 0 0; font-size:12px; }
 #victory-title{
   margin:6px 0 2px;
   font-family:"Board Marker", cursive;
@@ -713,17 +689,7 @@ footer{
 }
 
 /* ---------------------------------- confirm dialog ---------------------------------- */
-#confirm-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,14,8,0.55);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:59;
-  padding:20px;
-}
-#confirm-overlay.open{ display:flex; }
+#confirm-overlay{ z-index:59; }
 #confirm-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -733,14 +699,7 @@ footer{
   text-align:center;
   box-shadow:0 30px 70px rgba(0,0,0,0.4);
 }
-.confirm-eyebrow{
-  margin:0 0 6px;
-  color:var(--ink-soft);
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:1.5px;
-  font-size:12px;
-}
+.confirm-eyebrow{ margin:0 0 6px; font-size:12px; }
 #confirm-message{
   margin:0 0 22px;
   color:var(--ink);
@@ -757,17 +716,7 @@ footer{
 .btn.danger:hover{ background:var(--danger-soft); }
 
 /* ---------------------------------- editor ---------------------------------- */
-#editor-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,14,8,0.55);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:56;
-  padding:20px;
-}
-#editor-overlay.open{ display:flex; }
+#editor-overlay{ z-index:56; }
 #editor-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -809,13 +758,18 @@ footer{
   gap:5px;
   text-align:left;
 }
-.field > span{
+/* Shared by every small uppercase field/section label in the editor. */
+.field > span,
+.size-label,
+.field-group-label,
+.editor-clue-image-label{
   font-weight:700;
   font-size:11.5px;
   text-transform:uppercase;
   letter-spacing:0.6px;
-  color:var(--ink-soft);
 }
+.field > span,
+.size-label{ color:var(--ink-soft); }
 .field input[type="text"],
 .field textarea{
   background:var(--board);
@@ -839,13 +793,6 @@ footer{
   display:flex;
   align-items:center;
   gap:10px;
-}
-.size-label{
-  font-weight:700;
-  font-size:11.5px;
-  text-transform:uppercase;
-  letter-spacing:0.6px;
-  color:var(--ink-soft);
 }
 .size-stepper{
   display:flex;
@@ -942,14 +889,7 @@ footer{
   gap:12px;
   flex-wrap:wrap;
 }
-.editor-clue-image-label{
-  font-weight:700;
-  font-size:11.5px;
-  text-transform:uppercase;
-  letter-spacing:0.6px;
-  color:var(--info);
-  width:100%;
-}
+.editor-clue-image-label{ color:var(--info); width:100%; }
 .editor-clue-thumb{
   display:none;
   width:56px;
@@ -1010,13 +950,7 @@ footer{
   gap:10px;
   text-align:left;
 }
-.field-group-label{
-  font-weight:700;
-  font-size:11.5px;
-  text-transform:uppercase;
-  letter-spacing:0.6px;
-  color:var(--ink);
-}
+.field-group-label{ color:var(--ink); }
 .dd-row{
   display:flex;
   gap:10px;
@@ -1111,10 +1045,10 @@ footer{
   <footer>Pick a dollar value to reveal a clue, then reveal the response and award points to the team that got it.</footer>
 </div>
 
-<div id="overlay">
+<div id="overlay" class="modal-overlay">
   <div id="clue-card">
     <div class="daily-double-banner" id="dd-banner">Daily Double!</div>
-    <div id="clue-cat"></div>
+    <div id="clue-cat" class="eyebrow"></div>
     <div id="clue-value" class="tabular"></div>
     <img id="clue-image" alt="">
     <div id="clue-text"></div>
@@ -1133,7 +1067,7 @@ footer{
   </div>
 </div>
 
-<div id="howto-overlay">
+<div id="howto-overlay" class="modal-overlay">
   <div id="howto-card">
     <h2>How to Play</h2>
     <ol>
@@ -1149,10 +1083,10 @@ footer{
   </div>
 </div>
 
-<div id="victory-overlay" role="dialog" aria-labelledby="victory-title">
+<div id="victory-overlay" class="modal-overlay" role="dialog" aria-labelledby="victory-title">
   <div id="victory-card">
     <div class="victory-badge" aria-hidden="true"><span>WINNER</span></div>
-    <p class="victory-eyebrow">Game Over</p>
+    <p class="eyebrow victory-eyebrow">Game Over</p>
     <h2 id="victory-title"></h2>
     <p id="victory-score" class="tabular"></p>
     <div id="victory-standings"></div>
@@ -1163,9 +1097,9 @@ footer{
   </div>
 </div>
 
-<div id="confirm-overlay" role="dialog" aria-labelledby="confirm-message">
+<div id="confirm-overlay" class="modal-overlay" role="dialog" aria-labelledby="confirm-message">
   <div id="confirm-card">
-    <p class="confirm-eyebrow">Are you sure?</p>
+    <p class="eyebrow confirm-eyebrow">Are you sure?</p>
     <p id="confirm-message"></p>
     <div class="confirm-actions">
       <button class="btn" id="confirm-cancel-btn">Cancel</button>
@@ -1174,7 +1108,7 @@ footer{
   </div>
 </div>
 
-<div id="editor-overlay" role="dialog" aria-labelledby="editor-title">
+<div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
     <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board — or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
@@ -1237,7 +1171,7 @@ footer{
 
   function makeClue(rowIdx){
     var v = valueForRow(rowIdx);
-    return { value: v, clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", image: "" };
+    return { clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", image: "" };
   }
 
   function makeDefaultContent(){
@@ -1260,21 +1194,47 @@ footer{
 
   function cloneContent(c){ return JSON.parse(JSON.stringify(c)); }
 
+  /* The one place that knows what a valid N-category x M-row grid looks like:
+     N and M each in bounds, and every category has the same clue count M.
+     Returns {catCount, rowCount}, or null if `categories` doesn't form one. */
+  function gridShapeOf(categories){
+    if (!Array.isArray(categories)) return null;
+    var catCount = categories.length;
+    if (catCount < MIN_CATS || catCount > MAX_CATS) return null;
+    var cat0 = categories[0];
+    if (!cat0 || !Array.isArray(cat0.clues)) return null;
+    var rowCount = cat0.clues.length;
+    if (rowCount < MIN_ROWS || rowCount > MAX_ROWS) return null;
+    for (var i = 0; i < catCount; i++){
+      var cat = categories[i];
+      if (!cat || !Array.isArray(cat.clues) || cat.clues.length !== rowCount) return null;
+    }
+    return { catCount: catCount, rowCount: rowCount };
+  }
+
+  /* Keeps a Daily Double pointer inside the current grid — the one rule for
+     "stays in bounds," called after anything that can shrink the grid. */
+  function clampDailyDouble(dd, catCount, rowCount){
+    dd.cat = Math.min(dd.cat, catCount - 1);
+    dd.idx = Math.min(dd.idx, rowCount - 1);
+  }
+
   function isValidContent(c){
     if (!c || typeof c !== "object") return false;
     if (typeof c.title !== "string" || typeof c.tagline !== "string") return false;
-    if (!Array.isArray(c.categories) || c.categories.length < MIN_CATS || c.categories.length > MAX_CATS) return false;
-    var rowCount = c.categories.length && Array.isArray(c.categories[0].clues) ? c.categories[0].clues.length : -1;
-    if (rowCount < MIN_ROWS || rowCount > MAX_ROWS) return false;
-    for (var i = 0; i < c.categories.length; i++){
+    var shape = gridShapeOf(c.categories);
+    if (!shape) return false;
+    for (var i = 0; i < shape.catCount; i++){
       var cat = c.categories[i];
-      if (!cat || typeof cat.name !== "string" || !Array.isArray(cat.clues) || cat.clues.length !== rowCount) return false;
-      for (var j = 0; j < cat.clues.length; j++){
+      if (typeof cat.name !== "string") return false;
+      for (var j = 0; j < shape.rowCount; j++){
         var clue = cat.clues[j];
         if (!clue || typeof clue.clue !== "string" || typeof clue.answer !== "string") return false;
       }
     }
-    if (!c.dailyDouble || typeof c.dailyDouble.cat !== "number" || typeof c.dailyDouble.idx !== "number") return false;
+    var dd = c.dailyDouble;
+    if (!dd || typeof dd.cat !== "number" || typeof dd.idx !== "number") return false;
+    if (dd.cat < 0 || dd.cat >= shape.catCount || dd.idx < 0 || dd.idx >= shape.rowCount) return false;
     return true;
   }
 
@@ -1284,9 +1244,8 @@ footer{
       if (!raw) return null;
       var parsed = JSON.parse(raw);
       if (!isValidContent(parsed)) return null;
-      parsed.categories.forEach(function(cat, ci){
-        cat.clues.forEach(function(clue, ci2){
-          clue.value = valueForRow(ci2);
+      parsed.categories.forEach(function(cat){
+        cat.clues.forEach(function(clue){
           if (typeof clue.explainer !== "string") clue.explainer = "";
           if (typeof clue.image !== "string") clue.image = "";
         });
@@ -1389,14 +1348,14 @@ footer{
       catRowEl.appendChild(el);
     });
     content.categories[0].clues.forEach(function(_, rowIdx){
+      var value = valueForRow(rowIdx);
       content.categories.forEach(function(cat, catIdx){
-        var clue = cat.clues[rowIdx];
         var key = tileKey(catIdx, rowIdx);
         var tile = document.createElement("button");
         tile.className = "tile";
-        tile.textContent = state.used[key] ? "" : "$" + clue.value;
+        tile.textContent = state.used[key] ? "" : "$" + value;
         tile.disabled = !!state.used[key];
-        tile.setAttribute("aria-label", cat.name + " for $" + clue.value);
+        tile.setAttribute("aria-label", cat.name + " for $" + value);
         tile.addEventListener("click", function(){ openClue(catIdx, rowIdx); });
         tileGridEl.appendChild(tile);
       });
@@ -1430,30 +1389,15 @@ footer{
 
       var btnRow = document.createElement("div");
       btnRow.className = "team-buttons";
-      var minus = document.createElement("button");
-      minus.type = "button";
-      minus.textContent = "−100";
-      minus.addEventListener("click", function(){ team.score -= 100; renderTeams(); });
-      var plus = document.createElement("button");
-      plus.type = "button";
-      plus.textContent = "+100";
-      plus.addEventListener("click", function(){ team.score += 100; renderTeams(); });
-      btnRow.appendChild(minus);
-      btnRow.appendChild(plus);
+      btnRow.appendChild(makeButton("", "−100", function(){ team.score -= 100; renderTeams(); }));
+      btnRow.appendChild(makeButton("", "+100", function(){ team.score += 100; renderTeams(); }));
       box.appendChild(btnRow);
 
       if (state.teams.length > 1) {
-        var removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "remove-team";
-        removeBtn.textContent = "×";
-        removeBtn.title = "Remove team";
-        removeBtn.setAttribute("aria-label", "Remove " + team.name);
-        removeBtn.addEventListener("click", function(){
+        box.appendChild(makeButton("remove-team", "×", function(){
           state.teams.splice(idx, 1);
           renderTeams();
-        });
-        box.appendChild(removeBtn);
+        }, { title: "Remove team", ariaLabel: "Remove " + team.name }));
       }
 
       teamsEl.appendChild(box);
@@ -1528,11 +1472,12 @@ footer{
     if (state.used[tileKey(catIdx, rowIdx)]) return;
     var cat = content.categories[catIdx];
     var clue = cat.clues[rowIdx];
+    var value = valueForRow(rowIdx);
     var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
-    current = { catIdx: catIdx, rowIdx: rowIdx, isDaily: isDaily };
+    current = { catIdx: catIdx, rowIdx: rowIdx, value: value, isDaily: isDaily };
 
     clueCatEl.textContent = cat.name;
-    clueValueEl.textContent = "$" + clue.value;
+    clueValueEl.textContent = "$" + value;
     if (clue.image) {
       clueImageEl.src = clue.image;
       clueImageEl.classList.add("shown");
@@ -1557,21 +1502,10 @@ footer{
   function renderAwardButtons(){
     awardButtons.innerHTML = "";
     if (!current) return;
-    var clue = content.categories[current.catIdx].clues[current.rowIdx];
+    var value = current.value;
     state.teams.forEach(function(team){
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "award-btn correct";
-      b.textContent = "✓ " + team.name + " (+$" + clue.value + ")";
-      b.addEventListener("click", function(){ awardPoints(team, clue.value); });
-      awardButtons.appendChild(b);
-
-      var w = document.createElement("button");
-      w.type = "button";
-      w.className = "award-btn wrong";
-      w.textContent = "✗ " + team.name + " (−$" + clue.value + ")";
-      w.addEventListener("click", function(){ awardPoints(team, -clue.value); });
-      awardButtons.appendChild(w);
+      awardButtons.appendChild(makeButton("award-btn correct", "✓ " + team.name + " (+$" + value + ")", function(){ awardPoints(team, value); }));
+      awardButtons.appendChild(makeButton("award-btn wrong", "✗ " + team.name + " (−$" + value + ")", function(){ awardPoints(team, -value); }));
     });
   }
 
@@ -1623,19 +1557,6 @@ footer{
     markUsedAndClose();
   });
 
-  overlay.addEventListener("click", function(e){
-    if (e.target === overlay) markUsedAndClose();
-  });
-  document.addEventListener("keydown", function(e){
-    if (e.key === "Escape"){
-      if (overlay.classList.contains("open")) markUsedAndClose();
-      if (howtoOverlay.classList.contains("open")) howtoOverlay.classList.remove("open");
-      if (victoryOverlay.classList.contains("open")) victoryOverlay.classList.remove("open");
-      if (confirmOverlay.classList.contains("open")) closeConfirm();
-      if (editorOverlay.classList.contains("open")) closeEditor();
-    }
-  });
-
   addTeamBtn.addEventListener("click", function(){
     if (state.teams.length >= 6) return;
     state.teams.push({ name: "Team " + (state.teams.length + 1), score: 0 });
@@ -1667,10 +1588,6 @@ footer{
     pendingConfirmAction = null;
     if (action) action();
   });
-  confirmOverlay.addEventListener("click", function(e){
-    if (e.target === confirmOverlay) closeConfirm();
-  });
-
   undoBtn.addEventListener("click", undoLast);
 
   document.getElementById("end-game-btn").addEventListener("click", function(){
@@ -1681,22 +1598,12 @@ footer{
   document.getElementById("how-to-btn").addEventListener("click", function(){
     howtoOverlay.classList.add("open");
   });
-  document.getElementById("howto-close").addEventListener("click", function(){
-    howtoOverlay.classList.remove("open");
-  });
-  howtoOverlay.addEventListener("click", function(e){
-    if (e.target === howtoOverlay) howtoOverlay.classList.remove("open");
-  });
+  document.getElementById("howto-close").addEventListener("click", closeHowto);
 
   document.getElementById("victory-play-again").addEventListener("click", function(){
     resetGame();
   });
-  document.getElementById("victory-close").addEventListener("click", function(){
-    victoryOverlay.classList.remove("open");
-  });
-  victoryOverlay.addEventListener("click", function(e){
-    if (e.target === victoryOverlay) victoryOverlay.classList.remove("open");
-  });
+  document.getElementById("victory-close").addEventListener("click", closeVictory);
 
   /* ---------------- board editor ---------------- */
 
@@ -1731,34 +1638,82 @@ footer{
     reader.readAsDataURL(file);
   }
 
-  function refreshDDCatOptions(){
-    var prevValue = ddCatSelect.value;
-    ddCatSelect.innerHTML = "";
-    draft.categories.forEach(function(cat, i){
+  /* Rebuilds a <select>'s options from `items`, preserving the current
+     selection if it's still valid, else falling back to `fallbackValue`.
+     Shared by both Daily Double dropdowns (category picker, value picker). */
+  function populateSelect(selectEl, items, valueFn, labelFn, fallbackValue){
+    var prevValue = selectEl.value;
+    selectEl.innerHTML = "";
+    var stillValid = false;
+    items.forEach(function(item, i){
       var opt = document.createElement("option");
-      opt.value = String(i);
-      opt.textContent = cat.name.trim() ? cat.name : ("Category " + (i + 1));
-      ddCatSelect.appendChild(opt);
+      opt.value = valueFn(item, i);
+      opt.textContent = labelFn(item, i);
+      if (opt.value === prevValue) stillValid = true;
+      selectEl.appendChild(opt);
     });
-    ddCatSelect.value = prevValue || String(draft.dailyDouble.cat);
+    selectEl.value = stillValid ? prevValue : String(fallbackValue);
+  }
+
+  /* Builds a <label class="field"><span>labelText</span><input|textarea></label>,
+     wired so typing calls oninput(newValue). opts: rows, maxLength, placeholder. */
+  function makeField(labelText, tagName, value, oninput, opts){
+    opts = opts || {};
+    var field = document.createElement("label");
+    field.className = "field";
+    var span = document.createElement("span");
+    span.textContent = labelText;
+    var input = document.createElement(tagName);
+    if (tagName === "textarea") input.rows = opts.rows || 2;
+    if (tagName === "input") input.type = "text";
+    if (opts.maxLength) input.maxLength = opts.maxLength;
+    if (opts.placeholder) input.placeholder = opts.placeholder;
+    input.value = value;
+    input.addEventListener("input", function(){ oninput(input.value); });
+    field.appendChild(span);
+    field.appendChild(input);
+    return field;
+  }
+
+  /* Builds a <button type="button"> wired to onClick. opts: disabled, ariaLabel, title. */
+  function makeButton(className, text, onClick, opts){
+    opts = opts || {};
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = className;
+    btn.textContent = text;
+    if (opts.disabled) btn.disabled = true;
+    if (opts.ariaLabel) btn.setAttribute("aria-label", opts.ariaLabel);
+    if (opts.title) btn.title = opts.title;
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function refreshDDCatOptions(){
+    populateSelect(
+      ddCatSelect,
+      draft.categories,
+      function(cat, i){ return String(i); },
+      function(cat, i){ return cat.name.trim() ? cat.name : ("Category " + (i + 1)); },
+      draft.dailyDouble.cat
+    );
   }
 
   function refreshDDValueOptions(){
-    var prevValue = ddValueSelect.value;
     var rowCount = draft.categories[0].clues.length;
-    ddValueSelect.innerHTML = "";
-    for (var i = 0; i < rowCount; i++){
-      var opt = document.createElement("option");
-      opt.value = String(i);
-      opt.textContent = "$" + valueForRow(i);
-      ddValueSelect.appendChild(opt);
-    }
-    ddValueSelect.value = prevValue || String(draft.dailyDouble.idx);
+    var rows = Array.from({ length: rowCount }, function(_, i){ return i; });
+    populateSelect(
+      ddValueSelect,
+      rows,
+      function(i){ return String(i); },
+      function(i){ return "$" + valueForRow(i); },
+      draft.dailyDouble.idx
+    );
   }
 
   function addCategory(){
     if (draft.categories.length >= MAX_CATS) return;
-    var rowCount = draft.categories.length ? draft.categories[0].clues.length : DEFAULT_ROWS;
+    var rowCount = draft.categories[0].clues.length;
     var clues = [];
     for (var i = 0; i < rowCount; i++){ clues.push(makeClue(i)); }
     draft.categories.push({ name: "Category " + (draft.categories.length + 1), clues: clues });
@@ -1768,8 +1723,11 @@ footer{
   function removeCategory(catIdx){
     if (draft.categories.length <= MIN_CATS) return;
     draft.categories.splice(catIdx, 1);
+    // preserve *which* category the Daily Double points at across the splice
+    // (shift left to follow it); clampDailyDouble below is the final bounds check.
     if (draft.dailyDouble.cat === catIdx) draft.dailyDouble.cat = 0;
     else if (draft.dailyDouble.cat > catIdx) draft.dailyDouble.cat -= 1;
+    clampDailyDouble(draft.dailyDouble, draft.categories.length, draft.categories[0].clues.length);
     buildEditorForm();
   }
 
@@ -1784,8 +1742,7 @@ footer{
     var rowCount = draft.categories[0].clues.length;
     if (rowCount <= MIN_ROWS) return;
     draft.categories.forEach(function(cat){ cat.clues.pop(); });
-    var newRowCount = rowCount - 1;
-    if (draft.dailyDouble.idx > newRowCount - 1) draft.dailyDouble.idx = newRowCount - 1;
+    clampDailyDouble(draft.dailyDouble, draft.categories.length, draft.categories[0].clues.length);
     buildEditorForm();
   }
 
@@ -1795,9 +1752,10 @@ footer{
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
 
-    rowCountLabel.textContent = String(draft.categories[0].clues.length);
-    rowRemoveBtn.disabled = draft.categories[0].clues.length <= MIN_ROWS;
-    rowAddBtn.disabled = draft.categories[0].clues.length >= MAX_ROWS;
+    var rowCount = draft.categories[0].clues.length;
+    rowCountLabel.textContent = String(rowCount);
+    rowRemoveBtn.disabled = rowCount <= MIN_ROWS;
+    rowAddBtn.disabled = rowCount >= MAX_ROWS;
 
     editorCategoriesEl.innerHTML = "";
     draft.categories.forEach(function(cat, catIdx){
@@ -1807,29 +1765,14 @@ footer{
       var header = document.createElement("div");
       header.className = "editor-category-header";
 
-      var nameField = document.createElement("label");
-      nameField.className = "field";
-      var nameSpan = document.createElement("span");
-      nameSpan.textContent = "Category " + (catIdx + 1) + " name";
-      var nameInput = document.createElement("input");
-      nameInput.type = "text";
-      nameInput.maxLength = 40;
-      nameInput.value = cat.name;
-      nameInput.addEventListener("input", function(){
-        cat.name = nameInput.value;
+      var nameField = makeField("Category " + (catIdx + 1) + " name", "input", cat.name, function(v){
+        cat.name = v;
         refreshDDCatOptions();
-      });
-      nameField.appendChild(nameSpan);
-      nameField.appendChild(nameInput);
+      }, { maxLength: 40 });
       header.appendChild(nameField);
 
       if (draft.categories.length > MIN_CATS){
-        var removeCatBtn = document.createElement("button");
-        removeCatBtn.type = "button";
-        removeCatBtn.className = "remove-category-btn";
-        removeCatBtn.textContent = "Remove Category";
-        removeCatBtn.addEventListener("click", function(){ removeCategory(catIdx); });
-        header.appendChild(removeCatBtn);
+        header.appendChild(makeButton("remove-category-btn", "Remove Category", function(){ removeCategory(catIdx); }));
       }
       wrap.appendChild(header);
 
@@ -1842,29 +1785,10 @@ footer{
 
         var valueLabel = document.createElement("div");
         valueLabel.className = "clue-value-label tabular";
-        valueLabel.textContent = "$" + clue.value;
+        valueLabel.textContent = "$" + valueForRow(rowIdx);
 
-        var clueField = document.createElement("label");
-        clueField.className = "field";
-        var clueSpan = document.createElement("span");
-        clueSpan.textContent = "Clue";
-        var clueArea = document.createElement("textarea");
-        clueArea.rows = 2;
-        clueArea.value = clue.clue;
-        clueArea.addEventListener("input", function(){ clue.clue = clueArea.value; });
-        clueField.appendChild(clueSpan);
-        clueField.appendChild(clueArea);
-
-        var answerField = document.createElement("label");
-        answerField.className = "field";
-        var answerSpan = document.createElement("span");
-        answerSpan.textContent = "Answer";
-        var answerArea = document.createElement("textarea");
-        answerArea.rows = 2;
-        answerArea.value = clue.answer;
-        answerArea.addEventListener("input", function(){ clue.answer = answerArea.value; });
-        answerField.appendChild(answerSpan);
-        answerField.appendChild(answerArea);
+        var clueField = makeField("Clue", "textarea", clue.clue, function(v){ clue.clue = v; });
+        var answerField = makeField("Answer", "textarea", clue.answer, function(v){ clue.answer = v; });
 
         mainRow.appendChild(valueLabel);
         mainRow.appendChild(clueField);
@@ -1882,13 +1806,16 @@ footer{
         var fileInput = document.createElement("input");
         fileInput.type = "file";
         fileInput.accept = "image/*";
-        var removeImageBtn = document.createElement("button");
-        removeImageBtn.type = "button";
-        removeImageBtn.className = "remove-image-btn" + (clue.image ? " shown" : "");
-        removeImageBtn.textContent = "Remove image";
         var imageErr = document.createElement("span");
         imageErr.className = "image-error";
         imageErr.textContent = "Couldn't load that image — try a different file.";
+        var removeImageBtn = makeButton("remove-image-btn" + (clue.image ? " shown" : ""), "Remove image", function(){
+          clue.image = "";
+          thumb.removeAttribute("src");
+          thumb.classList.remove("shown");
+          removeImageBtn.classList.remove("shown");
+          imageErr.classList.remove("shown");
+        });
 
         fileInput.addEventListener("change", function(){
           var file = fileInput.files && fileInput.files[0];
@@ -1906,13 +1833,6 @@ footer{
             removeImageBtn.classList.add("shown");
           });
         });
-        removeImageBtn.addEventListener("click", function(){
-          clue.image = "";
-          thumb.removeAttribute("src");
-          thumb.classList.remove("shown");
-          removeImageBtn.classList.remove("shown");
-          imageErr.classList.remove("shown");
-        });
 
         imageWrap.appendChild(imageLabel);
         imageWrap.appendChild(thumb);
@@ -1922,18 +1842,9 @@ footer{
 
         var explainerWrap = document.createElement("div");
         explainerWrap.className = "editor-clue-explainer";
-        var explainerField = document.createElement("label");
-        explainerField.className = "field";
-        var explainerSpan = document.createElement("span");
-        explainerSpan.textContent = "Explainer (optional)";
-        var explainerArea = document.createElement("textarea");
-        explainerArea.rows = 2;
-        explainerArea.value = clue.explainer || "";
-        explainerArea.placeholder = "Add extra context or a fun fact — shown alongside the answer when it's revealed";
-        explainerArea.addEventListener("input", function(){ clue.explainer = explainerArea.value; });
-        explainerField.appendChild(explainerSpan);
-        explainerField.appendChild(explainerArea);
-        explainerWrap.appendChild(explainerField);
+        explainerWrap.appendChild(makeField("Explainer (optional)", "textarea", clue.explainer || "", function(v){ clue.explainer = v; }, {
+          placeholder: "Add extra context or a fun fact — shown alongside the answer when it's revealed"
+        }));
 
         row.appendChild(mainRow);
         row.appendChild(imageWrap);
@@ -1944,14 +1855,17 @@ footer{
       editorCategoriesEl.appendChild(wrap);
     });
 
-    var addCatBtn = document.createElement("button");
-    addCatBtn.type = "button";
-    addCatBtn.className = "add-category-btn";
-    addCatBtn.textContent = draft.categories.length >= MAX_CATS ? "Maximum " + MAX_CATS + " categories" : "+ Add Category";
-    addCatBtn.disabled = draft.categories.length >= MAX_CATS;
-    addCatBtn.addEventListener("click", addCategory);
+    var addCatBtn = makeButton("add-category-btn",
+      draft.categories.length >= MAX_CATS ? "Maximum " + MAX_CATS + " categories" : "+ Add Category",
+      addCategory,
+      { disabled: draft.categories.length >= MAX_CATS }
+    );
     editorCategoriesEl.appendChild(addCatBtn);
 
+    // Force-sync to draft.dailyDouble here (not just populateSelect's own
+    // stale-value fallback) because this full rebuild can follow a
+    // programmatic change to draft.dailyDouble the dropdowns haven't seen
+    // yet — a CSV import, or a row/category removal that clamped it.
     refreshDDCatOptions();
     ddCatSelect.value = String(draft.dailyDouble.cat);
     refreshDDValueOptions();
@@ -1983,7 +1897,6 @@ footer{
     draft.categories.forEach(function(cat, catIdx){
       cat.name = cat.name.trim() || ("Category " + (catIdx + 1));
       cat.clues.forEach(function(clue, rowIdx){
-        clue.value = valueForRow(rowIdx);
         clue.image = clue.image || "";
         clue.clue = clue.clue.trim() || (clue.image ? "" : ("Write your $" + valueForRow(rowIdx) + " clue here"));
         clue.answer = clue.answer.trim() || "Write the answer here";
@@ -2008,8 +1921,28 @@ footer{
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
   });
-  editorOverlay.addEventListener("click", function(e){
-    if (e.target === editorOverlay) closeEditor();
+
+  /* ---------------- overlay dismissal (backdrop click + Escape), all overlays ---------------- */
+  function closeHowto(){ howtoOverlay.classList.remove("open"); }
+  function closeVictory(){ victoryOverlay.classList.remove("open"); }
+
+  var dismissibleOverlays = [
+    { el: overlay, close: markUsedAndClose },
+    { el: howtoOverlay, close: closeHowto },
+    { el: victoryOverlay, close: closeVictory },
+    { el: confirmOverlay, close: closeConfirm },
+    { el: editorOverlay, close: closeEditor }
+  ];
+  dismissibleOverlays.forEach(function(o){
+    o.el.addEventListener("click", function(e){
+      if (e.target === o.el) o.close();
+    });
+  });
+  document.addEventListener("keydown", function(e){
+    if (e.key !== "Escape") return;
+    dismissibleOverlays.forEach(function(o){
+      if (o.el.classList.contains("open")) o.close();
+    });
   });
 
   /* ---------------- CSV template import/export ---------------- */
@@ -2034,7 +1967,7 @@ footer{
     c.categories.forEach(function(cat, catIdx){
       cat.clues.forEach(function(clue, rowIdx){
         var isDD = (catIdx === c.dailyDouble.cat && rowIdx === c.dailyDouble.idx);
-        rows.push([cat.name, String(clue.value), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : ""]);
+        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : ""]);
       });
     });
     return rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
@@ -2086,28 +2019,27 @@ footer{
 
     var dataRows = rows.slice(headerIdx + 1);
 
-    var order = [];
-    var byCat = {};
+    var byCat = new Map();
     dataRows.forEach(function(r, idx){
       var catName = (r[0] || "").trim();
       if (!catName) throw new Error("Row " + (idx + 1) + " of the clue table is missing a category name.");
-      if (!byCat[catName]){ byCat[catName] = []; order.push(catName); }
-      byCat[catName].push(r);
+      if (!byCat.has(catName)) byCat.set(catName, []);
+      byCat.get(catName).push(r);
     });
+    var order = Array.from(byCat.keys());
     if (order.length < MIN_CATS || order.length > MAX_CATS) throw new Error("Expected between " + MIN_CATS + " and " + MAX_CATS + " categories, found " + order.length + ".");
-    var rowCount = byCat[order[0]].length;
+    var rowCount = byCat.get(order[0]).length;
     if (rowCount < MIN_ROWS || rowCount > MAX_ROWS) throw new Error("Each category needs between " + MIN_ROWS + " and " + MAX_ROWS + " clue rows; found " + rowCount + ".");
     order.forEach(function(name){
-      if (byCat[name].length !== rowCount) throw new Error("Category “" + name + "” has " + byCat[name].length + " rows — every category needs the same number (" + rowCount + "), and its rows must stay together.");
+      if (byCat.get(name).length !== rowCount) throw new Error("Category “" + name + "” has " + byCat.get(name).length + " rows — every category needs the same number (" + rowCount + "), and its rows must stay together.");
     });
 
     var dailyDouble = null;
     var categories = order.map(function(name, catIdx){
-      var clues = byCat[name].map(function(r, rowIdx){
+      var clues = byCat.get(name).map(function(r, rowIdx){
         var isDD = /^(y|yes|true|x|✓)$/i.test((r[5] || "").trim());
         if (isDD && !dailyDouble) dailyDouble = { cat: catIdx, idx: rowIdx };
         return {
-          value: valueForRow(rowIdx),
           clue: r[2] || "",
           answer: r[3] || "",
           explainer: r[4] || "",
@@ -2116,6 +2048,8 @@ footer{
       });
       return { name: name, clues: clues };
     });
+
+    if (!gridShapeOf(categories)) throw new Error("That file didn't come out to a valid board — check that every category has the same number of rows.");
 
     return {
       title: title,
@@ -2247,15 +2181,16 @@ footer{
       });
     }
     var start = Date.now();
+    var vw = window.innerWidth, vh = window.innerHeight;
     function frame(){
       var elapsed = Date.now() - start;
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.clearRect(0, 0, vw, vh);
       var alive = false;
       pieces.forEach(function(p){
         p.x += p.vx;
         p.y += p.vy;
         p.rot += p.vr;
-        if (p.y < window.innerHeight + 20) alive = true;
+        if (p.y < vh + 20) alive = true;
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rot);
@@ -2266,7 +2201,7 @@ footer{
       if (alive && elapsed < 4500){
         requestAnimationFrame(frame);
       } else {
-        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        ctx.clearRect(0, 0, vw, vh);
       }
     }
     requestAnimationFrame(frame);
