@@ -212,7 +212,7 @@ h1{
 
 #category-row{
   display:grid;
-  grid-template-columns:repeat(5, minmax(0, 1fr));
+  grid-template-columns:repeat(var(--cat-count, 5), minmax(0, 1fr));
   gap:14px;
   margin-bottom:14px;
 }
@@ -240,10 +240,11 @@ h1{
 .cat-card:nth-child(3){ transform:rotate(-0.4deg); }
 .cat-card:nth-child(4){ transform:rotate(0.9deg); }
 .cat-card:nth-child(5){ transform:rotate(-0.7deg); }
+.cat-card:nth-child(6){ transform:rotate(0.5deg); }
 
 #tile-grid{
   display:grid;
-  grid-template-columns:repeat(5, minmax(0, 1fr));
+  grid-template-columns:repeat(var(--cat-count, 5), minmax(0, 1fr));
   gap:10px;
 }
 .tile{
@@ -834,6 +835,47 @@ footer{
   gap:12px;
   padding-top:14px;
 }
+#editor-size-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.size-label{
+  font-weight:700;
+  font-size:11.5px;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:var(--ink-soft);
+}
+.size-stepper{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.size-btn{
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  color:var(--ink);
+  border-radius:6px;
+  width:28px;
+  height:28px;
+  font-size:16px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.size-btn:hover:not(:disabled){ background:var(--accent-soft); border-color:var(--accent); }
+.size-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.size-count{
+  font-family:"Board Numeral", sans-serif;
+  color:var(--accent);
+  font-size:17px;
+  min-width:16px;
+  text-align:center;
+}
 .editor-category{
   border:1px solid var(--paper-edge);
   border-radius:10px;
@@ -843,11 +885,41 @@ footer{
   gap:12px;
   background:var(--board);
 }
+.editor-category-header{
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+}
+.editor-category-header .field{ flex:1; }
 .editor-category .field input[type="text"]{
   font-family:"Board Sans", sans-serif;
   font-weight:700;
   background:var(--paper);
 }
+.remove-category-btn{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  color:var(--danger);
+  border-radius:5px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.remove-category-btn:hover{ background:var(--danger-soft); }
+.add-category-btn{
+  border:1.5px dashed var(--paper-edge);
+  background:transparent;
+  color:var(--ink-soft);
+  border-radius:10px;
+  padding:14px;
+  cursor:pointer;
+  font-weight:700;
+  font-size:13px;
+}
+.add-category-btn:hover:not(:disabled){ border-color:var(--accent); color:var(--accent-ink); background:var(--accent-soft); }
+.add-category-btn:disabled{ opacity:0.4; cursor:not-allowed; }
 .editor-clue{
   display:flex;
   flex-direction:column;
@@ -926,6 +998,7 @@ footer{
   .editor-clue-explainer{ margin-left:0; }
   .editor-clue-image{ margin-left:0; }
   .clue-value-label{ text-align:left; padding-top:0; }
+  .editor-category-header{ flex-wrap:wrap; }
 }
 #dd-picker{
   border:1px solid var(--info);
@@ -1070,7 +1143,7 @@ footer{
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
-      <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and all 25 clues &mdash; no code required.</li>
+      <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
   </div>
@@ -1104,7 +1177,7 @@ footer{
 <div id="editor-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and all 25 clues for your subject, or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board — or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -1122,18 +1195,20 @@ footer{
           <input type="text" id="editor-tagline-input" maxlength="140">
         </label>
       </div>
+      <div id="editor-size-row">
+        <span class="size-label">Clues per Category</span>
+        <div class="size-stepper">
+          <button type="button" class="size-btn" id="row-remove-btn" aria-label="Remove a clue row">&minus;</button>
+          <span id="row-count-label" class="size-count tabular"></span>
+          <button type="button" class="size-btn" id="row-add-btn" aria-label="Add a clue row">+</button>
+        </div>
+      </div>
       <div id="editor-categories"></div>
       <div id="dd-picker">
         <span class="field-group-label">Daily Double location</span>
         <div class="dd-row">
           <select id="dd-cat-select" aria-label="Daily Double category"></select>
-          <select id="dd-value-select" aria-label="Daily Double dollar value">
-            <option value="0">$100</option>
-            <option value="1">$200</option>
-            <option value="2">$300</option>
-            <option value="3">$400</option>
-            <option value="4">$500</option>
-          </select>
+          <select id="dd-value-select" aria-label="Daily Double dollar value"></select>
         </div>
       </div>
     </div>
@@ -1151,21 +1226,25 @@ footer{
 (function(){
   "use strict";
 
-  var VALUES = [100, 200, 300, 400, 500];
+  var DEFAULT_CATS = 5;
+  var DEFAULT_ROWS = 5;
+  var MIN_CATS = 3;
+  var MAX_CATS = 6;
+  var MIN_ROWS = 3;
+  var MAX_ROWS = 6;
+
+  function valueForRow(rowIdx){ return (rowIdx + 1) * 100; }
+
+  function makeClue(rowIdx){
+    var v = valueForRow(rowIdx);
+    return { value: v, clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", image: "" };
+  }
 
   function makeDefaultContent(){
     var categories = [];
-    for (var c = 0; c < 5; c++){
+    for (var c = 0; c < DEFAULT_CATS; c++){
       var clues = [];
-      for (var i = 0; i < 5; i++){
-        clues.push({
-          value: VALUES[i],
-          clue: "Write your $" + VALUES[i] + " clue here",
-          answer: "Write the answer here",
-          explainer: "",
-          image: ""
-        });
-      }
+      for (var i = 0; i < DEFAULT_ROWS; i++){ clues.push(makeClue(i)); }
       categories.push({ name: "Category " + (c + 1), clues: clues });
     }
     return {
@@ -1184,11 +1263,13 @@ footer{
   function isValidContent(c){
     if (!c || typeof c !== "object") return false;
     if (typeof c.title !== "string" || typeof c.tagline !== "string") return false;
-    if (!Array.isArray(c.categories) || c.categories.length !== 5) return false;
-    for (var i = 0; i < 5; i++){
+    if (!Array.isArray(c.categories) || c.categories.length < MIN_CATS || c.categories.length > MAX_CATS) return false;
+    var rowCount = c.categories.length && Array.isArray(c.categories[0].clues) ? c.categories[0].clues.length : -1;
+    if (rowCount < MIN_ROWS || rowCount > MAX_ROWS) return false;
+    for (var i = 0; i < c.categories.length; i++){
       var cat = c.categories[i];
-      if (!cat || typeof cat.name !== "string" || !Array.isArray(cat.clues) || cat.clues.length !== 5) return false;
-      for (var j = 0; j < 5; j++){
+      if (!cat || typeof cat.name !== "string" || !Array.isArray(cat.clues) || cat.clues.length !== rowCount) return false;
+      for (var j = 0; j < cat.clues.length; j++){
         var clue = cat.clues[j];
         if (!clue || typeof clue.clue !== "string" || typeof clue.answer !== "string") return false;
       }
@@ -1205,7 +1286,7 @@ footer{
       if (!isValidContent(parsed)) return null;
       parsed.categories.forEach(function(cat, ci){
         cat.clues.forEach(function(clue, ci2){
-          clue.value = VALUES[ci2];
+          clue.value = valueForRow(ci2);
           if (typeof clue.explainer !== "string") clue.explainer = "";
           if (typeof clue.image !== "string") clue.image = "";
         });
@@ -1239,6 +1320,7 @@ footer{
 
   var gameTitleEl = document.getElementById("game-title");
   var gameTaglineEl = document.getElementById("game-tagline");
+  var boardEl = document.getElementById("board");
   var catRowEl = document.getElementById("category-row");
   var tileGridEl = document.getElementById("tile-grid");
   var teamsEl = document.getElementById("teams");
@@ -1269,6 +1351,9 @@ footer{
   var editorTitleInput = document.getElementById("editor-title-input");
   var editorTaglineInput = document.getElementById("editor-tagline-input");
   var editorCategoriesEl = document.getElementById("editor-categories");
+  var rowRemoveBtn = document.getElementById("row-remove-btn");
+  var rowAddBtn = document.getElementById("row-add-btn");
+  var rowCountLabel = document.getElementById("row-count-label");
   var ddCatSelect = document.getElementById("dd-cat-select");
   var ddValueSelect = document.getElementById("dd-value-select");
   var editBoardBtn = document.getElementById("edit-board-btn");
@@ -1296,6 +1381,7 @@ footer{
   function renderBoard(){
     catRowEl.innerHTML = "";
     tileGridEl.innerHTML = "";
+    boardEl.style.setProperty("--cat-count", String(content.categories.length));
     content.categories.forEach(function(cat){
       var el = document.createElement("div");
       el.className = "cat-card";
@@ -1616,7 +1702,7 @@ footer{
 
   /* Resizes/compresses an uploaded image client-side before it's stored as a
      data URI (in the content object and, if available, localStorage) — keeps
-     25 clue images from blowing past storage quota. */
+     a board full of clue images from blowing past storage quota. */
   function compressImageFile(file, maxDim, cb){
     if (!file.type || file.type.indexOf("image/") !== 0){ cb(null); return; }
     var reader = new FileReader();
@@ -1657,16 +1743,69 @@ footer{
     ddCatSelect.value = prevValue || String(draft.dailyDouble.cat);
   }
 
+  function refreshDDValueOptions(){
+    var prevValue = ddValueSelect.value;
+    var rowCount = draft.categories[0].clues.length;
+    ddValueSelect.innerHTML = "";
+    for (var i = 0; i < rowCount; i++){
+      var opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = "$" + valueForRow(i);
+      ddValueSelect.appendChild(opt);
+    }
+    ddValueSelect.value = prevValue || String(draft.dailyDouble.idx);
+  }
+
+  function addCategory(){
+    if (draft.categories.length >= MAX_CATS) return;
+    var rowCount = draft.categories.length ? draft.categories[0].clues.length : DEFAULT_ROWS;
+    var clues = [];
+    for (var i = 0; i < rowCount; i++){ clues.push(makeClue(i)); }
+    draft.categories.push({ name: "Category " + (draft.categories.length + 1), clues: clues });
+    buildEditorForm();
+  }
+
+  function removeCategory(catIdx){
+    if (draft.categories.length <= MIN_CATS) return;
+    draft.categories.splice(catIdx, 1);
+    if (draft.dailyDouble.cat === catIdx) draft.dailyDouble.cat = 0;
+    else if (draft.dailyDouble.cat > catIdx) draft.dailyDouble.cat -= 1;
+    buildEditorForm();
+  }
+
+  function addRow(){
+    var rowCount = draft.categories[0].clues.length;
+    if (rowCount >= MAX_ROWS) return;
+    draft.categories.forEach(function(cat){ cat.clues.push(makeClue(rowCount)); });
+    buildEditorForm();
+  }
+
+  function removeRow(){
+    var rowCount = draft.categories[0].clues.length;
+    if (rowCount <= MIN_ROWS) return;
+    draft.categories.forEach(function(cat){ cat.clues.pop(); });
+    var newRowCount = rowCount - 1;
+    if (draft.dailyDouble.idx > newRowCount - 1) draft.dailyDouble.idx = newRowCount - 1;
+    buildEditorForm();
+  }
+
   function buildEditorForm(){
     editorTitleInput.value = draft.title;
     editorTaglineInput.value = draft.tagline;
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
 
+    rowCountLabel.textContent = String(draft.categories[0].clues.length);
+    rowRemoveBtn.disabled = draft.categories[0].clues.length <= MIN_ROWS;
+    rowAddBtn.disabled = draft.categories[0].clues.length >= MAX_ROWS;
+
     editorCategoriesEl.innerHTML = "";
     draft.categories.forEach(function(cat, catIdx){
       var wrap = document.createElement("div");
       wrap.className = "editor-category";
+
+      var header = document.createElement("div");
+      header.className = "editor-category-header";
 
       var nameField = document.createElement("label");
       nameField.className = "field";
@@ -1682,7 +1821,17 @@ footer{
       });
       nameField.appendChild(nameSpan);
       nameField.appendChild(nameInput);
-      wrap.appendChild(nameField);
+      header.appendChild(nameField);
+
+      if (draft.categories.length > MIN_CATS){
+        var removeCatBtn = document.createElement("button");
+        removeCatBtn.type = "button";
+        removeCatBtn.className = "remove-category-btn";
+        removeCatBtn.textContent = "Remove Category";
+        removeCatBtn.addEventListener("click", function(){ removeCategory(catIdx); });
+        header.appendChild(removeCatBtn);
+      }
+      wrap.appendChild(header);
 
       cat.clues.forEach(function(clue, rowIdx){
         var row = document.createElement("div");
@@ -1795,8 +1944,17 @@ footer{
       editorCategoriesEl.appendChild(wrap);
     });
 
+    var addCatBtn = document.createElement("button");
+    addCatBtn.type = "button";
+    addCatBtn.className = "add-category-btn";
+    addCatBtn.textContent = draft.categories.length >= MAX_CATS ? "Maximum " + MAX_CATS + " categories" : "+ Add Category";
+    addCatBtn.disabled = draft.categories.length >= MAX_CATS;
+    addCatBtn.addEventListener("click", addCategory);
+    editorCategoriesEl.appendChild(addCatBtn);
+
     refreshDDCatOptions();
     ddCatSelect.value = String(draft.dailyDouble.cat);
+    refreshDDValueOptions();
     ddValueSelect.value = String(draft.dailyDouble.idx);
   }
 
@@ -1825,9 +1983,9 @@ footer{
     draft.categories.forEach(function(cat, catIdx){
       cat.name = cat.name.trim() || ("Category " + (catIdx + 1));
       cat.clues.forEach(function(clue, rowIdx){
-        clue.value = VALUES[rowIdx];
+        clue.value = valueForRow(rowIdx);
         clue.image = clue.image || "";
-        clue.clue = clue.clue.trim() || (clue.image ? "" : ("Write your $" + VALUES[rowIdx] + " clue here"));
+        clue.clue = clue.clue.trim() || (clue.image ? "" : ("Write your $" + valueForRow(rowIdx) + " clue here"));
         clue.answer = clue.answer.trim() || "Write the answer here";
         clue.explainer = (clue.explainer || "").trim();
       });
@@ -1845,6 +2003,8 @@ footer{
   editBoardBtn.addEventListener("click", openEditor);
   editorCancelBtn.addEventListener("click", closeEditor);
   editorSaveBtn.addEventListener("click", saveEditor);
+  rowAddBtn.addEventListener("click", addRow);
+  rowRemoveBtn.addEventListener("click", removeRow);
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
   });
@@ -1925,7 +2085,6 @@ footer{
     if (headerIdx === -1) throw new Error("Couldn't find the clue table in that file — make sure it matches the Download Template format.");
 
     var dataRows = rows.slice(headerIdx + 1);
-    if (dataRows.length !== 25) throw new Error("Expected 25 clue rows, found " + dataRows.length + ". Don't add or remove rows from the template.");
 
     var order = [];
     var byCat = {};
@@ -1935,9 +2094,11 @@ footer{
       if (!byCat[catName]){ byCat[catName] = []; order.push(catName); }
       byCat[catName].push(r);
     });
-    if (order.length !== 5) throw new Error("Expected 5 categories, found " + order.length + ". Each category's 5 rows must stay together.");
+    if (order.length < MIN_CATS || order.length > MAX_CATS) throw new Error("Expected between " + MIN_CATS + " and " + MAX_CATS + " categories, found " + order.length + ".");
+    var rowCount = byCat[order[0]].length;
+    if (rowCount < MIN_ROWS || rowCount > MAX_ROWS) throw new Error("Each category needs between " + MIN_ROWS + " and " + MAX_ROWS + " clue rows; found " + rowCount + ".");
     order.forEach(function(name){
-      if (byCat[name].length !== 5) throw new Error("Category “" + name + "” has " + byCat[name].length + " rows — each category needs exactly 5.");
+      if (byCat[name].length !== rowCount) throw new Error("Category “" + name + "” has " + byCat[name].length + " rows — every category needs the same number (" + rowCount + "), and its rows must stay together.");
     });
 
     var dailyDouble = null;
@@ -1946,7 +2107,7 @@ footer{
         var isDD = /^(y|yes|true|x|✓)$/i.test((r[5] || "").trim());
         if (isDD && !dailyDouble) dailyDouble = { cat: catIdx, idx: rowIdx };
         return {
-          value: VALUES[rowIdx],
+          value: valueForRow(rowIdx),
           clue: r[2] || "",
           answer: r[3] || "",
           explainer: r[4] || "",
@@ -2042,8 +2203,9 @@ footer{
     reader.onload = function(e){
       try {
         var imported = parseBoardCSV(String(e.target.result));
+        var clueCount = imported.categories.length * imported.categories[0].clues.length;
         applyImportedBoard(imported);
-        showIoStatus("Imported " + imported.categories.length + " categories and 25 clues. Click Save & Close to apply.", "success");
+        showIoStatus("Imported " + imported.categories.length + " categories and " + clueCount + " clues. Click Save & Close to apply.", "success");
       } catch (err) {
         showIoStatus(err.message || "Couldn't import that file.", "error");
       }
