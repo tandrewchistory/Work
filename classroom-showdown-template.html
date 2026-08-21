@@ -1142,6 +1142,7 @@ footer{
 
     <div id="modal-actions">
       <button class="btn primary" id="reveal-btn">Reveal Response</button>
+      <button class="btn" id="return-btn">Return to Board</button>
       <button class="btn" id="close-btn">Close (No Award)</button>
     </div>
   </div>
@@ -1155,6 +1156,7 @@ footer{
       <li>A team picks a category and dollar value from the board.</li>
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
+      <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or just click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue as done with no points awarded.</li>
       <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
@@ -1398,6 +1400,7 @@ footer{
   var explainerTextEl = document.getElementById("explainer-text");
   var revealBtn = document.getElementById("reveal-btn");
   var closeBtn = document.getElementById("close-btn");
+  var returnBtn = document.getElementById("return-btn");
   var awardRow = document.getElementById("award-row");
   var awardButtons = document.getElementById("award-buttons");
   var ddBanner = document.getElementById("dd-banner");
@@ -1814,6 +1817,8 @@ footer{
   closeBtn.addEventListener("click", function(){
     markUsedAndClose();
   });
+
+  returnBtn.addEventListener("click", closeModal);
 
   addTeamBtn.addEventListener("click", function(){
     if (state.teams.length >= 6) return;
@@ -2286,7 +2291,7 @@ footer{
   function closeVictory(){ victoryOverlay.classList.remove("open"); }
 
   var dismissibleOverlays = [
-    { el: overlay, close: markUsedAndClose },
+    { el: overlay, close: closeModal },
     { el: howtoOverlay, close: closeHowto },
     { el: victoryOverlay, close: closeVictory },
     { el: confirmOverlay, close: closeConfirm },
