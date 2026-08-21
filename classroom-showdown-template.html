@@ -404,6 +404,8 @@ h1{
   border-color:var(--paper-edge);
   color:var(--ink-soft);
 }
+#buzzer-btn.buzzer-live{ border-color:var(--good); color:var(--good); }
+#buzzer-btn.buzzer-live:hover{ background:var(--good-soft); }
 
 footer{
   text-align:center;
@@ -1073,7 +1075,7 @@ footer{
   justify-content:space-between;
   flex-wrap:wrap;
 }
-#editor-actions .editor-actions-right{
+.editor-actions-right{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
@@ -1083,6 +1085,101 @@ footer{
   font-size:11.5px;
   color:var(--ink-soft);
 }
+
+/* ---------------------------------- buzzer setup ---------------------------------- */
+#buzzer-overlay{ z-index:57; }
+#buzzer-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:16px;
+  width:min(600px, 100%);
+  max-height:min(88vh, 900px);
+  padding:28px 30px 22px;
+  box-shadow:0 30px 70px rgba(0,0,0,0.4);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  overflow-y:auto;
+  text-align:left;
+}
+#buzzer-card h2{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:28px;
+  margin:0;
+  color:var(--ink);
+}
+.buzzer-status{
+  margin:0;
+  font-size:13px;
+  font-weight:700;
+  padding:8px 12px;
+  border-radius:8px;
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  color:var(--ink-soft);
+}
+.buzzer-status.connected{ background:var(--good-soft); border-color:var(--good); color:var(--good); }
+.buzzer-status.error{ background:var(--danger-soft); border-color:var(--danger); color:var(--danger); }
+.buzzer-status.connecting{ background:var(--info-soft); border-color:var(--info); color:var(--info); }
+#buzzer-body{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+#buzzer-config-input{ font-family:ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size:12.5px; }
+.buzzer-inline-row{ display:flex; gap:8px; }
+.buzzer-inline-row input{ flex:1; }
+#buzzer-connect-row, #buzzer-link-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+#buzzer-link-row input{
+  flex:1;
+  min-width:180px;
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:8px 10px;
+  color:var(--ink);
+  font-size:12.5px;
+}
+#buzzer-instructions{
+  border:1px dashed var(--paper-edge);
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13px;
+  color:var(--ink-soft);
+  line-height:1.5;
+}
+#buzzer-instructions summary{ cursor:pointer; font-weight:700; color:var(--ink); }
+#buzzer-instructions ol{ margin:10px 0; padding-left:20px; }
+#buzzer-instructions li{ margin-bottom:6px; }
+#buzzer-rules-block{
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:10px;
+  font-size:11.5px;
+  overflow-x:auto;
+  white-space:pre;
+  color:var(--ink);
+}
+.buzzer-banner{
+  display:none;
+  margin:14px 0;
+  padding:12px 16px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:14.5px;
+  border:1.5px solid var(--info);
+  background:var(--info-soft);
+  color:var(--info);
+}
+.buzzer-banner.show{ display:block; }
+.buzzer-banner.buzzed{ border-color:var(--good); background:var(--good-soft); color:var(--good); }
 </style>
 </head>
 <body>
@@ -1118,6 +1215,7 @@ footer{
     <button class="btn" id="add-team-btn">+ Add Team</button>
     <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
     <button class="btn" id="end-game-btn">End Game</button>
+    <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="reset-btn">Reset Game</button>
   </div>
@@ -1135,6 +1233,8 @@ footer{
     <div id="answer-text"></div>
     <div id="explainer-text"></div>
 
+    <div id="buzzer-banner" class="buzzer-banner"></div>
+
     <div id="award-row">
       <p>Who answered correctly?</p>
       <div id="award-buttons"></div>
@@ -1142,6 +1242,7 @@ footer{
 
     <div id="modal-actions">
       <button class="btn primary" id="reveal-btn">Reveal Response</button>
+      <button class="btn" id="buzzer-reset-btn" style="display:none">&#128276; Reset Buzzers</button>
       <button class="btn" id="return-btn">Return to Board</button>
       <button class="btn" id="close-btn">Close (No Award)</button>
     </div>
@@ -1160,6 +1261,7 @@ footer{
       <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
+      <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
   </div>
@@ -1239,6 +1341,71 @@ footer{
       <div class="editor-actions-right">
         <button class="btn" id="editor-cancel-btn">Cancel</button>
         <button class="btn primary" id="editor-save-btn">Save &amp; Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="buzzer-overlay" class="modal-overlay" role="dialog" aria-labelledby="buzzer-title">
+  <div id="buzzer-card">
+    <h2 id="buzzer-title">Buzzer Setup</h2>
+    <p class="editor-sub">Let students buzz in from their own devices during a clue. This is optional and needs a free <strong>Firebase</strong> project you control &mdash; the board works completely offline without it. See the setup steps below.</p>
+    <p id="buzzer-status" class="buzzer-status">Not connected.</p>
+    <div id="buzzer-body">
+      <label class="field">
+        <span>Room Code</span>
+        <div class="buzzer-inline-row">
+          <input type="text" id="buzzer-room-input" maxlength="8" placeholder="e.g. QUIZ1">
+          <button type="button" class="btn" id="buzzer-generate-room-btn">Generate</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>Firebase Config (paste the snippet from your Firebase project settings)</span>
+        <textarea id="buzzer-config-input" rows="5" placeholder='{ "apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "...", "appId": "..." }'></textarea>
+      </label>
+      <label class="field">
+        <span>Restrict Google Sign-In to a School Domain (optional)</span>
+        <input type="text" id="buzzer-domain-input" placeholder="e.g. yourschool.edu">
+      </label>
+      <label class="field">
+        <span>Student Buzzer Page URL</span>
+        <input type="text" id="buzzer-page-url-input" placeholder="classroom-showdown-buzzer.html">
+      </label>
+      <div id="buzzer-connect-row">
+        <button class="btn primary" id="buzzer-connect-btn" type="button">Save &amp; Connect</button>
+        <button class="btn" id="buzzer-disable-btn" type="button">Disable Buzzer</button>
+      </div>
+      <div id="buzzer-link-row">
+        <button class="btn" id="buzzer-copy-link-btn" type="button">Copy Student Link</button>
+        <input type="text" id="buzzer-link-output" readonly aria-label="Student buzzer link">
+      </div>
+      <details id="buzzer-instructions">
+        <summary>First-time setup instructions</summary>
+        <ol>
+          <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase console</a>, sign in with Google, and create a free project.</li>
+          <li>In the project, open <strong>Build &rarr; Realtime Database</strong>, click Create Database, and start in locked mode.</li>
+          <li>Open the Realtime Database&rsquo;s <strong>Rules</strong> tab, replace the contents with the JSON below, and publish:</li>
+        </ol>
+        <pre id="buzzer-rules-block">{
+  "rules": {
+    "rooms": {
+      "$room": {
+        ".read": true,
+        "round": { ".write": "auth != null" },
+        "lock": { ".write": "auth != null &amp;&amp; (newData.val() == null || !data.exists())" }
+      }
+    }
+  }
+}</pre>
+        <ol start="4">
+          <li>Open <strong>Build &rarr; Authentication &rarr; Sign-in method</strong> and enable both the <strong>Google</strong> and <strong>Anonymous</strong> providers.</li>
+          <li>Open <strong>Project settings</strong> (gear icon) &rarr; scroll to &ldquo;Your apps&rdquo; &rarr; add a Web app &rarr; copy the <code>firebaseConfig</code> object it shows you into the field above.</li>
+          <li>Host the separate <code>classroom-showdown-buzzer.html</code> file somewhere public (e.g. GitHub Pages) and set its URL above &mdash; that&rsquo;s the page students open to buzz in.</li>
+          <li>Pick a room code, click Save &amp; Connect, then Copy Student Link and share it with your class.</li>
+        </ol>
+      </details>
+      <div class="editor-actions-right">
+        <button class="btn primary" id="buzzer-close-btn" type="button">Done</button>
       </div>
     </div>
   </div>
@@ -1435,12 +1602,308 @@ footer{
   var editorImportBtn = document.getElementById("editor-import-btn");
   var editorImportFile = document.getElementById("editor-import-file");
   var editorIoStatus = document.getElementById("editor-io-status");
+  var buzzerBtn = document.getElementById("buzzer-btn");
+  var buzzerOverlay = document.getElementById("buzzer-overlay");
+  var buzzerStatusEl = document.getElementById("buzzer-status");
+  var buzzerRoomInput = document.getElementById("buzzer-room-input");
+  var buzzerGenerateRoomBtn = document.getElementById("buzzer-generate-room-btn");
+  var buzzerConfigInput = document.getElementById("buzzer-config-input");
+  var buzzerDomainInput = document.getElementById("buzzer-domain-input");
+  var buzzerPageUrlInput = document.getElementById("buzzer-page-url-input");
+  var buzzerConnectBtn = document.getElementById("buzzer-connect-btn");
+  var buzzerDisableBtn = document.getElementById("buzzer-disable-btn");
+  var buzzerCopyLinkBtn = document.getElementById("buzzer-copy-link-btn");
+  var buzzerLinkOutput = document.getElementById("buzzer-link-output");
+  var buzzerCloseBtn = document.getElementById("buzzer-close-btn");
+  var buzzerBannerEl = document.getElementById("buzzer-banner");
+  var buzzerResetBtn = document.getElementById("buzzer-reset-btn");
 
   var current = null;
   var victoryCelebrated = false;
   var draft = null;
 
   function tileKey(c, i){ return c + "-" + i; }
+
+  /* ---------------- buzzer (optional, needs a teacher-provided Firebase project) ----------------
+     Entirely opt-in: with no stored config, none of this loads a script or touches the
+     network, and the board behaves exactly as it does without this feature. */
+  var BUZZER_STORAGE_KEY = "classroom-showdown-buzzer-v1";
+
+  var FIREBASE_APP_URL = window.__TEST_FIREBASE_APP_URL__ || "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js";
+  var FIREBASE_AUTH_URL = window.__TEST_FIREBASE_AUTH_URL__ || "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js";
+  var FIREBASE_DATABASE_URL = window.__TEST_FIREBASE_DATABASE_URL__ || "https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js";
+
+  /* Tolerantly parses the config snippet Firebase's console shows (a JS object
+     literal with unquoted keys, often prefixed "const firebaseConfig = " and
+     semicolon-terminated) without eval — quotes bare keys, then JSON.parse's it. */
+  function parseFirebaseConfig(text){
+    var trimmed = (text || "").trim();
+    if (!trimmed) return { ok: false, error: "Paste your Firebase config first." };
+    var body = trimmed.replace(/^\s*(const|var|let)\s+\w+\s*=\s*/, "").replace(/;\s*$/, "");
+    var jsonish = body.replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, "$1\"$2\":").replace(/'/g, "\"");
+    var parsed;
+    try {
+      parsed = JSON.parse(jsonish);
+    } catch (err) {
+      return { ok: false, error: "Couldn't read that config — paste the object Firebase gave you (apiKey, authDomain, etc.)." };
+    }
+    var required = ["apiKey", "authDomain", "databaseURL", "projectId", "appId"];
+    for (var i = 0; i < required.length; i++){
+      if (typeof parsed[required[i]] !== "string" || !parsed[required[i]]){
+        return { ok: false, error: "Config is missing \"" + required[i] + "\"." };
+      }
+    }
+    return { ok: true, config: parsed };
+  }
+
+  function loadStoredBuzzerSettings(){
+    try {
+      var raw = window.localStorage.getItem(BUZZER_STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      return {
+        roomCode: typeof parsed.roomCode === "string" ? parsed.roomCode : "",
+        configText: typeof parsed.configText === "string" ? parsed.configText : "",
+        hostedDomain: typeof parsed.hostedDomain === "string" ? parsed.hostedDomain : "",
+        pageUrl: typeof parsed.pageUrl === "string" ? parsed.pageUrl : ""
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function persistBuzzerSettings(settings){
+    try { window.localStorage.setItem(BUZZER_STORAGE_KEY, JSON.stringify(settings)); } catch (err) { /* storage unavailable */ }
+  }
+
+  function clearStoredBuzzerSettings(){
+    try { window.localStorage.removeItem(BUZZER_STORAGE_KEY); } catch (err) { /* storage unavailable */ }
+  }
+
+  var loadedScriptUrls = {};
+  function loadScript(url){
+    if (!loadedScriptUrls[url]){
+      loadedScriptUrls[url] = new Promise(function(resolve, reject){
+        var el = document.createElement("script");
+        el.src = url;
+        var timer = setTimeout(function(){ reject(new Error("Timed out loading " + url)); }, 15000);
+        el.onload = function(){ clearTimeout(timer); resolve(); };
+        el.onerror = function(){ clearTimeout(timer); reject(new Error("Couldn't load the Firebase library — check your internet connection.")); };
+        document.head.appendChild(el);
+      });
+    }
+    return loadedScriptUrls[url];
+  }
+
+  var buzzer = {
+    status: "idle",     // idle | connecting | connected | error
+    error: "",
+    db: null,
+    roomCode: "",
+    hostedDomain: "",
+    pageUrl: "",
+    roundToken: null,
+    lockHandler: null
+  };
+
+  function setBuzzerStatus(status, message){
+    buzzer.status = status;
+    buzzer.error = status === "error" ? (message || "") : "";
+    renderBuzzerStatus();
+  }
+
+  function renderBuzzerStatus(){
+    var labels = {
+      idle: "Not connected.",
+      connecting: "Connecting…",
+      connected: "Connected — room " + buzzer.roomCode + ".",
+      error: "Error: " + buzzer.error
+    };
+    if (buzzerStatusEl){
+      buzzerStatusEl.textContent = labels[buzzer.status] || labels.idle;
+      buzzerStatusEl.className = "buzzer-status " + buzzer.status;
+    }
+    if (buzzerBtn) buzzerBtn.classList.toggle("buzzer-live", buzzer.status === "connected");
+  }
+
+  function roomRef(path){
+    if (!buzzer.db || buzzer.status !== "connected") return null;
+    return buzzer.db.ref("rooms/" + buzzer.roomCode + "/" + path);
+  }
+
+  function connectBuzzer(roomCode, configText, hostedDomain, pageUrl){
+    roomCode = (roomCode || "").trim().toUpperCase();
+    if (!roomCode){ setBuzzerStatus("error", "Enter a room code first."); return; }
+    var parsedResult = parseFirebaseConfig(configText);
+    if (!parsedResult.ok){ setBuzzerStatus("error", parsedResult.error); return; }
+
+    persistBuzzerSettings({ roomCode: roomCode, configText: configText, hostedDomain: hostedDomain || "", pageUrl: pageUrl || "" });
+    disconnectBuzzer(false);
+    buzzer.roomCode = roomCode;
+    buzzer.hostedDomain = hostedDomain || "";
+    buzzer.pageUrl = pageUrl || "";
+    setBuzzerStatus("connecting");
+
+    loadScript(FIREBASE_APP_URL)
+      .then(function(){ return Promise.all([loadScript(FIREBASE_AUTH_URL), loadScript(FIREBASE_DATABASE_URL)]); })
+      .then(function(){
+        var fb = window.firebase;
+        var app = (fb.apps && fb.apps.length) ? fb.app() : fb.initializeApp(parsedResult.config);
+        return app.auth().signInAnonymously().then(function(){ return app; });
+      })
+      .then(function(app){
+        buzzer.db = app.database();
+        setBuzzerStatus("connected");
+        renderBuzzerLink();
+        if (current) startBuzzerRound();
+      })
+      .catch(function(err){
+        buzzer.db = null;
+        setBuzzerStatus("error", (err && err.message) ? err.message : "Couldn't connect. Check your config and internet connection.");
+      });
+  }
+
+  function disconnectBuzzer(forget){
+    stopBuzzerRound();
+    buzzer.db = null;
+    buzzer.roomCode = "";
+    setBuzzerStatus("idle");
+    if (forget) clearStoredBuzzerSettings();
+  }
+
+  function randomRoundToken(){
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function startBuzzerRound(){
+    if (buzzer.status !== "connected") return;
+    stopBuzzerRound();
+    buzzer.roundToken = randomRoundToken();
+    var round = roomRef("round");
+    var lock = roomRef("lock");
+    if (!round || !lock) return;
+    round.set(buzzer.roundToken).catch(function(){});
+    lock.set(null).catch(function(){});
+    buzzer.lockHandler = function(snapshot){ renderBuzzerBanner(snapshot.val()); };
+    lock.on("value", buzzer.lockHandler);
+    renderBuzzerBanner(null);
+  }
+
+  function stopBuzzerRound(){
+    if (buzzer.lockHandler){
+      var lock = roomRef("lock");
+      if (lock) lock.off("value", buzzer.lockHandler);
+      buzzer.lockHandler = null;
+    }
+    buzzer.roundToken = null;
+    var round = roomRef("round");
+    var lockClear = roomRef("lock");
+    if (round) round.set(null).catch(function(){});
+    if (lockClear) lockClear.set(null).catch(function(){});
+    renderBuzzerBanner(null);
+  }
+
+  function resetBuzzerLock(){
+    var lock = roomRef("lock");
+    if (lock) lock.set(null).catch(function(){});
+  }
+
+  function renderBuzzerBanner(lockVal){
+    var active = buzzer.status === "connected" && !!current;
+    if (!buzzerBannerEl || !buzzerResetBtn) return;
+    buzzerBannerEl.classList.toggle("show", active);
+    buzzerResetBtn.style.display = active ? "" : "none";
+    if (!active) return;
+    if (lockVal && lockVal.name){
+      buzzerBannerEl.textContent = "🔔 " + lockVal.name + " buzzed in first!";
+      buzzerBannerEl.classList.add("buzzed");
+      buzzerResetBtn.disabled = false;
+    } else {
+      buzzerBannerEl.textContent = "🔔 Buzzer armed — waiting for a buzz…";
+      buzzerBannerEl.classList.remove("buzzed");
+      buzzerResetBtn.disabled = true;
+    }
+  }
+
+  function openBuzzerSetup(){
+    var stored = loadStoredBuzzerSettings();
+    buzzerRoomInput.value = buzzer.roomCode || (stored && stored.roomCode) || "";
+    buzzerConfigInput.value = (stored && stored.configText) || "";
+    buzzerDomainInput.value = buzzer.hostedDomain || (stored && stored.hostedDomain) || "";
+    buzzerPageUrlInput.value = buzzer.pageUrl || (stored && stored.pageUrl) || "classroom-showdown-buzzer.html";
+    renderBuzzerStatus();
+    renderBuzzerLink();
+    buzzerOverlay.classList.add("open");
+  }
+
+  function closeBuzzerSetup(){
+    buzzerOverlay.classList.remove("open");
+  }
+
+  function generateRoomCode(){
+    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    var code = "";
+    for (var i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    buzzerRoomInput.value = code;
+    renderBuzzerLink();
+  }
+
+  function buildStudentLink(){
+    var base = (buzzerPageUrlInput.value || "").trim() || "classroom-showdown-buzzer.html";
+    var room = (buzzerRoomInput.value || "").trim().toUpperCase();
+    if (!room) return "";
+    var hashParts = ["room=" + encodeURIComponent(room)];
+    var domain = (buzzerDomainInput.value || "").trim();
+    if (domain) hashParts.push("hd=" + encodeURIComponent(domain));
+    var parsedResult = parseFirebaseConfig(buzzerConfigInput.value);
+    if (parsedResult.ok) hashParts.push("cfg=" + encodeURIComponent(btoa(JSON.stringify(parsedResult.config))));
+    return base + "#" + hashParts.join("&");
+  }
+
+  function renderBuzzerLink(){
+    buzzerLinkOutput.value = buildStudentLink();
+  }
+
+  function copyStudentLink(){
+    var link = buildStudentLink();
+    if (!link) return;
+    renderBuzzerLink();
+    buzzerLinkOutput.select();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(link);
+        return;
+      }
+    } catch (err) { /* fall through to manual selection */ }
+    try { document.execCommand("copy"); } catch (err) { /* link stays selected for manual copy */ }
+  }
+
+  function initBuzzer(){
+    var stored = loadStoredBuzzerSettings();
+    if (!stored || !stored.roomCode || !stored.configText) return;
+    connectBuzzer(stored.roomCode, stored.configText, stored.hostedDomain, stored.pageUrl);
+  }
+
+  buzzerBtn.addEventListener("click", openBuzzerSetup);
+  buzzerCloseBtn.addEventListener("click", closeBuzzerSetup);
+  buzzerGenerateRoomBtn.addEventListener("click", generateRoomCode);
+  buzzerConnectBtn.addEventListener("click", function(){
+    connectBuzzer(buzzerRoomInput.value, buzzerConfigInput.value, buzzerDomainInput.value, buzzerPageUrlInput.value);
+    renderBuzzerLink();
+  });
+  buzzerDisableBtn.addEventListener("click", function(){
+    disconnectBuzzer(true);
+    buzzerRoomInput.value = "";
+    buzzerConfigInput.value = "";
+    buzzerDomainInput.value = "";
+    renderBuzzerLink();
+  });
+  buzzerCopyLinkBtn.addEventListener("click", copyStudentLink);
+  buzzerResetBtn.addEventListener("click", resetBuzzerLock);
+  [buzzerRoomInput, buzzerConfigInput, buzzerDomainInput, buzzerPageUrlInput].forEach(function(el){
+    el.addEventListener("input", renderBuzzerLink);
+  });
 
   /* ---------------- palette customization ---------------- */
   var SEMANTIC_SLOTS = ["accent", "info", "good", "danger"];
@@ -1736,6 +2199,7 @@ footer{
     var value = valueForRow(rowIdx);
     var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
     current = { catIdx: catIdx, rowIdx: rowIdx, value: value, isDaily: isDaily };
+    startBuzzerRound();
 
     clueCatEl.textContent = cat.name;
     clueValueEl.textContent = "$" + value;
@@ -1803,6 +2267,7 @@ footer{
   }
 
   function closeModal(){
+    stopBuzzerRound();
     overlay.classList.remove("open");
     current = null;
   }
@@ -2295,7 +2760,8 @@ footer{
     { el: howtoOverlay, close: closeHowto },
     { el: victoryOverlay, close: closeVictory },
     { el: confirmOverlay, close: closeConfirm },
-    { el: editorOverlay, close: closeEditor }
+    { el: editorOverlay, close: closeEditor },
+    { el: buzzerOverlay, close: closeBuzzerSetup }
   ];
   dismissibleOverlays.forEach(function(o){
     o.el.addEventListener("click", function(e){
@@ -2599,6 +3065,7 @@ footer{
   renderHeader();
   renderBoard();
   renderTeams();
+  initBuzzer();
 })();
 </script>
 </body>
