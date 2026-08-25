@@ -135,6 +135,7 @@ button, input, textarea, select{ font-family:inherit; }
   display:flex;
   flex-direction:column;
   gap:22px;
+  transform-origin:top center;
 }
 
 /* ---------------------------------- header ---------------------------------- */
@@ -1552,6 +1553,7 @@ footer{
   };
   var history = [];
 
+  var stageEl = document.getElementById("stage");
   var gameTitleEl = document.getElementById("game-title");
   var gameTaglineEl = document.getElementById("game-tagline");
   var boardEl = document.getElementById("board");
@@ -2053,12 +2055,48 @@ footer{
   }
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyPalette);
 
+  /* ---------------- fit-to-screen ----------------
+     On a wide-enough (non-mobile) viewport, uniformly scales the whole game
+     down so header + board + teams + controls fit within the visible screen
+     without scrolling — a shorter laptop screen still shows every category
+     and clue row at once. Mobile keeps its own scrolling layout untouched:
+     shrinking touch targets on a phone would hurt more than it helps. */
+  var FIT_MIN_VIEWPORT_WIDTH = 700;
+  var FIT_MIN_SCALE = 0.4;
+  var fitScheduled = false;
+
+  function scheduleFit(){
+    if (fitScheduled) return;
+    fitScheduled = true;
+    requestAnimationFrame(function(){
+      fitScheduled = false;
+      fitStageToViewport();
+    });
+  }
+
+  function fitStageToViewport(){
+    if (!stageEl) return;
+    stageEl.style.transform = "";
+    stageEl.style.height = "";
+    var natural = stageEl.scrollHeight;
+    var available = window.innerHeight - 16;
+    if (window.innerWidth >= FIT_MIN_VIEWPORT_WIDTH && natural > available){
+      var factor = Math.max(FIT_MIN_SCALE, Math.min(1, available / natural));
+      stageEl.style.transform = "scale(" + factor.toFixed(4) + ")";
+      stageEl.style.height = (natural * factor) + "px";
+    }
+  }
+
+  window.addEventListener("resize", scheduleFit);
+  window.addEventListener("orientationchange", scheduleFit);
+
   function renderHeader(){
     gameTitleEl.textContent = content.title;
     gameTaglineEl.textContent = content.tagline;
     gameTaglineEl.style.display = content.tagline ? "" : "none";
     document.title = content.title;
     applyPalette();
+    scheduleFit();
   }
 
   function renderBoard(){
@@ -2084,6 +2122,7 @@ footer{
         tileGridEl.appendChild(tile);
       });
     });
+    scheduleFit();
   }
 
   function renderTeams(){
@@ -2128,6 +2167,7 @@ footer{
     });
 
     checkWinner();
+    scheduleFit();
   }
 
   function checkWinner(){
