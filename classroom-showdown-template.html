@@ -131,10 +131,10 @@ button, input, textarea, select{ font-family:inherit; }
 #stage{
   max-width:1180px;
   margin:0 auto;
-  padding:28px 20px 48px;
+  padding:20px 20px 32px;
   display:flex;
   flex-direction:column;
-  gap:22px;
+  gap:16px;
   transform-origin:top center;
 }
 
@@ -193,13 +193,13 @@ h1{
   max-width:1120px;
   background:linear-gradient(180deg, var(--frame), var(--frame-shadow));
   border-radius:16px;
-  padding:16px 16px 26px;
+  padding:12px 12px 18px;
   box-shadow:0 24px 50px -18px var(--shadow-color), inset 0 0 0 1px rgba(0,0,0,0.15);
   position:relative;
 }
 #tray{
   height:12px;
-  margin:14px 30px 0;
+  margin:10px 30px 0;
   border-radius:6px;
   background:linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.05));
 }
@@ -207,22 +207,22 @@ h1{
 #board{
   background:var(--board);
   border-radius:8px;
-  padding:22px 18px 18px;
+  padding:16px 16px 14px;
   box-shadow:inset 0 2px 10px rgba(0,0,0,0.12);
 }
 
 #category-row{
   display:grid;
   grid-template-columns:repeat(var(--cat-count, 5), minmax(0, 1fr));
-  gap:14px;
-  margin-bottom:14px;
+  gap:10px;
+  margin-bottom:10px;
 }
 .cat-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
   border-radius:5px;
-  padding:10px 8px;
-  min-height:64px;
+  padding:8px 8px;
+  min-height:56px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -246,10 +246,10 @@ h1{
 #tile-grid{
   display:grid;
   grid-template-columns:repeat(var(--cat-count, 5), minmax(0, 1fr));
-  gap:10px;
+  gap:8px;
 }
 .tile{
-  aspect-ratio:5/3.4;
+  aspect-ratio:5/3;
   border:1px dashed var(--board-line);
   border-radius:6px;
   background:transparent;
@@ -2062,7 +2062,7 @@ footer{
      and clue row at once. Mobile keeps its own scrolling layout untouched:
      shrinking touch targets on a phone would hurt more than it helps. */
   var FIT_MIN_VIEWPORT_WIDTH = 700;
-  var FIT_MIN_SCALE = 0.4;
+  var FIT_MIN_SCALE = 0.75;
   var fitScheduled = false;
 
   function scheduleFit(){
@@ -2076,15 +2076,23 @@ footer{
 
   function fitStageToViewport(){
     if (!stageEl) return;
+    var fitting = window.innerWidth >= FIT_MIN_VIEWPORT_WIDTH;
     stageEl.style.transform = "";
     stageEl.style.height = "";
     var natural = stageEl.scrollHeight;
     var available = window.innerHeight - 16;
-    if (window.innerWidth >= FIT_MIN_VIEWPORT_WIDTH && natural > available){
+    if (fitting && natural > available){
       var factor = Math.max(FIT_MIN_SCALE, Math.min(1, available / natural));
       stageEl.style.transform = "scale(" + factor.toFixed(4) + ")";
       stageEl.style.height = (natural * factor) + "px";
     }
+    /* Measuring `natural` above briefly un-collapses the page to its full
+       unscaled height; if that transient size made the browser scroll (e.g.
+       a button click's scroll-into-view), the board could end up parked off
+       the top of the viewport once re-shrunk. Always re-anchor to the top
+       after a refit — in fit mode the goal is showing the board, not
+       preserving whatever scroll position a click happened to leave behind. */
+    if (fitting) window.scrollTo(0, 0);
   }
 
   window.addEventListener("resize", scheduleFit);
