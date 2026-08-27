@@ -1296,9 +1296,8 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick a color palette (or customize every color yourself) to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick a color palette (or customize every color yourself) to match your class or school. Or import a filled-in spreadsheet template to set categories and clues in one go. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
-      <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
       <input type="file" id="editor-import-file" accept=".csv,text/csv" style="display:none">
       <span id="editor-io-status"></span>
@@ -1600,7 +1599,6 @@ footer{
   var editorSaveBtn = document.getElementById("editor-save-btn");
   var editorCancelBtn = document.getElementById("editor-cancel-btn");
   var editorRestoreBtn = document.getElementById("editor-restore-btn");
-  var editorDownloadBtn = document.getElementById("editor-download-btn");
   var editorImportBtn = document.getElementById("editor-import-btn");
   var editorImportFile = document.getElementById("editor-import-file");
   var editorIoStatus = document.getElementById("editor-io-status");
@@ -2829,38 +2827,6 @@ footer{
     editorIoStatus.className = kind || "";
   }
 
-  function csvField(v){
-    v = v == null ? "" : String(v);
-    if (/[",\r\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
-    return v;
-  }
-
-  function buildBoardCSV(c){
-    var rows = [];
-    rows.push(["HOW TO EDIT THIS TEMPLATE (read before filling in the table below)"]);
-    rows.push(["This board defaults to " + DEFAULT_CATS + " categories x " + DEFAULT_ROWS + " clues. To resize it before you submit:"]);
-    rows.push(["- Categories: " + MIN_CATS + " to " + MAX_CATS + " allowed. To add one, add a new block of rows below with a new name in column A, matching the row count of the other categories. To remove one, delete that whole block."]);
-    rows.push(["- Clues per category: " + MIN_ROWS + " to " + MAX_ROWS + " allowed. To add one, add a new row to EVERY category's block so they all stay the same length. To remove one, delete a row from EVERY category's block. The Value column is filled in for reference only — the dollar amount is set by row position, not by what you type there."]);
-    rows.push(["- Keep each category's rows together as one unbroken block — don't split a category across two places or leave blank rows inside the table."]);
-    rows.push(["- Daily Double: put \"Yes\" in exactly one row's Daily Double column, and leave every other row blank."]);
-    rows.push([]);
-    rows.push(["Field", "Value"]);
-    rows.push(["Title", c.title]);
-    rows.push(["Tagline", c.tagline]);
-    PALETTE_SLOTS.forEach(function(slot){
-      rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
-    });
-    rows.push([]);
-    rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double"]);
-    c.categories.forEach(function(cat, catIdx){
-      cat.clues.forEach(function(clue, rowIdx){
-        var isDD = (catIdx === c.dailyDouble.cat && rowIdx === c.dailyDouble.idx);
-        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : ""]);
-      });
-    });
-    return rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
-  }
-
   /* Minimal RFC4180-ish CSV parser: handles quoted fields, "" escapes,
      embedded commas/newlines, and either \r\n or \n line endings. */
   function parseCSV(text){
@@ -2914,7 +2880,7 @@ footer{
     for (var i = 0; i < rows.length; i++){
       if ((rows[i][0] || "").trim().toLowerCase() === "category"){ headerIdx = i; break; }
     }
-    if (headerIdx === -1) throw new Error("Couldn't find the clue table in that file — make sure it matches the Download Template format.");
+    if (headerIdx === -1) throw new Error("Couldn't find the clue table in that file — make sure it has a \"Category\" column header.");
 
     var dataRows = rows.slice(headerIdx + 1);
 
@@ -2976,57 +2942,6 @@ footer{
     draft.dailyDouble = imported.dailyDouble;
     buildEditorForm();
   }
-
-  function fallbackDownload(filename, text){
-    try {
-      var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-      showIoStatus("Downloaded " + filename + ".", "success");
-    } catch (err) {
-      showIoStatus("Couldn't generate a download in this browser.", "error");
-    }
-  }
-
-  function triggerDownload(filename, text){
-    if (!(window.claude && typeof window.claude.use === "function")){
-      fallbackDownload(filename, text);
-      return;
-    }
-    window.claude.use("downloads").then(function(downloads){
-      if (!downloads){ fallbackDownload(filename, text); return; }
-      downloads.save({ filename: filename, data: text }).then(function(){
-        showIoStatus("Downloaded " + filename + ".", "success");
-      }).catch(function(err){
-        var code = err && err.code;
-        if (code === "declined") return;
-        if (code === "extension_not_enabled"){
-          var txtName = filename.replace(/\.csv$/i, ".txt");
-          downloads.save({ filename: txtName, data: text }).then(function(){
-            showIoStatus("Saved as " + txtName + " — rename it to .csv to open in a spreadsheet app.", "success");
-          }).catch(function(){
-            showIoStatus("Couldn't save the file. Try again.", "error");
-          });
-          return;
-        }
-        showIoStatus("Couldn't save the file. Try again.", "error");
-      });
-    }).catch(function(){
-      fallbackDownload(filename, text);
-    });
-  }
-
-  editorDownloadBtn.addEventListener("click", function(){
-    var csvText = buildBoardCSV(draft);
-    var base = (draft.title || "board").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "board";
-    triggerDownload(base + "-template.csv", csvText);
-  });
 
   editorImportBtn.addEventListener("click", function(){
     editorImportFile.click();
