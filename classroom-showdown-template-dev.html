@@ -125,7 +125,11 @@ body.has-bg-image{
   background-position:center;
   background-repeat:no-repeat;
 }
-body.has-bg-image header{
+/* Page chrome that sits directly on the body background (no card/board
+   surface of its own) needs a solid-ish backing once that background is a
+   photo instead of a flat color, or its text loses contrast. */
+body.has-bg-image header,
+body.has-bg-image footer{
   background:color-mix(in srgb, var(--board) 82%, transparent);
   border-radius:18px;
   padding:14px 22px;
@@ -824,41 +828,11 @@ footer{
   gap:12px;
   flex-wrap:wrap;
 }
-.editor-bg-image-row input[type="file"]{
-  font-size:12.5px;
-  color:var(--ink-soft);
-  max-width:220px;
-}
-.bg-image-thumb{
-  display:none;
-  width:56px;
-  height:56px;
-  object-fit:cover;
-  border-radius:6px;
-  border:1px solid var(--paper-edge);
-  background:var(--paper);
-}
-.bg-image-thumb.shown{ display:block; }
-.bg-image-remove-btn{
-  display:none;
-  background:var(--paper);
-  border:1px solid var(--paper-edge);
-  color:var(--danger);
-  border-radius:5px;
-  padding:4px 9px;
-  cursor:pointer;
-  font-size:12px;
-  font-weight:700;
-}
-.bg-image-remove-btn.shown{ display:inline-block; }
-.bg-image-remove-btn:hover{ background:var(--danger-soft); }
-.bg-image-error{
-  display:none;
-  width:100%;
-  color:var(--danger);
-  font-size:12px;
-}
-.bg-image-error.shown{ display:block; }
+/* .bg-image-thumb/-remove-btn/-error stay separate CLASS NAMES from their
+   .editor-clue-*/.remove-image-btn/.image-error counterparts below — tests
+   select the clue-image versions with .first(), so merging the names would
+   make that selector ambiguous — but share the same style rules with them
+   via a combined selector to avoid duplicating the declarations. */
 #preset-palette-row{
   display:flex;
   flex-wrap:wrap;
@@ -1037,7 +1011,8 @@ footer{
   flex-wrap:wrap;
 }
 .editor-clue-image-label{ color:var(--info); width:100%; }
-.editor-clue-thumb{
+.editor-clue-thumb,
+.bg-image-thumb{
   display:none;
   width:56px;
   height:56px;
@@ -1046,13 +1021,16 @@ footer{
   border:1px solid var(--paper-edge);
   background:var(--paper);
 }
-.editor-clue-thumb.shown{ display:block; }
-.editor-clue-image input[type="file"]{
+.editor-clue-thumb.shown,
+.bg-image-thumb.shown{ display:block; }
+.editor-clue-image input[type="file"],
+.editor-bg-image-row input[type="file"]{
   font-size:12.5px;
   color:var(--ink-soft);
   max-width:220px;
 }
-.remove-image-btn{
+.remove-image-btn,
+.bg-image-remove-btn{
   display:none;
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -1063,15 +1041,19 @@ footer{
   font-size:12px;
   font-weight:700;
 }
-.remove-image-btn.shown{ display:inline-block; }
-.remove-image-btn:hover{ background:var(--danger-soft); }
-.image-error{
+.remove-image-btn.shown,
+.bg-image-remove-btn.shown{ display:inline-block; }
+.remove-image-btn:hover,
+.bg-image-remove-btn:hover{ background:var(--danger-soft); }
+.image-error,
+.bg-image-error{
   display:none;
   width:100%;
   color:var(--danger);
   font-size:12px;
 }
-.image-error.shown{ display:block; }
+.image-error.shown,
+.bg-image-error.shown{ display:block; }
 .clue-value-label{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
@@ -1861,11 +1843,19 @@ footer{
 
   var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /* Every Team object is built here, whichever of the three producers
+     (initial state, "+ Add Team", or the Team Builder's "Send to
+     Scoreboard") creates it — so `members` is always an array, never
+     undefined, and renderTeams() never needs an existence guard for it. */
+  function makeTeam(name, members){
+    return { name: name, score: 0, members: members ? members.slice() : [] };
+  }
+
   var state = {
     used: {},
     teams: [
-      { name: "Team 1", score: 0 },
-      { name: "Team 2", score: 0 }
+      makeTeam("Team 1"),
+      makeTeam("Team 2")
     ]
   };
   var history = [];
@@ -2287,8 +2277,7 @@ footer{
   var teamBuilder = { teamCount: 2, teams: [], unassigned: [], selected: null };
 
   function setTeamBuilderStatus(msg, kind){
-    teamBuilderStatusEl.textContent = msg;
-    teamBuilderStatusEl.className = kind || "";
+    setStatusText(teamBuilderStatusEl, msg, kind);
   }
 
   function updateTeamCountUI(){
@@ -2325,17 +2314,20 @@ footer{
       var removed = teamBuilder.teams.pop();
       teamBuilder.unassigned = teamBuilder.unassigned.concat(removed.members);
     }
-    var nameSet = {};
-    names.forEach(function(n){ nameSet[n] = true; });
-    teamBuilder.unassigned = teamBuilder.unassigned.filter(function(n){ return nameSet[n]; });
-    teamBuilder.teams.forEach(function(t){
-      t.members = t.members.filter(function(n){ return nameSet[n]; });
-    });
-    var known = {};
-    teamBuilder.unassigned.forEach(function(n){ known[n] = true; });
-    teamBuilder.teams.forEach(function(t){ t.members.forEach(function(n){ known[n] = true; }); });
+    var validSet = {};
+    names.forEach(function(n){ validSet[n] = true; });
+    var placed = {};
+    function keepValid(list){
+      return list.filter(function(n){
+        if (!validSet[n]) return false;
+        placed[n] = true;
+        return true;
+      });
+    }
+    teamBuilder.unassigned = keepValid(teamBuilder.unassigned);
+    teamBuilder.teams.forEach(function(t){ t.members = keepValid(t.members); });
     names.forEach(function(n){
-      if (!known[n]){ teamBuilder.unassigned.push(n); known[n] = true; }
+      if (!placed[n]) teamBuilder.unassigned.push(n);
     });
     teamBuilder.selected = null;
     teamBuilderBoard.hidden = false;
@@ -2446,34 +2438,50 @@ footer{
     return chip;
   }
 
+  function isDropTarget(listKey){
+    return !!teamBuilder.selected && teamBuilder.selected.list !== listKey;
+  }
+
+  /* Click activates "drop the selected chip here"; Enter/Space does the same
+     when the list container itself (not a child chip) has focus. Shared by
+     the pool (wired once, it's static) and every team box (rewired each
+     render, since the boxes themselves are rebuilt each render). */
+  function wireListActivation(el, listKey){
+    el.addEventListener("click", function(){ onListActivate(listKey); });
+    el.addEventListener("keydown", function(e){
+      if (e.target !== el) return;
+      if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate(listKey); }
+    });
+  }
+
+  function renderChipList(container, names, listKey, emptyText){
+    container.innerHTML = "";
+    if (!names.length){
+      var hint = document.createElement("span");
+      hint.className = "team-builder-empty-hint";
+      hint.textContent = emptyText;
+      container.appendChild(hint);
+    } else {
+      names.forEach(function(name){
+        container.appendChild(makeTeamBuilderChip(name, listKey));
+      });
+    }
+  }
+
   function renderTeamBuilder(){
     updateTeamCountUI();
 
-    teamBuilderPoolList.innerHTML = "";
-    if (!teamBuilder.unassigned.length){
-      var poolHint = document.createElement("span");
-      poolHint.className = "team-builder-empty-hint";
-      poolHint.textContent = "Everyone's assigned.";
-      teamBuilderPoolList.appendChild(poolHint);
-    } else {
-      teamBuilder.unassigned.forEach(function(name){
-        teamBuilderPoolList.appendChild(makeTeamBuilderChip(name, "pool"));
-      });
-    }
-    teamBuilderPool.classList.toggle("drop-target", !!teamBuilder.selected && teamBuilder.selected.list !== "pool");
+    renderChipList(teamBuilderPoolList, teamBuilder.unassigned, "pool", "Everyone's assigned.");
+    teamBuilderPool.classList.toggle("drop-target", isDropTarget("pool"));
 
     teamBuilderTeamsEl.innerHTML = "";
     teamBuilder.teams.forEach(function(team, idx){
       var box = document.createElement("div");
       box.className = "team-builder-team";
-      box.classList.toggle("drop-target", !!teamBuilder.selected && teamBuilder.selected.list !== idx);
+      box.classList.toggle("drop-target", isDropTarget(idx));
       box.tabIndex = 0;
       box.setAttribute("aria-label", "Drop into " + (team.name.trim() || ("Team " + (idx + 1))));
-      box.addEventListener("click", function(){ onListActivate(idx); });
-      box.addEventListener("keydown", function(e){
-        if (e.target !== box) return;
-        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate(idx); }
-      });
+      wireListActivation(box, idx);
       wireDropTarget(box, idx);
 
       var header = document.createElement("div");
@@ -2491,23 +2499,14 @@ footer{
 
       var countEl = document.createElement("span");
       countEl.className = "team-builder-team-count";
-      countEl.textContent = team.members.length + (team.members.length === 1 ? " student" : " students");
+      countEl.textContent = plural(team.members.length, "student");
       header.appendChild(countEl);
 
       box.appendChild(header);
 
       var list = document.createElement("div");
       list.className = "team-builder-chip-list";
-      if (!team.members.length){
-        var emptyHint = document.createElement("span");
-        emptyHint.className = "team-builder-empty-hint";
-        emptyHint.textContent = "No students yet.";
-        list.appendChild(emptyHint);
-      } else {
-        team.members.forEach(function(name){
-          list.appendChild(makeTeamBuilderChip(name, idx));
-        });
-      }
+      renderChipList(list, team.members, idx, "No students yet.");
       box.appendChild(list);
 
       teamBuilderTeamsEl.appendChild(box);
@@ -2530,7 +2529,7 @@ footer{
       teamBuilder.teams[i % teamBuilder.teams.length].members.push(name);
     });
     teamBuilder.selected = null;
-    setTeamBuilderStatus("Shuffled " + all.length + (all.length === 1 ? " student" : " students") + " into " + teamBuilder.teams.length + " teams.", "success");
+    setTeamBuilderStatus("Shuffled " + plural(all.length, "student") + " into " + teamBuilder.teams.length + " teams.", "success");
     renderTeamBuilder();
   }
 
@@ -2541,12 +2540,12 @@ footer{
       return;
     }
     var capped = nonEmpty.slice(0, 6);
-    var msg = "Replace the current scoreboard teams with these " + capped.length + " team" + (capped.length === 1 ? "" : "s") + "? This resets all scores.";
+    var msg = "Replace the current scoreboard teams with these " + plural(capped.length, "team") + "? This resets all scores.";
     if (nonEmpty.length > 6) msg += " Teams are capped at 6, so only the first 6 will be used.";
     openConfirm(msg, "Replace Teams", function(){
-      state.teams = capped.map(function(t){ return { name: t.name.trim() || "Team", score: 0, members: t.members.slice() }; });
+      state.teams = capped.map(function(t){ return makeTeam(t.name.trim() || "Team", t.members); });
       renderTeams();
-      setTeamBuilderStatus("Sent " + capped.length + " team" + (capped.length === 1 ? "" : "s") + " (with their student names) to the scoreboard.", "success");
+      setTeamBuilderStatus("Sent " + plural(capped.length, "team") + " (with their student names) to the scoreboard.", "success");
     });
   }
 
@@ -2563,11 +2562,7 @@ footer{
   teamBuilderSendBtn.addEventListener("click", sendBuilderTeamsToScoreboard);
   teamBuilderPool.tabIndex = 0;
   teamBuilderPool.setAttribute("aria-label", "Drop into Unassigned");
-  teamBuilderPool.addEventListener("click", function(){ onListActivate("pool"); });
-  teamBuilderPool.addEventListener("keydown", function(e){
-    if (e.target !== teamBuilderPool) return;
-    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate("pool"); }
-  });
+  wireListActivation(teamBuilderPool, "pool");
   wireDropTarget(teamBuilderPool, "pool");
 
   /* ---------------- palette customization ---------------- */
@@ -2828,11 +2823,12 @@ footer{
       nameInput.addEventListener("input", function(){ team.name = nameInput.value; renderAwardButtons(); });
       box.appendChild(nameInput);
 
-      if (team.members && team.members.length){
+      if (team.members.length){
         var rosterEl = document.createElement("div");
         rosterEl.className = "team-roster";
-        rosterEl.textContent = team.members.join(", ");
-        rosterEl.title = team.members.join(", ");
+        var roster = team.members.join(", ");
+        rosterEl.textContent = roster;
+        rosterEl.title = roster;
         box.appendChild(rosterEl);
       }
 
@@ -3018,7 +3014,7 @@ footer{
 
   addTeamBtn.addEventListener("click", function(){
     if (state.teams.length >= 6) return;
-    state.teams.push({ name: "Team " + (state.teams.length + 1), score: 0 });
+    state.teams.push(makeTeam("Team " + (state.teams.length + 1)));
     renderTeams();
   });
 
@@ -3097,6 +3093,43 @@ footer{
     reader.readAsDataURL(file);
   }
 
+  /* Wires a thumbnail + file input + remove button + error message into a
+     reusable "optional image" field, shared by the per-clue image picker and
+     the background-image picker. `getValue`/`setValue` read and write
+     whatever the field is backing (a clue's `.image`, or the draft's
+     `.backgroundImage`). Returns a `sync` function that re-applies the
+     current value to the thumb/remove-button state — call it once up front
+     to set the field's initial display, and it's also what runs after every
+     upload/removal. */
+  function wireImageField(opts){
+    function sync(){
+      var value = opts.getValue();
+      opts.thumb.classList.toggle("shown", !!value);
+      opts.thumb.src = value || "";
+      opts.removeBtn.classList.toggle("shown", !!value);
+      opts.errorEl.classList.remove("shown");
+    }
+    opts.fileInput.addEventListener("change", function(){
+      var file = opts.fileInput.files && opts.fileInput.files[0];
+      opts.fileInput.value = "";
+      if (!file) return;
+      opts.errorEl.classList.remove("shown");
+      compressImageFile(file, opts.maxDim, function(dataUrl){
+        if (!dataUrl){
+          opts.errorEl.classList.add("shown");
+          return;
+        }
+        opts.setValue(dataUrl);
+        sync();
+      });
+    });
+    opts.removeBtn.addEventListener("click", function(){
+      opts.setValue("");
+      sync();
+    });
+    return sync;
+  }
+
   /* Rebuilds a <select>'s options from `items`, preserving the current
      selection if it's still valid, else falling back to `fallbackValue`.
      Shared by both Daily Double dropdowns (category picker, value picker). */
@@ -3135,6 +3168,15 @@ footer{
   }
 
   /* Builds a <button type="button"> wired to onClick. opts: disabled, ariaLabel, title. */
+  function setStatusText(el, msg, kind){
+    el.textContent = msg;
+    el.className = kind || "";
+  }
+
+  function plural(n, word){
+    return n + " " + word + (n === 1 ? "" : "s");
+  }
+
   function makeButton(className, text, onClick, opts){
     opts = opts || {};
     var btn = document.createElement("button");
@@ -3299,20 +3341,22 @@ footer{
     });
   }
 
-  function renderBgImageField(){
-    var has = !!draft.backgroundImage;
-    bgImageThumb.classList.toggle("shown", has);
-    bgImageThumb.src = has ? draft.backgroundImage : "";
-    bgImageRemoveBtn.classList.toggle("shown", has);
-    bgImageError.classList.remove("shown");
-  }
+  var syncBgImageField = wireImageField({
+    thumb: bgImageThumb,
+    fileInput: bgImageFile,
+    removeBtn: bgImageRemoveBtn,
+    errorEl: bgImageError,
+    maxDim: 1600,
+    getValue: function(){ return draft.backgroundImage; },
+    setValue: function(v){ draft.backgroundImage = v; }
+  });
 
   function buildEditorForm(){
     editorTitleInput.value = draft.title;
     editorTaglineInput.value = draft.tagline;
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
-    renderBgImageField();
+    syncBgImageField();
     buildPresetRow();
     buildCustomPaletteGrid();
 
@@ -3364,39 +3408,28 @@ footer{
         imageLabel.className = "editor-clue-image-label";
         imageLabel.textContent = "Clue Image (optional)";
         var thumb = document.createElement("img");
-        thumb.className = "editor-clue-thumb" + (clue.image ? " shown" : "");
+        thumb.className = "editor-clue-thumb";
         thumb.alt = "";
-        if (clue.image) thumb.src = clue.image;
         var fileInput = document.createElement("input");
         fileInput.type = "file";
         fileInput.accept = "image/*";
         var imageErr = document.createElement("span");
         imageErr.className = "image-error";
         imageErr.textContent = "Couldn't load that image — try a different file.";
-        var removeImageBtn = makeButton("remove-image-btn" + (clue.image ? " shown" : ""), "Remove image", function(){
-          clue.image = "";
-          thumb.removeAttribute("src");
-          thumb.classList.remove("shown");
-          removeImageBtn.classList.remove("shown");
-          imageErr.classList.remove("shown");
-        });
+        var removeImageBtn = document.createElement("button");
+        removeImageBtn.type = "button";
+        removeImageBtn.className = "remove-image-btn";
+        removeImageBtn.textContent = "Remove image";
 
-        fileInput.addEventListener("change", function(){
-          var file = fileInput.files && fileInput.files[0];
-          fileInput.value = "";
-          if (!file) return;
-          imageErr.classList.remove("shown");
-          compressImageFile(file, 900, function(dataUrl){
-            if (!dataUrl) {
-              imageErr.classList.add("shown");
-              return;
-            }
-            clue.image = dataUrl;
-            thumb.src = dataUrl;
-            thumb.classList.add("shown");
-            removeImageBtn.classList.add("shown");
-          });
-        });
+        wireImageField({
+          thumb: thumb,
+          fileInput: fileInput,
+          removeBtn: removeImageBtn,
+          errorEl: imageErr,
+          maxDim: 900,
+          getValue: function(){ return clue.image; },
+          setValue: function(v){ clue.image = v; }
+        })();
 
         imageWrap.appendChild(imageLabel);
         imageWrap.appendChild(thumb);
@@ -3488,24 +3521,6 @@ footer{
     draft.palette = normalizePalette(null);
     buildEditorForm();
   });
-  bgImageFile.addEventListener("change", function(){
-    var file = bgImageFile.files && bgImageFile.files[0];
-    bgImageFile.value = "";
-    if (!file) return;
-    bgImageError.classList.remove("shown");
-    compressImageFile(file, 1600, function(dataUrl){
-      if (!dataUrl){
-        bgImageError.classList.add("shown");
-        return;
-      }
-      draft.backgroundImage = dataUrl;
-      renderBgImageField();
-    });
-  });
-  bgImageRemoveBtn.addEventListener("click", function(){
-    draft.backgroundImage = "";
-    renderBgImageField();
-  });
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
   });
@@ -3538,8 +3553,7 @@ footer{
 
   /* ---------------- CSV template import/export ---------------- */
   function showIoStatus(msg, kind){
-    editorIoStatus.textContent = msg;
-    editorIoStatus.className = kind || "";
+    setStatusText(editorIoStatus, msg, kind);
   }
 
   function csvField(v){
