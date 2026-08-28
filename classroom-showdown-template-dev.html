@@ -506,6 +506,45 @@ footer{
   font-size:22px;
   margin-bottom:16px;
 }
+#clue-timer-row{
+  display:none;
+  align-items:center;
+  gap:10px;
+  margin:0 auto 16px;
+  max-width:360px;
+}
+#clue-timer-row.shown{ display:flex; }
+#clue-timer-track{
+  flex:1;
+  height:10px;
+  border-radius:6px;
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  overflow:hidden;
+}
+#clue-timer-fill{
+  height:100%;
+  width:100%;
+  background:var(--info);
+  transition:width 0.2s linear;
+}
+#clue-timer-fill.low{ background:var(--danger); }
+#clue-timer-label{
+  font-family:"Board Numeral", sans-serif;
+  color:var(--ink);
+  font-size:15px;
+  min-width:2.5em;
+  text-align:right;
+}
+#clue-timer-chime-label{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  font-size:11.5px;
+  color:var(--ink-soft);
+  white-space:nowrap;
+  cursor:pointer;
+}
 #clue-image{
   display:none;
   max-width:100%;
@@ -578,6 +617,32 @@ footer{
 .award-btn.correct:hover{ background:var(--good-soft); }
 .award-btn.wrong{ border-color:var(--danger); color:var(--danger); }
 .award-btn.wrong:hover{ background:var(--danger-soft); }
+.wager-unit{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--paper-edge);
+  border-radius:8px;
+  padding:6px 8px 6px 10px;
+  background:var(--board);
+}
+.wager-team-name{
+  font-weight:700;
+  font-size:12.5px;
+  color:var(--ink);
+  white-space:nowrap;
+}
+.wager-input{
+  width:68px;
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:5px;
+  padding:4px 6px;
+  color:var(--ink);
+  font-size:13px;
+  font-family:inherit;
+}
+.wager-unit .award-btn{ padding:6px 10px; }
 
 #modal-actions{
   margin-top:24px;
@@ -715,6 +780,14 @@ footer{
   justify-content:center;
   flex-wrap:wrap;
 }
+#victory-export-status{
+  display:block;
+  margin-top:10px;
+  font-size:12px;
+  color:var(--ink-soft);
+}
+#victory-export-status.success{ color:var(--good); font-weight:700; }
+#victory-export-status.error{ color:var(--danger); font-weight:700; }
 
 /* ---------------------------------- confirm dialog ---------------------------------- */
 #confirm-overlay{ z-index:59; }
@@ -1003,6 +1076,24 @@ footer{
   margin-left:54px;
 }
 .editor-clue-explainer .field > span{ color:var(--info); }
+.editor-clue-note{
+  margin-left:54px;
+}
+.editor-clue-note .field > span{ color:var(--danger); }
+.editor-clue-timer{
+  margin-left:54px;
+}
+.editor-clue-timer .field{ max-width:220px; }
+.editor-clue-timer input[type="number"]{
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:8px 10px;
+  color:var(--ink);
+  font-size:14px;
+  width:100%;
+}
+.editor-clue-timer input[type="number"]:focus{ border-color:var(--focus); }
 .editor-clue-image{
   margin-left:54px;
   display:flex;
@@ -1065,6 +1156,8 @@ footer{
 @media (max-width: 560px){
   .editor-clue-main{ grid-template-columns:1fr; gap:6px; }
   .editor-clue-explainer{ margin-left:0; }
+  .editor-clue-note{ margin-left:0; }
+  .editor-clue-timer{ margin-left:0; }
   .editor-clue-image{ margin-left:0; }
   .clue-value-label{ text-align:left; padding-top:0; }
   .editor-category-header{ flex-wrap:wrap; }
@@ -1116,6 +1209,7 @@ footer{
 }
 #editor-io-status.success{ color:var(--good); font-weight:700; }
 #editor-io-status.error{ color:var(--danger); font-weight:700; }
+#editor-io-status.warning{ color:var(--info); font-weight:700; }
 #editor-actions{
   display:flex;
   gap:10px;
@@ -1412,6 +1506,77 @@ footer{
   color:var(--ink-soft);
   font-style:italic;
 }
+
+/* ---------------------------------- review all clues ---------------------------------- */
+#review-overlay{ z-index:58; }
+#review-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:16px;
+  width:min(720px, 100%);
+  max-height:min(88vh, 900px);
+  padding:28px 30px 22px;
+  box-shadow:0 30px 70px rgba(0,0,0,0.4);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+#review-card h2{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:28px;
+  margin:0;
+  color:var(--ink);
+}
+#review-body{
+  overflow-y:auto;
+  padding:4px 4px 4px 0;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  border-top:1px dashed var(--paper-edge);
+  border-bottom:1px dashed var(--paper-edge);
+  margin:2px 0;
+}
+.review-category h3{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:19px;
+  margin:0 0 8px;
+  color:var(--accent);
+}
+.review-clue{
+  border-top:1px dashed var(--paper-edge);
+  padding:8px 0;
+}
+.review-clue:first-child{ border-top:none; padding-top:0; }
+.review-clue-value{
+  font-family:"Board Numeral", sans-serif;
+  color:var(--accent);
+  font-size:13px;
+  margin-right:6px;
+}
+.review-clue-daily{
+  font-size:11px;
+  font-weight:700;
+  color:var(--danger);
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.review-clue-text{
+  font-weight:700;
+  color:var(--ink);
+  margin:4px 0 2px;
+}
+.review-clue-answer{
+  color:var(--good);
+  font-style:italic;
+}
+.review-clue-explainer{
+  color:var(--ink-soft);
+  font-size:12.5px;
+  margin-top:2px;
+}
 </style>
 </head>
 <body>
@@ -1446,6 +1611,7 @@ footer{
     <button class="btn primary" id="edit-board-btn">&#9998; Edit Board</button>
     <button class="btn" id="add-team-btn">+ Add Team</button>
     <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
+    <button class="btn" id="random-clue-btn">&#127922; Random Clue</button>
     <button class="btn" id="end-game-btn">End Game</button>
     <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
@@ -1462,6 +1628,11 @@ footer{
     <div class="daily-double-banner" id="dd-banner">Daily Double!</div>
     <div id="clue-cat" class="eyebrow"></div>
     <div id="clue-value" class="tabular"></div>
+    <div id="clue-timer-row">
+      <div id="clue-timer-track"><div id="clue-timer-fill"></div></div>
+      <span id="clue-timer-label" class="tabular"></span>
+      <label id="clue-timer-chime-label"><input type="checkbox" id="clue-timer-chime-toggle"> Chime</label>
+    </div>
     <img id="clue-image" alt="">
     <div id="clue-text"></div>
     <div id="answer-text"></div>
@@ -1492,10 +1663,11 @@ footer{
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or just click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue as done with no points awarded.</li>
-      <li>Watch for the hidden Daily Double &mdash; same rules, but only one team gets to answer.</li>
+      <li>Watch for the hidden Daily Double &mdash; only one team gets to answer, and they wager an amount up to their own score (or up to the board&rsquo;s top dollar value, if their score is lower than that).</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
       <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
+      <li>Running the game from a clicker instead of the mouse? Space or Enter reveals the response, 1&ndash;6 awards the clue to that team, Shift+1&ndash;6 docks it instead, and U undoes the last action.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
   </div>
@@ -1510,8 +1682,20 @@ footer{
     <div id="victory-standings"></div>
     <div class="victory-actions">
       <button class="btn primary" id="victory-play-again">Play Again</button>
+      <button class="btn" id="victory-review-btn">&#128214; Review All Clues</button>
+      <button class="btn" id="victory-export-btn">&#8681; Download Scores (.csv)</button>
       <button class="btn" id="victory-close">Close</button>
     </div>
+    <span id="victory-export-status"></span>
+  </div>
+</div>
+
+<div id="review-overlay" class="modal-overlay" role="dialog" aria-labelledby="review-title">
+  <div id="review-card">
+    <h2 id="review-title">Review All Clues</h2>
+    <p class="editor-sub">Every clue and its answer, for a post-game recap.</p>
+    <div id="review-body"></div>
+    <button class="btn primary" id="review-close-btn">Done</button>
   </div>
 </div>
 
@@ -1529,7 +1713,7 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, pick a color palette (or customize every color yourself), and set a background image to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, pick a color palette (or customize every color yourself), and set a background image to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. A separate Teacher Note field stays private to you and is never shown on the board. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -1725,7 +1909,7 @@ footer{
 
   function makeClue(rowIdx){
     var v = valueForRow(rowIdx);
-    return { clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", image: "" };
+    return { clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", note: "", image: "", timerSeconds: 0 };
   }
 
   function makeDefaultContent(){
@@ -1819,7 +2003,9 @@ footer{
       parsed.categories.forEach(function(cat){
         cat.clues.forEach(function(clue){
           if (typeof clue.explainer !== "string") clue.explainer = "";
+          if (typeof clue.note !== "string") clue.note = "";
           if (typeof clue.image !== "string") clue.image = "";
+          if (typeof clue.timerSeconds !== "number" || !isFinite(clue.timerSeconds) || clue.timerSeconds < 0) clue.timerSeconds = 0;
         });
       });
       parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
@@ -1851,14 +2037,83 @@ footer{
     return { name: name, score: 0, members: members ? members.slice() : [] };
   }
 
-  var state = {
+  /* ---------------- game-state persistence ----------------
+     Separate from STORAGE_KEY (board content): this is the live score/
+     progress snapshot, saved after every render so an accidental refresh,
+     a laptop sleep, or a knocked projector cable mid-lesson doesn't wipe
+     the game. History entries reference a team by index rather than by
+     object, since object identity doesn't survive JSON round-tripping. */
+  var GAME_STATE_KEY = "classroom-showdown-game-state-v1";
+
+  function loadStoredGameState(){
+    try {
+      var raw = window.localStorage.getItem(GAME_STATE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return null;
+      if (!Array.isArray(parsed.teams) || !parsed.teams.length) return null;
+      if (!parsed.used || typeof parsed.used !== "object") return null;
+
+      var teams = parsed.teams.map(function(t){
+        var team = makeTeam(
+          typeof (t && t.name) === "string" ? t.name : "Team",
+          Array.isArray(t && t.members) ? t.members.filter(function(m){ return typeof m === "string"; }) : []
+        );
+        team.score = (t && typeof t.score === "number" && isFinite(t.score)) ? t.score : 0;
+        return team;
+      });
+
+      var used = {};
+      Object.keys(parsed.used).forEach(function(k){ if (parsed.used[k]) used[k] = true; });
+
+      var hist = Array.isArray(parsed.history) ? parsed.history.map(function(h){
+        var teamIdx = (h && typeof h.teamIdx === "number") ? h.teamIdx : -1;
+        return {
+          type: (h && h.type === "manual") ? "manual" : "clue",
+          catIdx: h && h.catIdx,
+          rowIdx: h && h.rowIdx,
+          team: (teamIdx >= 0 && teamIdx < teams.length) ? teams[teamIdx] : null,
+          delta: (h && typeof h.delta === "number") ? h.delta : 0
+        };
+      }) : [];
+
+      return { teams: teams, used: used, history: hist };
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function persistGameState(){
+    try {
+      window.localStorage.setItem(GAME_STATE_KEY, JSON.stringify({
+        teams: state.teams.map(function(t){ return { name: t.name, score: t.score, members: t.members }; }),
+        used: state.used,
+        history: history.map(function(h){
+          return {
+            type: h.type,
+            catIdx: h.catIdx,
+            rowIdx: h.rowIdx,
+            teamIdx: h.team ? state.teams.indexOf(h.team) : -1,
+            delta: h.delta
+          };
+        })
+      }));
+    } catch (err) { /* storage unavailable */ }
+  }
+
+  function clearStoredGameState(){
+    try { window.localStorage.removeItem(GAME_STATE_KEY); } catch (err) { /* ignore */ }
+  }
+
+  var restoredGameState = loadStoredGameState();
+  var state = restoredGameState ? { used: restoredGameState.used, teams: restoredGameState.teams } : {
     used: {},
     teams: [
       makeTeam("Team 1"),
       makeTeam("Team 2")
     ]
   };
-  var history = [];
+  var history = restoredGameState ? restoredGameState.history : [];
 
   var stageEl = document.getElementById("stage");
   var gameTitleEl = document.getElementById("game-title");
@@ -1870,6 +2125,10 @@ footer{
   var overlay = document.getElementById("overlay");
   var clueCatEl = document.getElementById("clue-cat");
   var clueValueEl = document.getElementById("clue-value");
+  var clueTimerRow = document.getElementById("clue-timer-row");
+  var clueTimerFill = document.getElementById("clue-timer-fill");
+  var clueTimerLabel = document.getElementById("clue-timer-label");
+  var clueTimerChimeToggle = document.getElementById("clue-timer-chime-toggle");
   var clueImageEl = document.getElementById("clue-image");
   var clueTextEl = document.getElementById("clue-text");
   var answerTextEl = document.getElementById("answer-text");
@@ -1882,10 +2141,17 @@ footer{
   var ddBanner = document.getElementById("dd-banner");
   var howtoOverlay = document.getElementById("howto-overlay");
   var undoBtn = document.getElementById("undo-btn");
+  var randomClueBtn = document.getElementById("random-clue-btn");
   var victoryOverlay = document.getElementById("victory-overlay");
   var victoryTitleEl = document.getElementById("victory-title");
   var victoryScoreEl = document.getElementById("victory-score");
   var victoryStandingsEl = document.getElementById("victory-standings");
+  var victoryExportBtn = document.getElementById("victory-export-btn");
+  var victoryExportStatusEl = document.getElementById("victory-export-status");
+  var victoryReviewBtn = document.getElementById("victory-review-btn");
+  var reviewOverlay = document.getElementById("review-overlay");
+  var reviewBody = document.getElementById("review-body");
+  var reviewCloseBtn = document.getElementById("review-close-btn");
   var addTeamBtn = document.getElementById("add-team-btn");
   var confirmOverlay = document.getElementById("confirm-overlay");
   var confirmMessageEl = document.getElementById("confirm-message");
@@ -2787,19 +3053,23 @@ footer{
       el.textContent = cat.name;
       catRowEl.appendChild(el);
     });
+    var anyUnused = false;
     content.categories[0].clues.forEach(function(_, rowIdx){
       var value = valueForRow(rowIdx);
       content.categories.forEach(function(cat, catIdx){
         var key = tileKey(catIdx, rowIdx);
+        var used = !!state.used[key];
+        if (!used) anyUnused = true;
         var tile = document.createElement("button");
         tile.className = "tile";
-        tile.textContent = state.used[key] ? "" : "$" + value;
-        tile.disabled = !!state.used[key];
+        tile.textContent = used ? "" : "$" + value;
+        tile.disabled = used;
         tile.setAttribute("aria-label", cat.name + " for $" + value);
         tile.addEventListener("click", function(){ openClue(catIdx, rowIdx); });
         tileGridEl.appendChild(tile);
       });
     });
+    randomClueBtn.disabled = !anyUnused;
     scheduleFit();
   }
 
@@ -2839,8 +3109,8 @@ footer{
 
       var btnRow = document.createElement("div");
       btnRow.className = "team-buttons";
-      btnRow.appendChild(makeButton("", "−100", function(){ team.score -= 100; renderTeams(); }));
-      btnRow.appendChild(makeButton("", "+100", function(){ team.score += 100; renderTeams(); }));
+      btnRow.appendChild(makeButton("", "−100", function(){ adjustTeamScoreManually(team, -100); }));
+      btnRow.appendChild(makeButton("", "+100", function(){ adjustTeamScoreManually(team, 100); }));
       box.appendChild(btnRow);
 
       if (state.teams.length > 1) {
@@ -2855,6 +3125,7 @@ footer{
 
     checkWinner();
     scheduleFit();
+    persistGameState();
   }
 
   function checkWinner(){
@@ -2915,9 +3186,79 @@ footer{
     updateUndoState();
     victoryCelebrated = false;
     victoryOverlay.classList.remove("open");
+    clearStoredGameState();
     renderBoard();
     renderTeams();
   }
+
+  /* ---------------- clue countdown timer ----------------
+     Configurable per clue (0/blank = no timer, set from the editor).
+     Counts down from when the clue opens; stops on reveal or close, and
+     optionally chimes at zero. The chime preference persists across
+     sessions since it's a personal "how I like to run this" setting, not
+     board content. */
+  var TIMER_CHIME_KEY = "classroom-showdown-timer-chime-v1";
+  var timerInterval = null;
+  var timerEndAt = 0;
+  var timerTotalMs = 0;
+
+  function loadTimerChimePref(){
+    try { return window.localStorage.getItem(TIMER_CHIME_KEY) === "1"; } catch (err) { return false; }
+  }
+  function saveTimerChimePref(on){
+    try { window.localStorage.setItem(TIMER_CHIME_KEY, on ? "1" : "0"); } catch (err) { /* storage unavailable */ }
+  }
+
+  function playChime(){
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.frequency.value = 880;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.6);
+    } catch (err) { /* audio unavailable */ }
+  }
+
+  function stopClueTimer(){
+    if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+    clueTimerRow.classList.remove("shown");
+  }
+
+  function updateClueTimerDisplay(){
+    var remainingMs = Math.max(0, timerEndAt - Date.now());
+    var remainingSec = Math.ceil(remainingMs / 1000);
+    clueTimerLabel.textContent = remainingSec + "s";
+    var pct = timerTotalMs ? (remainingMs / timerTotalMs) : 0;
+    clueTimerFill.style.width = Math.max(0, Math.min(1, pct)) * 100 + "%";
+    clueTimerFill.classList.toggle("low", remainingSec <= 5 && remainingSec > 0);
+    if (remainingMs <= 0){
+      clearInterval(timerInterval);
+      timerInterval = null;
+      if (clueTimerChimeToggle.checked) playChime();
+    }
+  }
+
+  function startClueTimer(seconds){
+    stopClueTimer();
+    if (!seconds || seconds <= 0) return;
+    clueTimerRow.classList.add("shown");
+    clueTimerChimeToggle.checked = loadTimerChimePref();
+    timerTotalMs = seconds * 1000;
+    timerEndAt = Date.now() + timerTotalMs;
+    updateClueTimerDisplay();
+    timerInterval = setInterval(updateClueTimerDisplay, 200);
+  }
+
+  clueTimerChimeToggle.addEventListener("change", function(){
+    saveTimerChimePref(clueTimerChimeToggle.checked);
+  });
 
   function openClue(catIdx, rowIdx){
     if (state.used[tileKey(catIdx, rowIdx)]) return;
@@ -2930,6 +3271,7 @@ footer{
 
     clueCatEl.textContent = cat.name;
     clueValueEl.textContent = "$" + value;
+    startClueTimer(clue.timerSeconds || 0);
     if (clue.image) {
       clueImageEl.src = clue.image;
       clueImageEl.classList.add("shown");
@@ -2951,14 +3293,71 @@ footer{
     revealBtn.focus();
   }
 
+  /* Classic Daily Double wagering: a team can risk up to its own score, or
+     up to the board's highest clue value if that's more (so a team with a
+     low or negative score can still make a meaningful wager). */
+  function dailyDoubleWagerCap(team){
+    var boardMax = valueForRow(content.categories[0].clues.length - 1);
+    return Math.max(team.score, boardMax);
+  }
+
+  /* One {correct, wrong} handler pair per team, in team order — populated
+     fresh by every renderAwardButtons() call. Keyboard shortcuts (1-6 /
+     Shift+1-6) call these directly rather than re-deriving the award
+     amount, so they always agree with whatever the on-screen buttons would
+     do (including reading a Daily Double's current wager input). */
+  var awardHandlers = [];
+
   function renderAwardButtons(){
     awardButtons.innerHTML = "";
+    awardHandlers = [];
     if (!current) return;
     var value = current.value;
-    state.teams.forEach(function(team){
-      awardButtons.appendChild(makeButton("award-btn correct", "✓ " + team.name + " (+$" + value + ")", function(){ awardPoints(team, value); }));
-      awardButtons.appendChild(makeButton("award-btn wrong", "✗ " + team.name + " (−$" + value + ")", function(){ awardPoints(team, -value); }));
-    });
+    if (current.isDaily){
+      state.teams.forEach(function(team){
+        var cap = dailyDoubleWagerCap(team);
+        var unit = document.createElement("div");
+        unit.className = "wager-unit";
+
+        var nameEl = document.createElement("span");
+        nameEl.className = "wager-team-name";
+        nameEl.textContent = team.name;
+        unit.appendChild(nameEl);
+
+        var wagerInput = document.createElement("input");
+        wagerInput.type = "number";
+        wagerInput.className = "wager-input";
+        wagerInput.min = "0";
+        wagerInput.max = String(cap);
+        wagerInput.step = "10";
+        wagerInput.value = String(Math.min(value, cap));
+        wagerInput.setAttribute("aria-label", team.name + " Daily Double wager, up to $" + cap);
+        unit.appendChild(wagerInput);
+
+        function currentWager(){
+          var n = parseInt(wagerInput.value, 10);
+          if (!isFinite(n) || n < 0) n = 0;
+          if (n > cap) n = cap;
+          return n;
+        }
+
+        var correct = function(){ awardPoints(team, currentWager()); };
+        var wrong = function(){ awardPoints(team, -currentWager()); };
+        unit.appendChild(makeButton("award-btn correct", "✓", correct, { ariaLabel: team.name + " answered correctly" }));
+        unit.appendChild(makeButton("award-btn wrong", "✗", wrong, { ariaLabel: team.name + " answered incorrectly" }));
+        awardHandlers.push({ correct: correct, wrong: wrong });
+
+        awardButtons.appendChild(unit);
+      });
+    } else {
+      state.teams.forEach(function(team){
+        var correct = function(){ awardPoints(team, value); };
+        var wrong = function(){ awardPoints(team, -value); };
+        awardButtons.appendChild(makeButton("award-btn correct", "✓ " + team.name + " (+$" + value + ")", correct));
+        awardButtons.appendChild(makeButton("award-btn wrong", "✗ " + team.name + " (−$" + value + ")", wrong));
+        awardHandlers.push({ correct: correct, wrong: wrong });
+      });
+    }
   }
 
   function awardPoints(team, delta){
@@ -2969,7 +3368,7 @@ footer{
   function markUsedAndClose(team, delta){
     if (current){
       state.used[tileKey(current.catIdx, current.rowIdx)] = true;
-      history.push({ catIdx: current.catIdx, rowIdx: current.rowIdx, team: team || null, delta: delta || 0 });
+      history.push({ type: "clue", catIdx: current.catIdx, rowIdx: current.rowIdx, team: team || null, delta: delta || 0 });
       updateUndoState();
     }
     closeModal();
@@ -2981,10 +3380,22 @@ footer{
     undoBtn.disabled = history.length === 0;
   }
 
+  /* Manual +100/-100 clicks (from the team card, outside any clue) push a
+     "manual" entry too, so Undo reverses them in order rather than silently
+     skipping past them to the last clue award. */
+  function adjustTeamScoreManually(team, delta){
+    team.score += delta;
+    history.push({ type: "manual", team: team, delta: delta });
+    updateUndoState();
+    renderTeams();
+  }
+
   function undoLast(){
     if (!history.length) return;
     var last = history.pop();
-    delete state.used[tileKey(last.catIdx, last.rowIdx)];
+    if (last.type === "clue"){
+      delete state.used[tileKey(last.catIdx, last.rowIdx)];
+    }
     if (last.team && last.delta && state.teams.indexOf(last.team) !== -1){
       last.team.score -= last.delta;
     }
@@ -2995,11 +3406,13 @@ footer{
 
   function closeModal(){
     stopBuzzerRound();
+    stopClueTimer();
     overlay.classList.remove("open");
     current = null;
   }
 
   revealBtn.addEventListener("click", function(){
+    stopClueTimer();
     answerTextEl.classList.add("shown");
     if (explainerTextEl.textContent.trim()) explainerTextEl.classList.add("shown");
     awardRow.classList.add("shown");
@@ -3045,6 +3458,68 @@ footer{
   });
   undoBtn.addEventListener("click", undoLast);
 
+  /* ---------------- keyboard shortcuts ----------------
+     Lets a teacher run the whole game from a clicker/keyboard without
+     standing at the laptop: Space/Enter reveals the response, 1-6 awards
+     the clue to that team (Shift+1-6 docks it instead), and U undoes.
+     Disabled while typing anywhere, or while any other modal (editor,
+     buzzer setup, Team Builder, confirm, etc.) is open, so it never fights
+     with normal typing or a different dialog's own controls. */
+  function isEditableTarget(el){
+    if (!el) return false;
+    var tag = el.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+  }
+
+  function otherModalOpen(){
+    return [editorOverlay, buzzerOverlay, studentBuzzerOverlay, teamBuilderOverlay, howtoOverlay, confirmOverlay, victoryOverlay, reviewOverlay].some(function(el){
+      return el.classList.contains("open");
+    });
+  }
+
+  document.addEventListener("keydown", function(e){
+    if (isEditableTarget(e.target) || otherModalOpen()) return;
+
+    if ((e.key === "u" || e.key === "U") && !undoBtn.disabled){
+      e.preventDefault();
+      undoLast();
+      return;
+    }
+
+    if (!overlay.classList.contains("open")) return;
+
+    if ((e.key === " " || e.key === "Enter") && revealBtn.style.display !== "none"){
+      e.preventDefault();
+      revealBtn.click();
+      return;
+    }
+
+    /* e.code (not e.key) so Shift+1..6 still reads as "Digit1".."Digit6" —
+       e.key would report the shifted symbol ("!", "@", ...) instead. */
+    var digitMatch = /^Digit([1-6])$/.exec(e.code);
+    if (awardRow.classList.contains("shown") && digitMatch){
+      var handler = awardHandlers[parseInt(digitMatch[1], 10) - 1];
+      if (handler){
+        e.preventDefault();
+        if (e.shiftKey) handler.wrong(); else handler.correct();
+      }
+    }
+  });
+
+  /* For when nobody volunteers: picks uniformly at random among whatever
+     tiles haven't been played yet, and opens it like a normal click would. */
+  randomClueBtn.addEventListener("click", function(){
+    var unused = [];
+    content.categories.forEach(function(cat, catIdx){
+      cat.clues.forEach(function(_, rowIdx){
+        if (!state.used[tileKey(catIdx, rowIdx)]) unused.push({ catIdx: catIdx, rowIdx: rowIdx });
+      });
+    });
+    if (!unused.length) return;
+    var pick = unused[Math.floor(Math.random() * unused.length)];
+    openClue(pick.catIdx, pick.rowIdx);
+  });
+
   document.getElementById("end-game-btn").addEventListener("click", function(){
     victoryCelebrated = true;
     showVictoryScreen();
@@ -3059,6 +3534,84 @@ footer{
     resetGame();
   });
   document.getElementById("victory-close").addEventListener("click", closeVictory);
+
+  function buildResultsCSV(){
+    var sorted = state.teams.slice().sort(function(a, b){ return b.score - a.score; });
+    var rows = [["Rank", "Team", "Members", "Final Score"]];
+    sorted.forEach(function(team, i){
+      rows.push([i + 1, team.name, (team.members || []).join("; "), team.score]);
+    });
+    return rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
+  }
+
+  victoryExportBtn.addEventListener("click", function(){
+    var csvText = buildResultsCSV();
+    var base = (content.title || "game").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "game";
+    triggerDownload(base + "-results.csv", csvText, function(msg, kind){ setStatusText(victoryExportStatusEl, msg, kind); });
+  });
+
+  /* Post-game recap: every clue in the whole board, with its answer, as a
+     single scrollable list — for reviewing what was covered without
+     replaying tile by tile. Read-only; doesn't touch state.used/history. */
+  function renderReview(){
+    reviewBody.innerHTML = "";
+    content.categories.forEach(function(cat, catIdx){
+      var section = document.createElement("div");
+      section.className = "review-category";
+      var heading = document.createElement("h3");
+      heading.textContent = cat.name;
+      section.appendChild(heading);
+
+      cat.clues.forEach(function(clue, rowIdx){
+        var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
+        var row = document.createElement("div");
+        row.className = "review-clue";
+
+        var valueLine = document.createElement("div");
+        var valueEl = document.createElement("span");
+        valueEl.className = "review-clue-value";
+        valueEl.textContent = "$" + valueForRow(rowIdx);
+        valueLine.appendChild(valueEl);
+        if (isDaily){
+          var dailyEl = document.createElement("span");
+          dailyEl.className = "review-clue-daily";
+          dailyEl.textContent = "Daily Double";
+          valueLine.appendChild(dailyEl);
+        }
+        row.appendChild(valueLine);
+
+        var clueEl = document.createElement("div");
+        clueEl.className = "review-clue-text";
+        clueEl.textContent = clue.clue;
+        row.appendChild(clueEl);
+
+        var answerEl = document.createElement("div");
+        answerEl.className = "review-clue-answer";
+        answerEl.textContent = clue.answer;
+        row.appendChild(answerEl);
+
+        if (clue.explainer){
+          var explainerEl = document.createElement("div");
+          explainerEl.className = "review-clue-explainer";
+          explainerEl.textContent = clue.explainer;
+          row.appendChild(explainerEl);
+        }
+
+        section.appendChild(row);
+      });
+
+      reviewBody.appendChild(section);
+    });
+  }
+
+  function openReview(){
+    renderReview();
+    reviewOverlay.classList.add("open");
+  }
+  function closeReview(){ reviewOverlay.classList.remove("open"); }
+
+  victoryReviewBtn.addEventListener("click", openReview);
+  reviewCloseBtn.addEventListener("click", closeReview);
 
   /* ---------------- board editor ---------------- */
 
@@ -3443,9 +3996,38 @@ footer{
           placeholder: "Add extra context or a fun fact — shown alongside the answer when it's revealed"
         }));
 
+        var noteWrap = document.createElement("div");
+        noteWrap.className = "editor-clue-note";
+        noteWrap.appendChild(makeField("🔒 Teacher Note (private, optional)", "textarea", clue.note || "", function(v){ clue.note = v; }, {
+          placeholder: "Bloom level, a reminder, anything for your eyes only — never shown on the board or projected to students"
+        }));
+
+        var timerWrap = document.createElement("div");
+        timerWrap.className = "editor-clue-timer";
+        var timerField = document.createElement("label");
+        timerField.className = "field";
+        var timerLabelSpan = document.createElement("span");
+        timerLabelSpan.textContent = "⏱ Timer, seconds (optional)";
+        var timerInput = document.createElement("input");
+        timerInput.type = "number";
+        timerInput.min = "0";
+        timerInput.max = "600";
+        timerInput.step = "5";
+        timerInput.placeholder = "e.g. 30 — blank for no countdown";
+        timerInput.value = clue.timerSeconds ? String(clue.timerSeconds) : "";
+        timerInput.addEventListener("input", function(){
+          var n = parseInt(timerInput.value, 10);
+          clue.timerSeconds = (isFinite(n) && n > 0) ? n : 0;
+        });
+        timerField.appendChild(timerLabelSpan);
+        timerField.appendChild(timerInput);
+        timerWrap.appendChild(timerField);
+
         row.appendChild(mainRow);
         row.appendChild(imageWrap);
         row.appendChild(explainerWrap);
+        row.appendChild(noteWrap);
+        row.appendChild(timerWrap);
         wrap.appendChild(row);
       });
 
@@ -3498,6 +4080,8 @@ footer{
         clue.clue = clue.clue.trim() || (clue.image ? "" : ("Write your $" + valueForRow(rowIdx) + " clue here"));
         clue.answer = clue.answer.trim() || "Write the answer here";
         clue.explainer = (clue.explainer || "").trim();
+        clue.note = (clue.note || "").trim();
+        clue.timerSeconds = (typeof clue.timerSeconds === "number" && clue.timerSeconds > 0) ? clue.timerSeconds : 0;
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
@@ -3537,7 +4121,8 @@ footer{
     { el: editorOverlay, close: closeEditor },
     { el: buzzerOverlay, close: closeBuzzerSetup },
     { el: studentBuzzerOverlay, close: closeStudentBuzzer },
-    { el: teamBuilderOverlay, close: closeTeamBuilder }
+    { el: teamBuilderOverlay, close: closeTeamBuilder },
+    { el: reviewOverlay, close: closeReview }
   ];
   dismissibleOverlays.forEach(function(o){
     o.el.addEventListener("click", function(e){
@@ -3578,11 +4163,11 @@ footer{
       rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
     });
     rows.push([]);
-    rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double"]);
+    rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double", "Teacher Note"]);
     c.categories.forEach(function(cat, catIdx){
       cat.clues.forEach(function(clue, rowIdx){
         var isDD = (catIdx === c.dailyDouble.cat && rowIdx === c.dailyDouble.idx);
-        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : ""]);
+        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : "", clue.note || ""]);
       });
     });
     return rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
@@ -3669,6 +4254,7 @@ footer{
           clue: r[2] || "",
           answer: r[3] || "",
           explainer: r[4] || "",
+          note: r[6] || "",
           image: ""
         };
       });
@@ -3686,12 +4272,32 @@ footer{
     };
   }
 
+  /* Clue images and timer settings live outside the CSV entirely, so
+     importing carries them over by grid position (category index, row
+     index) rather than by content. If the imported categories don't line
+     up one-to-one with the current ones — reordered, renamed, or a
+     different cat/row count — an existing image or timer can end up
+     attached to a different clue than the one it was set up for. Callers
+     use this to warn when that risk is real. */
+  function importCarriesPositionalDataRisk(prevCategories, importedCategories){
+    var hadAnyPositionalData = prevCategories.some(function(cat){
+      return cat.clues.some(function(clue){ return !!clue.image || !!clue.timerSeconds; });
+    });
+    if (!hadAnyPositionalData) return false;
+    if (prevCategories.length !== importedCategories.length) return true;
+    var prevRowCount = prevCategories[0] ? prevCategories[0].clues.length : 0;
+    var importedRowCount = importedCategories[0] ? importedCategories[0].clues.length : 0;
+    if (prevRowCount !== importedRowCount) return true;
+    return prevCategories.some(function(cat, i){ return cat.name !== importedCategories[i].name; });
+  }
+
   function applyImportedBoard(imported){
     imported.categories.forEach(function(cat, catIdx){
       cat.clues.forEach(function(clue, rowIdx){
         var prevCat = draft.categories[catIdx];
         var prevClue = prevCat && prevCat.clues[rowIdx];
         clue.image = prevClue ? (prevClue.image || "") : "";
+        clue.timerSeconds = prevClue ? (prevClue.timerSeconds || 0) : 0;
       });
     });
     if (imported.title !== null) draft.title = imported.title;
@@ -3704,7 +4310,8 @@ footer{
     buildEditorForm();
   }
 
-  function fallbackDownload(filename, text){
+  function fallbackDownload(filename, text, onStatus){
+    onStatus = onStatus || showIoStatus;
     try {
       var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
       var url = URL.createObjectURL(blob);
@@ -3715,37 +4322,38 @@ footer{
       a.click();
       document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-      showIoStatus("Downloaded " + filename + ".", "success");
+      onStatus("Downloaded " + filename + ".", "success");
     } catch (err) {
-      showIoStatus("Couldn't generate a download in this browser.", "error");
+      onStatus("Couldn't generate a download in this browser.", "error");
     }
   }
 
-  function triggerDownload(filename, text){
+  function triggerDownload(filename, text, onStatus){
+    onStatus = onStatus || showIoStatus;
     if (!(window.claude && typeof window.claude.use === "function")){
-      fallbackDownload(filename, text);
+      fallbackDownload(filename, text, onStatus);
       return;
     }
     window.claude.use("downloads").then(function(downloads){
-      if (!downloads){ fallbackDownload(filename, text); return; }
+      if (!downloads){ fallbackDownload(filename, text, onStatus); return; }
       downloads.save({ filename: filename, data: text }).then(function(){
-        showIoStatus("Downloaded " + filename + ".", "success");
+        onStatus("Downloaded " + filename + ".", "success");
       }).catch(function(err){
         var code = err && err.code;
         if (code === "declined") return;
         if (code === "extension_not_enabled"){
           var txtName = filename.replace(/\.csv$/i, ".txt");
           downloads.save({ filename: txtName, data: text }).then(function(){
-            showIoStatus("Saved as " + txtName + " — rename it to .csv to open in a spreadsheet app.", "success");
+            onStatus("Saved as " + txtName + " — rename it to .csv to open in a spreadsheet app.", "success");
           }).catch(function(){
-            showIoStatus("Couldn't save the file. Try again.", "error");
+            onStatus("Couldn't save the file. Try again.", "error");
           });
           return;
         }
-        showIoStatus("Couldn't save the file. Try again.", "error");
+        onStatus("Couldn't save the file. Try again.", "error");
       });
     }).catch(function(){
-      fallbackDownload(filename, text);
+      fallbackDownload(filename, text, onStatus);
     });
   }
 
@@ -3768,8 +4376,13 @@ footer{
       try {
         var imported = parseBoardCSV(String(e.target.result));
         var clueCount = imported.categories.length * imported.categories[0].clues.length;
+        var positionalRisk = importCarriesPositionalDataRisk(draft.categories, imported.categories);
         applyImportedBoard(imported);
-        showIoStatus("Imported " + imported.categories.length + " categories and " + clueCount + " clues. Click Save & Close to apply.", "success");
+        var msg = "Imported " + imported.categories.length + " categories and " + clueCount + " clues. Click Save & Close to apply.";
+        if (positionalRisk){
+          msg += " Note: categories or rows changed shape, so any clue images or timers you'd already set up may now be on the wrong clue — check them before saving.";
+        }
+        showIoStatus(msg, positionalRisk ? "warning" : "success");
       } catch (err) {
         showIoStatus(err.message || "Couldn't import that file.", "error");
       }
@@ -3840,6 +4453,7 @@ footer{
   renderHeader();
   renderBoard();
   renderTeams();
+  updateUndoState();
   initBuzzer();
 })();
 </script>
