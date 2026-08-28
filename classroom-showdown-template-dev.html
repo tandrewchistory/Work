@@ -347,6 +347,15 @@ h1{
   padding-bottom:3px;
   margin-bottom:6px;
 }
+.team-roster{
+  font-size:10.5px;
+  color:var(--ink-soft);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+  margin:-3px 0 5px;
+}
 .team .score{
   font-family:"Board Numeral", sans-serif;
   font-size:26px;
@@ -1285,9 +1294,9 @@ footer{
 }
 #student-buzzer-code-display.show{ display:block; }
 
-/* ---------------------------------- group maker ---------------------------------- */
-#group-maker-overlay{ z-index:58; }
-#group-maker-card{
+/* ---------------------------------- team builder ---------------------------------- */
+#team-builder-overlay{ z-index:58; }
+#team-builder-card{
   background:var(--paper);
   border:1px solid var(--paper-edge);
   border-radius:16px;
@@ -1299,14 +1308,14 @@ footer{
   flex-direction:column;
   gap:14px;
 }
-#group-maker-card h2{
+#team-builder-card h2{
   font-family:"Board Marker", cursive;
   font-weight:400;
   font-size:28px;
   margin:0;
   color:var(--ink);
 }
-#group-maker-body{
+#team-builder-body{
   overflow-y:auto;
   padding:4px 4px 4px 0;
   display:flex;
@@ -1316,7 +1325,7 @@ footer{
   border-bottom:1px dashed var(--paper-edge);
   margin:2px 0;
 }
-#group-maker-roster-input{
+#team-builder-roster-input{
   background:var(--board);
   border:1px solid var(--paper-edge);
   border-radius:6px;
@@ -1327,52 +1336,54 @@ footer{
   line-height:1.4;
   font-family:inherit;
 }
-#group-maker-count-row{
+#team-builder-count-row{
   display:flex;
   align-items:center;
   gap:12px;
 }
-#group-maker-setup-row{
+#team-builder-setup-row{
   display:flex;
   flex-direction:column;
   gap:12px;
 }
-#group-maker-status{
+#team-builder-status{
   font-size:12.5px;
   min-height:1.2em;
   color:var(--info);
 }
-#group-maker-status.error{ color:var(--danger); }
-#group-maker-status.success{ color:var(--good); }
-#group-maker-actions{
+#team-builder-status.error{ color:var(--danger); }
+#team-builder-status.success{ color:var(--good); }
+#team-builder-actions{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
 }
-#group-maker-pool,
-.group-maker-group{
+#team-builder-pool,
+.team-builder-team{
   border:1px solid var(--paper-edge);
   border-radius:10px;
   padding:10px 12px;
   background:var(--board);
 }
-.group-maker-group.drop-target,
-#group-maker-pool.drop-target{
+.team-builder-team.drop-target,
+.team-builder-team.drag-over,
+#team-builder-pool.drop-target,
+#team-builder-pool.drag-over{
   border-color:var(--accent);
   box-shadow:inset 0 0 0 2px var(--accent-soft);
 }
-#group-maker-groups{
+#team-builder-teams{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
   gap:10px;
 }
-.group-maker-group-header{
+.team-builder-team-header{
   display:flex;
   align-items:center;
   gap:8px;
   margin-bottom:8px;
 }
-.group-maker-group-name{
+.team-builder-team-name{
   flex:1;
   background:var(--paper);
   border:1px solid var(--paper-edge);
@@ -1383,34 +1394,38 @@ footer{
   font-weight:700;
   min-width:0;
 }
-.group-maker-group-count{
+.team-builder-team-count{
   font-size:11.5px;
   color:var(--ink-soft);
   white-space:nowrap;
 }
-.group-maker-chip-list{
+.team-builder-chip-list{
   display:flex;
   flex-wrap:wrap;
   gap:6px;
   min-height:34px;
 }
-.group-maker-chip{
+.team-builder-chip{
   background:var(--paper);
   border:1px solid var(--paper-edge);
   border-radius:999px;
   padding:5px 12px;
   font-size:13px;
   color:var(--ink);
-  cursor:pointer;
+  cursor:grab;
   user-select:none;
 }
-.group-maker-chip:hover{ border-color:var(--accent); }
-.group-maker-chip.selected{
+.team-builder-chip:hover{ border-color:var(--accent); }
+.team-builder-chip.selected{
   background:var(--accent);
   border-color:var(--accent);
   color:var(--accent-ink);
 }
-.group-maker-empty-hint{
+.team-builder-chip.dragging{
+  opacity:0.4;
+  cursor:grabbing;
+}
+.team-builder-empty-hint{
   font-size:12px;
   color:var(--ink-soft);
   font-style:italic;
@@ -1452,7 +1467,7 @@ footer{
     <button class="btn" id="end-game-btn">End Game</button>
     <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
-    <button class="btn" id="group-maker-btn">&#128101; Groups</button>
+    <button class="btn" id="team-builder-btn">&#128101; Team Builder</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="reset-btn">Reset Game</button>
   </div>
@@ -1675,40 +1690,40 @@ footer{
   </div>
 </div>
 
-<div id="group-maker-overlay" class="modal-overlay" role="dialog" aria-labelledby="group-maker-title">
-  <div id="group-maker-card">
-    <h2 id="group-maker-title">Groups</h2>
-    <p class="editor-sub">Type or paste your class list, choose how many groups you need, then click a name and click a group to place it — or shuffle to assign everyone at random.</p>
-    <div id="group-maker-body">
-      <div id="group-maker-setup-row">
+<div id="team-builder-overlay" class="modal-overlay" role="dialog" aria-labelledby="team-builder-title">
+  <div id="team-builder-card">
+    <h2 id="team-builder-title">Team Builder</h2>
+    <p class="editor-sub">Type or paste your class list, choose how many teams you need, then drag a name onto a team to place it (click also works) — or shuffle to assign everyone at random.</p>
+    <div id="team-builder-body">
+      <div id="team-builder-setup-row">
         <label class="field">
           <span>Student Names (one per line)</span>
-          <textarea id="group-maker-roster-input" rows="5" placeholder="Ada&#10;Grace&#10;Alan"></textarea>
+          <textarea id="team-builder-roster-input" rows="5" placeholder="Ada&#10;Grace&#10;Alan"></textarea>
         </label>
-        <div id="group-maker-count-row">
-          <span class="size-label">Number of Groups</span>
+        <div id="team-builder-count-row">
+          <span class="size-label">Number of Teams</span>
           <div class="size-stepper">
-            <button type="button" class="size-btn" id="group-count-remove-btn" aria-label="Remove a group">&minus;</button>
-            <span id="group-count-label" class="size-count tabular"></span>
-            <button type="button" class="size-btn" id="group-count-add-btn" aria-label="Add a group">+</button>
+            <button type="button" class="size-btn" id="team-count-remove-btn" aria-label="Remove a team">&minus;</button>
+            <span id="team-count-label" class="size-count tabular"></span>
+            <button type="button" class="size-btn" id="team-count-add-btn" aria-label="Add a team">+</button>
           </div>
         </div>
-        <button type="button" class="btn" id="group-maker-build-btn">Build Groups</button>
+        <button type="button" class="btn" id="team-builder-build-btn">Build Teams</button>
       </div>
-      <div id="group-maker-board" hidden>
-        <div id="group-maker-actions">
-          <button type="button" class="btn" id="group-maker-shuffle-btn">&#128256; Shuffle All</button>
-          <button type="button" class="btn primary" id="group-maker-send-btn">Send Groups to Teams</button>
+      <div id="team-builder-board" hidden>
+        <div id="team-builder-actions">
+          <button type="button" class="btn" id="team-builder-shuffle-btn">&#128256; Shuffle All</button>
+          <button type="button" class="btn primary" id="team-builder-send-btn">Send to Scoreboard</button>
         </div>
-        <div id="group-maker-pool">
+        <div id="team-builder-pool">
           <span class="field-group-label">Unassigned</span>
-          <div id="group-maker-pool-list" class="group-maker-chip-list"></div>
+          <div id="team-builder-pool-list" class="team-builder-chip-list"></div>
         </div>
-        <div id="group-maker-groups"></div>
+        <div id="team-builder-teams"></div>
       </div>
-      <div id="group-maker-status"></div>
+      <div id="team-builder-status"></div>
     </div>
-    <button class="btn primary" id="group-maker-close-btn" type="button">Done</button>
+    <button class="btn primary" id="team-builder-close-btn" type="button">Done</button>
   </div>
 </div>
 
@@ -1930,21 +1945,21 @@ footer{
   var studentBuzzerCodeDisplay = document.getElementById("student-buzzer-code-display");
   var buzzerBannerEl = document.getElementById("buzzer-banner");
   var buzzerResetBtn = document.getElementById("buzzer-reset-btn");
-  var groupMakerBtn = document.getElementById("group-maker-btn");
-  var groupMakerOverlay = document.getElementById("group-maker-overlay");
-  var groupMakerCloseBtn = document.getElementById("group-maker-close-btn");
-  var groupMakerRosterInput = document.getElementById("group-maker-roster-input");
-  var groupCountRemoveBtn = document.getElementById("group-count-remove-btn");
-  var groupCountAddBtn = document.getElementById("group-count-add-btn");
-  var groupCountLabel = document.getElementById("group-count-label");
-  var groupMakerBuildBtn = document.getElementById("group-maker-build-btn");
-  var groupMakerBoard = document.getElementById("group-maker-board");
-  var groupMakerShuffleBtn = document.getElementById("group-maker-shuffle-btn");
-  var groupMakerSendBtn = document.getElementById("group-maker-send-btn");
-  var groupMakerPoolList = document.getElementById("group-maker-pool-list");
-  var groupMakerPool = document.getElementById("group-maker-pool");
-  var groupMakerGroupsEl = document.getElementById("group-maker-groups");
-  var groupMakerStatusEl = document.getElementById("group-maker-status");
+  var teamBuilderBtn = document.getElementById("team-builder-btn");
+  var teamBuilderOverlay = document.getElementById("team-builder-overlay");
+  var teamBuilderCloseBtn = document.getElementById("team-builder-close-btn");
+  var teamBuilderRosterInput = document.getElementById("team-builder-roster-input");
+  var teamCountRemoveBtn = document.getElementById("team-count-remove-btn");
+  var teamCountAddBtn = document.getElementById("team-count-add-btn");
+  var teamCountLabel = document.getElementById("team-count-label");
+  var teamBuilderBuildBtn = document.getElementById("team-builder-build-btn");
+  var teamBuilderBoard = document.getElementById("team-builder-board");
+  var teamBuilderShuffleBtn = document.getElementById("team-builder-shuffle-btn");
+  var teamBuilderSendBtn = document.getElementById("team-builder-send-btn");
+  var teamBuilderPoolList = document.getElementById("team-builder-pool-list");
+  var teamBuilderPool = document.getElementById("team-builder-pool");
+  var teamBuilderTeamsEl = document.getElementById("team-builder-teams");
+  var teamBuilderStatusEl = document.getElementById("team-builder-status");
 
   var current = null;
   var victoryCelebrated = false;
@@ -2261,75 +2276,75 @@ footer{
     persistStudentBuzzerCode(studentBuzzerCodeInput.value.trim());
   });
 
-  /* ---------------- group maker ----------------
+  /* ---------------- team builder ----------------
      A standalone classroom utility for splitting a typed student list into
-     groups — independent of the scoring Teams, with an optional one-click
-     handoff that replaces the Teams with the built groups. Not persisted:
-     each open of the modal starts fresh unless groups were already built
-     earlier in this same page session. */
-  var MIN_GROUPS = 2;
-  var MAX_GROUPS = 8;
-  var groupMaker = { groupCount: 2, groups: [], unassigned: [], selected: null };
+     teams — independent of the scoring Teams, with an optional one-click
+     handoff that replaces the Teams (names and rosters both) with the built
+     teams. Not persisted: each open of the modal starts fresh unless teams
+     were already built earlier in this same page session. */
+  var MIN_BUILDER_TEAMS = 2;
+  var MAX_BUILDER_TEAMS = 8;
+  var teamBuilder = { teamCount: 2, teams: [], unassigned: [], selected: null };
 
-  function setGroupMakerStatus(msg, kind){
-    groupMakerStatusEl.textContent = msg;
-    groupMakerStatusEl.className = kind || "";
+  function setTeamBuilderStatus(msg, kind){
+    teamBuilderStatusEl.textContent = msg;
+    teamBuilderStatusEl.className = kind || "";
   }
 
-  function updateGroupCountUI(){
-    groupCountLabel.textContent = String(groupMaker.groupCount);
-    groupCountRemoveBtn.disabled = groupMaker.groupCount <= MIN_GROUPS;
-    groupCountAddBtn.disabled = groupMaker.groupCount >= MAX_GROUPS;
+  function updateTeamCountUI(){
+    teamCountLabel.textContent = String(teamBuilder.teamCount);
+    teamCountRemoveBtn.disabled = teamBuilder.teamCount <= MIN_BUILDER_TEAMS;
+    teamCountAddBtn.disabled = teamBuilder.teamCount >= MAX_BUILDER_TEAMS;
   }
 
-  function setGroupCount(n){
-    groupMaker.groupCount = Math.max(MIN_GROUPS, Math.min(MAX_GROUPS, n));
-    updateGroupCountUI();
-    if (groupMaker.groups.length) buildGroups();
+  function setBuilderTeamCount(n){
+    teamBuilder.teamCount = Math.max(MIN_BUILDER_TEAMS, Math.min(MAX_BUILDER_TEAMS, n));
+    updateTeamCountUI();
+    if (teamBuilder.teams.length) buildTeams();
   }
 
   function parseRoster(){
-    return groupMakerRosterInput.value.split("\n")
+    return teamBuilderRosterInput.value.split("\n")
       .map(function(s){ return s.trim(); })
       .filter(function(s){ return s.length > 0; });
   }
 
-  /* Reconciles the current groups/pool against a freshly (re)typed roster and
-     group count: names removed from the roster are dropped, new names land
+  /* Reconciles the current teams/pool against a freshly (re)typed roster and
+     team count: names removed from the roster are dropped, new names land
      in the unassigned pool, and existing placements are otherwise kept. */
-  function buildGroups(){
+  function buildTeams(){
     var names = parseRoster();
     if (!names.length){
-      setGroupMakerStatus("Type at least one student name first.", "error");
+      setTeamBuilderStatus("Type at least one student name first.", "error");
       return;
     }
-    while (groupMaker.groups.length < groupMaker.groupCount){
-      groupMaker.groups.push({ name: "Group " + (groupMaker.groups.length + 1), members: [] });
+    while (teamBuilder.teams.length < teamBuilder.teamCount){
+      teamBuilder.teams.push({ name: "Team " + (teamBuilder.teams.length + 1), members: [] });
     }
-    while (groupMaker.groups.length > groupMaker.groupCount){
-      var removed = groupMaker.groups.pop();
-      groupMaker.unassigned = groupMaker.unassigned.concat(removed.members);
+    while (teamBuilder.teams.length > teamBuilder.teamCount){
+      var removed = teamBuilder.teams.pop();
+      teamBuilder.unassigned = teamBuilder.unassigned.concat(removed.members);
     }
     var nameSet = {};
     names.forEach(function(n){ nameSet[n] = true; });
-    groupMaker.unassigned = groupMaker.unassigned.filter(function(n){ return nameSet[n]; });
-    groupMaker.groups.forEach(function(g){
-      g.members = g.members.filter(function(n){ return nameSet[n]; });
+    teamBuilder.unassigned = teamBuilder.unassigned.filter(function(n){ return nameSet[n]; });
+    teamBuilder.teams.forEach(function(t){
+      t.members = t.members.filter(function(n){ return nameSet[n]; });
     });
     var known = {};
-    groupMaker.unassigned.forEach(function(n){ known[n] = true; });
-    groupMaker.groups.forEach(function(g){ g.members.forEach(function(n){ known[n] = true; }); });
+    teamBuilder.unassigned.forEach(function(n){ known[n] = true; });
+    teamBuilder.teams.forEach(function(t){ t.members.forEach(function(n){ known[n] = true; }); });
     names.forEach(function(n){
-      if (!known[n]){ groupMaker.unassigned.push(n); known[n] = true; }
+      if (!known[n]){ teamBuilder.unassigned.push(n); known[n] = true; }
     });
-    groupMaker.selected = null;
-    groupMakerBoard.hidden = false;
-    setGroupMakerStatus("", "");
-    renderGroupMaker();
+    teamBuilder.selected = null;
+    teamBuilderBoard.hidden = false;
+    setTeamBuilderStatus("", "");
+    renderTeamBuilder();
   }
 
   function listByKey(key){
-    return key === "pool" ? groupMaker.unassigned : groupMaker.groups[key].members;
+    return key === "pool" ? teamBuilder.unassigned : teamBuilder.teams[key].members;
   }
 
   function moveMember(name, fromKey, toKey){
@@ -2342,31 +2357,77 @@ footer{
   }
 
   function onChipActivate(name, listKey){
-    var sel = groupMaker.selected;
+    var sel = teamBuilder.selected;
     if (sel && sel.name === name && sel.list === listKey){
-      groupMaker.selected = null;
+      teamBuilder.selected = null;
     } else if (sel){
       moveMember(sel.name, sel.list, listKey);
-      groupMaker.selected = null;
+      teamBuilder.selected = null;
     } else {
-      groupMaker.selected = { name: name, list: listKey };
+      teamBuilder.selected = { name: name, list: listKey };
     }
-    renderGroupMaker();
+    renderTeamBuilder();
   }
 
   function onListActivate(listKey){
-    var sel = groupMaker.selected;
+    var sel = teamBuilder.selected;
     if (sel && sel.list !== listKey){
       moveMember(sel.name, sel.list, listKey);
-      groupMaker.selected = null;
-      renderGroupMaker();
+      teamBuilder.selected = null;
+      renderTeamBuilder();
     }
   }
 
-  function makeGroupChip(name, listKey){
+  /* Native HTML5 drag-and-drop, layered on top of the click-to-select-then-
+     place flow above so the chips stay usable without a mouse (touch,
+     keyboard). The dragged payload travels as a JSON string in the
+     "text/plain" slot — custom MIME types are unreliable in some browsers'
+     drag implementations, plain text is not. */
+  function wireChipDrag(chip, name, listKey){
+    chip.draggable = true;
+    chip.addEventListener("dragstart", function(e){
+      teamBuilder.selected = null;
+      chip.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", JSON.stringify({ name: name, list: listKey })); } catch (err) { /* ignore */ }
+    });
+    chip.addEventListener("dragend", function(){
+      chip.classList.remove("dragging");
+    });
+  }
+
+  function wireDropTarget(el, listKey){
+    var depth = 0;
+    el.addEventListener("dragenter", function(e){
+      e.preventDefault();
+      depth++;
+      el.classList.add("drag-over");
+    });
+    el.addEventListener("dragover", function(e){
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    el.addEventListener("dragleave", function(){
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) el.classList.remove("drag-over");
+    });
+    el.addEventListener("drop", function(e){
+      e.preventDefault();
+      depth = 0;
+      el.classList.remove("drag-over");
+      var payload = null;
+      try { payload = JSON.parse(e.dataTransfer.getData("text/plain")); } catch (err) { /* ignore */ }
+      if (!payload || typeof payload.name !== "string") return;
+      moveMember(payload.name, payload.list, listKey);
+      teamBuilder.selected = null;
+      renderTeamBuilder();
+    });
+  }
+
+  function makeTeamBuilderChip(name, listKey){
     var chip = document.createElement("span");
-    var isSelected = groupMaker.selected && groupMaker.selected.name === name && groupMaker.selected.list === listKey;
-    chip.className = "group-maker-chip" + (isSelected ? " selected" : "");
+    var isSelected = teamBuilder.selected && teamBuilder.selected.name === name && teamBuilder.selected.list === listKey;
+    chip.className = "team-builder-chip" + (isSelected ? " selected" : "");
     chip.textContent = name;
     chip.setAttribute("role", "button");
     chip.tabIndex = 0;
@@ -2381,130 +2442,133 @@ footer{
         onChipActivate(name, listKey);
       }
     });
+    wireChipDrag(chip, name, listKey);
     return chip;
   }
 
-  function renderGroupMaker(){
-    updateGroupCountUI();
+  function renderTeamBuilder(){
+    updateTeamCountUI();
 
-    groupMakerPoolList.innerHTML = "";
-    if (!groupMaker.unassigned.length){
+    teamBuilderPoolList.innerHTML = "";
+    if (!teamBuilder.unassigned.length){
       var poolHint = document.createElement("span");
-      poolHint.className = "group-maker-empty-hint";
+      poolHint.className = "team-builder-empty-hint";
       poolHint.textContent = "Everyone's assigned.";
-      groupMakerPoolList.appendChild(poolHint);
+      teamBuilderPoolList.appendChild(poolHint);
     } else {
-      groupMaker.unassigned.forEach(function(name){
-        groupMakerPoolList.appendChild(makeGroupChip(name, "pool"));
+      teamBuilder.unassigned.forEach(function(name){
+        teamBuilderPoolList.appendChild(makeTeamBuilderChip(name, "pool"));
       });
     }
-    groupMakerPool.classList.toggle("drop-target", !!groupMaker.selected && groupMaker.selected.list !== "pool");
+    teamBuilderPool.classList.toggle("drop-target", !!teamBuilder.selected && teamBuilder.selected.list !== "pool");
 
-    groupMakerGroupsEl.innerHTML = "";
-    groupMaker.groups.forEach(function(group, idx){
+    teamBuilderTeamsEl.innerHTML = "";
+    teamBuilder.teams.forEach(function(team, idx){
       var box = document.createElement("div");
-      box.className = "group-maker-group";
-      box.classList.toggle("drop-target", !!groupMaker.selected && groupMaker.selected.list !== idx);
+      box.className = "team-builder-team";
+      box.classList.toggle("drop-target", !!teamBuilder.selected && teamBuilder.selected.list !== idx);
       box.tabIndex = 0;
-      box.setAttribute("aria-label", "Drop into " + (group.name.trim() || ("Group " + (idx + 1))));
+      box.setAttribute("aria-label", "Drop into " + (team.name.trim() || ("Team " + (idx + 1))));
       box.addEventListener("click", function(){ onListActivate(idx); });
       box.addEventListener("keydown", function(e){
         if (e.target !== box) return;
         if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate(idx); }
       });
+      wireDropTarget(box, idx);
 
       var header = document.createElement("div");
-      header.className = "group-maker-group-header";
+      header.className = "team-builder-team-header";
 
       var nameInput = document.createElement("input");
       nameInput.type = "text";
-      nameInput.className = "group-maker-group-name";
-      nameInput.value = group.name;
+      nameInput.className = "team-builder-team-name";
+      nameInput.value = team.name;
       nameInput.maxLength = 30;
-      nameInput.setAttribute("aria-label", "Group name");
+      nameInput.setAttribute("aria-label", "Team name");
       nameInput.addEventListener("click", function(e){ e.stopPropagation(); });
-      nameInput.addEventListener("input", function(){ group.name = nameInput.value; });
+      nameInput.addEventListener("input", function(){ team.name = nameInput.value; });
       header.appendChild(nameInput);
 
       var countEl = document.createElement("span");
-      countEl.className = "group-maker-group-count";
-      countEl.textContent = group.members.length + (group.members.length === 1 ? " student" : " students");
+      countEl.className = "team-builder-team-count";
+      countEl.textContent = team.members.length + (team.members.length === 1 ? " student" : " students");
       header.appendChild(countEl);
 
       box.appendChild(header);
 
       var list = document.createElement("div");
-      list.className = "group-maker-chip-list";
-      if (!group.members.length){
+      list.className = "team-builder-chip-list";
+      if (!team.members.length){
         var emptyHint = document.createElement("span");
-        emptyHint.className = "group-maker-empty-hint";
+        emptyHint.className = "team-builder-empty-hint";
         emptyHint.textContent = "No students yet.";
         list.appendChild(emptyHint);
       } else {
-        group.members.forEach(function(name){
-          list.appendChild(makeGroupChip(name, idx));
+        team.members.forEach(function(name){
+          list.appendChild(makeTeamBuilderChip(name, idx));
         });
       }
       box.appendChild(list);
 
-      groupMakerGroupsEl.appendChild(box);
+      teamBuilderTeamsEl.appendChild(box);
     });
   }
 
-  function shuffleGroups(){
-    if (!groupMaker.groups.length) return;
-    var all = groupMaker.unassigned.slice();
-    groupMaker.groups.forEach(function(g){
-      all = all.concat(g.members);
-      g.members = [];
+  function shuffleBuilderTeams(){
+    if (!teamBuilder.teams.length) return;
+    var all = teamBuilder.unassigned.slice();
+    teamBuilder.teams.forEach(function(t){
+      all = all.concat(t.members);
+      t.members = [];
     });
     for (var i = all.length - 1; i > 0; i--){
       var j = Math.floor(Math.random() * (i + 1));
       var tmp = all[i]; all[i] = all[j]; all[j] = tmp;
     }
-    groupMaker.unassigned = [];
+    teamBuilder.unassigned = [];
     all.forEach(function(name, i){
-      groupMaker.groups[i % groupMaker.groups.length].members.push(name);
+      teamBuilder.teams[i % teamBuilder.teams.length].members.push(name);
     });
-    groupMaker.selected = null;
-    setGroupMakerStatus("Shuffled " + all.length + (all.length === 1 ? " student" : " students") + " into " + groupMaker.groups.length + " groups.", "success");
-    renderGroupMaker();
+    teamBuilder.selected = null;
+    setTeamBuilderStatus("Shuffled " + all.length + (all.length === 1 ? " student" : " students") + " into " + teamBuilder.teams.length + " teams.", "success");
+    renderTeamBuilder();
   }
 
-  function sendGroupsToTeams(){
-    var nonEmpty = groupMaker.groups.filter(function(g){ return g.members.length > 0; });
+  function sendBuilderTeamsToScoreboard(){
+    var nonEmpty = teamBuilder.teams.filter(function(t){ return t.members.length > 0; });
     if (!nonEmpty.length){
-      setGroupMakerStatus("Build at least one group with students in it first.", "error");
+      setTeamBuilderStatus("Build at least one team with students in it first.", "error");
       return;
     }
     var capped = nonEmpty.slice(0, 6);
-    var msg = "Replace the current teams with these " + capped.length + " group" + (capped.length === 1 ? "" : "s") + "? This resets all scores.";
-    if (nonEmpty.length > 6) msg += " Teams are capped at 6, so only the first 6 groups will be used.";
+    var msg = "Replace the current scoreboard teams with these " + capped.length + " team" + (capped.length === 1 ? "" : "s") + "? This resets all scores.";
+    if (nonEmpty.length > 6) msg += " Teams are capped at 6, so only the first 6 will be used.";
     openConfirm(msg, "Replace Teams", function(){
-      state.teams = capped.map(function(g){ return { name: g.name.trim() || "Group", score: 0 }; });
+      state.teams = capped.map(function(t){ return { name: t.name.trim() || "Team", score: 0, members: t.members.slice() }; });
       renderTeams();
-      setGroupMakerStatus("Sent " + capped.length + " group" + (capped.length === 1 ? "" : "s") + " to the scoreboard.", "success");
+      setTeamBuilderStatus("Sent " + capped.length + " team" + (capped.length === 1 ? "" : "s") + " (with their student names) to the scoreboard.", "success");
     });
   }
 
-  function openGroupMaker(){ groupMakerOverlay.classList.add("open"); }
-  function closeGroupMaker(){ groupMakerOverlay.classList.remove("open"); }
+  function openTeamBuilder(){ teamBuilderOverlay.classList.add("open"); }
+  function closeTeamBuilder(){ teamBuilderOverlay.classList.remove("open"); }
 
-  updateGroupCountUI();
-  groupMakerBtn.addEventListener("click", openGroupMaker);
-  groupMakerCloseBtn.addEventListener("click", closeGroupMaker);
-  groupMakerBuildBtn.addEventListener("click", buildGroups);
-  groupCountAddBtn.addEventListener("click", function(){ setGroupCount(groupMaker.groupCount + 1); });
-  groupCountRemoveBtn.addEventListener("click", function(){ setGroupCount(groupMaker.groupCount - 1); });
-  groupMakerShuffleBtn.addEventListener("click", shuffleGroups);
-  groupMakerSendBtn.addEventListener("click", sendGroupsToTeams);
-  groupMakerPool.tabIndex = 0;
-  groupMakerPool.setAttribute("aria-label", "Drop into Unassigned");
-  groupMakerPool.addEventListener("click", function(){ onListActivate("pool"); });
-  groupMakerPool.addEventListener("keydown", function(e){
-    if (e.target !== groupMakerPool) return;
+  updateTeamCountUI();
+  teamBuilderBtn.addEventListener("click", openTeamBuilder);
+  teamBuilderCloseBtn.addEventListener("click", closeTeamBuilder);
+  teamBuilderBuildBtn.addEventListener("click", buildTeams);
+  teamCountAddBtn.addEventListener("click", function(){ setBuilderTeamCount(teamBuilder.teamCount + 1); });
+  teamCountRemoveBtn.addEventListener("click", function(){ setBuilderTeamCount(teamBuilder.teamCount - 1); });
+  teamBuilderShuffleBtn.addEventListener("click", shuffleBuilderTeams);
+  teamBuilderSendBtn.addEventListener("click", sendBuilderTeamsToScoreboard);
+  teamBuilderPool.tabIndex = 0;
+  teamBuilderPool.setAttribute("aria-label", "Drop into Unassigned");
+  teamBuilderPool.addEventListener("click", function(){ onListActivate("pool"); });
+  teamBuilderPool.addEventListener("keydown", function(e){
+    if (e.target !== teamBuilderPool) return;
     if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate("pool"); }
   });
+  wireDropTarget(teamBuilderPool, "pool");
 
   /* ---------------- palette customization ---------------- */
   var SEMANTIC_SLOTS = ["accent", "info", "good", "danger"];
@@ -2763,6 +2827,14 @@ footer{
       nameInput.setAttribute("aria-label", "Team name");
       nameInput.addEventListener("input", function(){ team.name = nameInput.value; renderAwardButtons(); });
       box.appendChild(nameInput);
+
+      if (team.members && team.members.length){
+        var rosterEl = document.createElement("div");
+        rosterEl.className = "team-roster";
+        rosterEl.textContent = team.members.join(", ");
+        rosterEl.title = team.members.join(", ");
+        box.appendChild(rosterEl);
+      }
 
       var scoreEl = document.createElement("div");
       scoreEl.className = "score tabular" + (team.score < 0 ? " neg" : "");
@@ -3450,7 +3522,7 @@ footer{
     { el: editorOverlay, close: closeEditor },
     { el: buzzerOverlay, close: closeBuzzerSetup },
     { el: studentBuzzerOverlay, close: closeStudentBuzzer },
-    { el: groupMakerOverlay, close: closeGroupMaker }
+    { el: teamBuilderOverlay, close: closeTeamBuilder }
   ];
   dismissibleOverlays.forEach(function(o){
     o.el.addEventListener("click", function(e){
