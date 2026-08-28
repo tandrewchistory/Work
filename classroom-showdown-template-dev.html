@@ -119,6 +119,18 @@ body{
   font-family:"Board Sans", "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing:antialiased;
 }
+body.has-bg-image{
+  background-image:var(--bg-image-url);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+body.has-bg-image header{
+  background:color-mix(in srgb, var(--board) 82%, transparent);
+  border-radius:18px;
+  padding:14px 22px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+}
 button, input, textarea, select{ font-family:inherit; }
 :focus-visible{
   outline:3px solid var(--focus);
@@ -786,7 +798,8 @@ footer{
 }
 .field input[type="text"]:focus,
 .field textarea:focus{ border-color:var(--focus); }
-#palette-section{
+#palette-section,
+#bg-image-section{
   display:flex;
   flex-direction:column;
   gap:10px;
@@ -795,6 +808,48 @@ footer{
   padding:14px;
   background:var(--board);
 }
+#bg-image-section .editor-sub{ margin:0; }
+.editor-bg-image-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.editor-bg-image-row input[type="file"]{
+  font-size:12.5px;
+  color:var(--ink-soft);
+  max-width:220px;
+}
+.bg-image-thumb{
+  display:none;
+  width:56px;
+  height:56px;
+  object-fit:cover;
+  border-radius:6px;
+  border:1px solid var(--paper-edge);
+  background:var(--paper);
+}
+.bg-image-thumb.shown{ display:block; }
+.bg-image-remove-btn{
+  display:none;
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  color:var(--danger);
+  border-radius:5px;
+  padding:4px 9px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+}
+.bg-image-remove-btn.shown{ display:inline-block; }
+.bg-image-remove-btn:hover{ background:var(--danger-soft); }
+.bg-image-error{
+  display:none;
+  width:100%;
+  color:var(--danger);
+  font-size:12px;
+}
+.bg-image-error.shown{ display:block; }
 #preset-palette-row{
   display:flex;
   flex-wrap:wrap;
@@ -1229,6 +1284,137 @@ footer{
   margin:4px 0 2px;
 }
 #student-buzzer-code-display.show{ display:block; }
+
+/* ---------------------------------- group maker ---------------------------------- */
+#group-maker-overlay{ z-index:58; }
+#group-maker-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:16px;
+  width:min(680px, 100%);
+  max-height:min(88vh, 900px);
+  padding:28px 30px 22px;
+  box-shadow:0 30px 70px rgba(0,0,0,0.4);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+#group-maker-card h2{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:28px;
+  margin:0;
+  color:var(--ink);
+}
+#group-maker-body{
+  overflow-y:auto;
+  padding:4px 4px 4px 0;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  border-top:1px dashed var(--paper-edge);
+  border-bottom:1px dashed var(--paper-edge);
+  margin:2px 0;
+}
+#group-maker-roster-input{
+  background:var(--board);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:8px 10px;
+  color:var(--ink);
+  font-size:14px;
+  resize:vertical;
+  line-height:1.4;
+  font-family:inherit;
+}
+#group-maker-count-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+#group-maker-setup-row{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#group-maker-status{
+  font-size:12.5px;
+  min-height:1.2em;
+  color:var(--info);
+}
+#group-maker-status.error{ color:var(--danger); }
+#group-maker-status.success{ color:var(--good); }
+#group-maker-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+#group-maker-pool,
+.group-maker-group{
+  border:1px solid var(--paper-edge);
+  border-radius:10px;
+  padding:10px 12px;
+  background:var(--board);
+}
+.group-maker-group.drop-target,
+#group-maker-pool.drop-target{
+  border-color:var(--accent);
+  box-shadow:inset 0 0 0 2px var(--accent-soft);
+}
+#group-maker-groups{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+  gap:10px;
+}
+.group-maker-group-header{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+.group-maker-group-name{
+  flex:1;
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:5px 8px;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:700;
+  min-width:0;
+}
+.group-maker-group-count{
+  font-size:11.5px;
+  color:var(--ink-soft);
+  white-space:nowrap;
+}
+.group-maker-chip-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  min-height:34px;
+}
+.group-maker-chip{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:999px;
+  padding:5px 12px;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+  user-select:none;
+}
+.group-maker-chip:hover{ border-color:var(--accent); }
+.group-maker-chip.selected{
+  background:var(--accent);
+  border-color:var(--accent);
+  color:var(--accent-ink);
+}
+.group-maker-empty-hint{
+  font-size:12px;
+  color:var(--ink-soft);
+  font-style:italic;
+}
 </style>
 </head>
 <body>
@@ -1266,6 +1452,7 @@ footer{
     <button class="btn" id="end-game-btn">End Game</button>
     <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
+    <button class="btn" id="group-maker-btn">&#128101; Groups</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="reset-btn">Reset Game</button>
   </div>
@@ -1345,7 +1532,7 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, and pick a color palette (or customize every color yourself) to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, pick a color palette (or customize every color yourself), and set a background image to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. Saving resets scores and board progress.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -1368,6 +1555,16 @@ footer{
         <div id="preset-palette-row"></div>
         <div id="custom-palette-grid"></div>
         <button type="button" class="btn" id="palette-reset-btn">Reset All Colors to Default</button>
+      </div>
+      <div id="bg-image-section">
+        <span class="field-group-label">Background Image (optional)</span>
+        <p class="editor-sub">Shown behind the whole page — the board and cards keep their own solid surface, so clues stay readable.</p>
+        <div class="editor-bg-image-row">
+          <img id="bg-image-thumb" class="bg-image-thumb" alt="">
+          <input type="file" id="bg-image-file" accept="image/*">
+          <button type="button" class="bg-image-remove-btn" id="bg-image-remove-btn">Remove image</button>
+          <span class="bg-image-error" id="bg-image-error">Couldn't load that image — try a different file.</span>
+        </div>
       </div>
       <div id="editor-size-row">
         <span class="size-label">Clues per Category</span>
@@ -1478,6 +1675,43 @@ footer{
   </div>
 </div>
 
+<div id="group-maker-overlay" class="modal-overlay" role="dialog" aria-labelledby="group-maker-title">
+  <div id="group-maker-card">
+    <h2 id="group-maker-title">Groups</h2>
+    <p class="editor-sub">Type or paste your class list, choose how many groups you need, then click a name and click a group to place it — or shuffle to assign everyone at random.</p>
+    <div id="group-maker-body">
+      <div id="group-maker-setup-row">
+        <label class="field">
+          <span>Student Names (one per line)</span>
+          <textarea id="group-maker-roster-input" rows="5" placeholder="Ada&#10;Grace&#10;Alan"></textarea>
+        </label>
+        <div id="group-maker-count-row">
+          <span class="size-label">Number of Groups</span>
+          <div class="size-stepper">
+            <button type="button" class="size-btn" id="group-count-remove-btn" aria-label="Remove a group">&minus;</button>
+            <span id="group-count-label" class="size-count tabular"></span>
+            <button type="button" class="size-btn" id="group-count-add-btn" aria-label="Add a group">+</button>
+          </div>
+        </div>
+        <button type="button" class="btn" id="group-maker-build-btn">Build Groups</button>
+      </div>
+      <div id="group-maker-board" hidden>
+        <div id="group-maker-actions">
+          <button type="button" class="btn" id="group-maker-shuffle-btn">&#128256; Shuffle All</button>
+          <button type="button" class="btn primary" id="group-maker-send-btn">Send Groups to Teams</button>
+        </div>
+        <div id="group-maker-pool">
+          <span class="field-group-label">Unassigned</span>
+          <div id="group-maker-pool-list" class="group-maker-chip-list"></div>
+        </div>
+        <div id="group-maker-groups"></div>
+      </div>
+      <div id="group-maker-status"></div>
+    </div>
+    <button class="btn primary" id="group-maker-close-btn" type="button">Done</button>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -1509,7 +1743,8 @@ footer{
       tagline: "A build-your-own trivia board for any subject — customize every category and clue in the editor.",
       categories: categories,
       dailyDouble: { cat: 2, idx: 2 },
-      palette: normalizePalette(null)
+      palette: normalizePalette(null),
+      backgroundImage: ""
     };
   }
 
@@ -1592,6 +1827,7 @@ footer{
       });
       parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
       delete parsed.accentColor;
+      if (typeof parsed.backgroundImage !== "string") parsed.backgroundImage = "";
       return parsed;
     } catch (err) {
       return null;
@@ -1656,6 +1892,10 @@ footer{
   var presetPaletteRow = document.getElementById("preset-palette-row");
   var customPaletteGrid = document.getElementById("custom-palette-grid");
   var paletteResetBtn = document.getElementById("palette-reset-btn");
+  var bgImageThumb = document.getElementById("bg-image-thumb");
+  var bgImageFile = document.getElementById("bg-image-file");
+  var bgImageRemoveBtn = document.getElementById("bg-image-remove-btn");
+  var bgImageError = document.getElementById("bg-image-error");
   var editorCategoriesEl = document.getElementById("editor-categories");
   var rowRemoveBtn = document.getElementById("row-remove-btn");
   var rowAddBtn = document.getElementById("row-add-btn");
@@ -1690,6 +1930,21 @@ footer{
   var studentBuzzerCodeDisplay = document.getElementById("student-buzzer-code-display");
   var buzzerBannerEl = document.getElementById("buzzer-banner");
   var buzzerResetBtn = document.getElementById("buzzer-reset-btn");
+  var groupMakerBtn = document.getElementById("group-maker-btn");
+  var groupMakerOverlay = document.getElementById("group-maker-overlay");
+  var groupMakerCloseBtn = document.getElementById("group-maker-close-btn");
+  var groupMakerRosterInput = document.getElementById("group-maker-roster-input");
+  var groupCountRemoveBtn = document.getElementById("group-count-remove-btn");
+  var groupCountAddBtn = document.getElementById("group-count-add-btn");
+  var groupCountLabel = document.getElementById("group-count-label");
+  var groupMakerBuildBtn = document.getElementById("group-maker-build-btn");
+  var groupMakerBoard = document.getElementById("group-maker-board");
+  var groupMakerShuffleBtn = document.getElementById("group-maker-shuffle-btn");
+  var groupMakerSendBtn = document.getElementById("group-maker-send-btn");
+  var groupMakerPoolList = document.getElementById("group-maker-pool-list");
+  var groupMakerPool = document.getElementById("group-maker-pool");
+  var groupMakerGroupsEl = document.getElementById("group-maker-groups");
+  var groupMakerStatusEl = document.getElementById("group-maker-status");
 
   var current = null;
   var victoryCelebrated = false;
@@ -2006,6 +2261,251 @@ footer{
     persistStudentBuzzerCode(studentBuzzerCodeInput.value.trim());
   });
 
+  /* ---------------- group maker ----------------
+     A standalone classroom utility for splitting a typed student list into
+     groups — independent of the scoring Teams, with an optional one-click
+     handoff that replaces the Teams with the built groups. Not persisted:
+     each open of the modal starts fresh unless groups were already built
+     earlier in this same page session. */
+  var MIN_GROUPS = 2;
+  var MAX_GROUPS = 8;
+  var groupMaker = { groupCount: 2, groups: [], unassigned: [], selected: null };
+
+  function setGroupMakerStatus(msg, kind){
+    groupMakerStatusEl.textContent = msg;
+    groupMakerStatusEl.className = kind || "";
+  }
+
+  function updateGroupCountUI(){
+    groupCountLabel.textContent = String(groupMaker.groupCount);
+    groupCountRemoveBtn.disabled = groupMaker.groupCount <= MIN_GROUPS;
+    groupCountAddBtn.disabled = groupMaker.groupCount >= MAX_GROUPS;
+  }
+
+  function setGroupCount(n){
+    groupMaker.groupCount = Math.max(MIN_GROUPS, Math.min(MAX_GROUPS, n));
+    updateGroupCountUI();
+    if (groupMaker.groups.length) buildGroups();
+  }
+
+  function parseRoster(){
+    return groupMakerRosterInput.value.split("\n")
+      .map(function(s){ return s.trim(); })
+      .filter(function(s){ return s.length > 0; });
+  }
+
+  /* Reconciles the current groups/pool against a freshly (re)typed roster and
+     group count: names removed from the roster are dropped, new names land
+     in the unassigned pool, and existing placements are otherwise kept. */
+  function buildGroups(){
+    var names = parseRoster();
+    if (!names.length){
+      setGroupMakerStatus("Type at least one student name first.", "error");
+      return;
+    }
+    while (groupMaker.groups.length < groupMaker.groupCount){
+      groupMaker.groups.push({ name: "Group " + (groupMaker.groups.length + 1), members: [] });
+    }
+    while (groupMaker.groups.length > groupMaker.groupCount){
+      var removed = groupMaker.groups.pop();
+      groupMaker.unassigned = groupMaker.unassigned.concat(removed.members);
+    }
+    var nameSet = {};
+    names.forEach(function(n){ nameSet[n] = true; });
+    groupMaker.unassigned = groupMaker.unassigned.filter(function(n){ return nameSet[n]; });
+    groupMaker.groups.forEach(function(g){
+      g.members = g.members.filter(function(n){ return nameSet[n]; });
+    });
+    var known = {};
+    groupMaker.unassigned.forEach(function(n){ known[n] = true; });
+    groupMaker.groups.forEach(function(g){ g.members.forEach(function(n){ known[n] = true; }); });
+    names.forEach(function(n){
+      if (!known[n]){ groupMaker.unassigned.push(n); known[n] = true; }
+    });
+    groupMaker.selected = null;
+    groupMakerBoard.hidden = false;
+    setGroupMakerStatus("", "");
+    renderGroupMaker();
+  }
+
+  function listByKey(key){
+    return key === "pool" ? groupMaker.unassigned : groupMaker.groups[key].members;
+  }
+
+  function moveMember(name, fromKey, toKey){
+    if (fromKey === toKey) return;
+    var fromList = listByKey(fromKey);
+    var idx = fromList.indexOf(name);
+    if (idx === -1) return;
+    fromList.splice(idx, 1);
+    listByKey(toKey).push(name);
+  }
+
+  function onChipActivate(name, listKey){
+    var sel = groupMaker.selected;
+    if (sel && sel.name === name && sel.list === listKey){
+      groupMaker.selected = null;
+    } else if (sel){
+      moveMember(sel.name, sel.list, listKey);
+      groupMaker.selected = null;
+    } else {
+      groupMaker.selected = { name: name, list: listKey };
+    }
+    renderGroupMaker();
+  }
+
+  function onListActivate(listKey){
+    var sel = groupMaker.selected;
+    if (sel && sel.list !== listKey){
+      moveMember(sel.name, sel.list, listKey);
+      groupMaker.selected = null;
+      renderGroupMaker();
+    }
+  }
+
+  function makeGroupChip(name, listKey){
+    var chip = document.createElement("span");
+    var isSelected = groupMaker.selected && groupMaker.selected.name === name && groupMaker.selected.list === listKey;
+    chip.className = "group-maker-chip" + (isSelected ? " selected" : "");
+    chip.textContent = name;
+    chip.setAttribute("role", "button");
+    chip.tabIndex = 0;
+    chip.setAttribute("aria-pressed", isSelected ? "true" : "false");
+    chip.addEventListener("click", function(e){
+      e.stopPropagation();
+      onChipActivate(name, listKey);
+    });
+    chip.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        onChipActivate(name, listKey);
+      }
+    });
+    return chip;
+  }
+
+  function renderGroupMaker(){
+    updateGroupCountUI();
+
+    groupMakerPoolList.innerHTML = "";
+    if (!groupMaker.unassigned.length){
+      var poolHint = document.createElement("span");
+      poolHint.className = "group-maker-empty-hint";
+      poolHint.textContent = "Everyone's assigned.";
+      groupMakerPoolList.appendChild(poolHint);
+    } else {
+      groupMaker.unassigned.forEach(function(name){
+        groupMakerPoolList.appendChild(makeGroupChip(name, "pool"));
+      });
+    }
+    groupMakerPool.classList.toggle("drop-target", !!groupMaker.selected && groupMaker.selected.list !== "pool");
+
+    groupMakerGroupsEl.innerHTML = "";
+    groupMaker.groups.forEach(function(group, idx){
+      var box = document.createElement("div");
+      box.className = "group-maker-group";
+      box.classList.toggle("drop-target", !!groupMaker.selected && groupMaker.selected.list !== idx);
+      box.tabIndex = 0;
+      box.setAttribute("aria-label", "Drop into " + (group.name.trim() || ("Group " + (idx + 1))));
+      box.addEventListener("click", function(){ onListActivate(idx); });
+      box.addEventListener("keydown", function(e){
+        if (e.target !== box) return;
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate(idx); }
+      });
+
+      var header = document.createElement("div");
+      header.className = "group-maker-group-header";
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = "group-maker-group-name";
+      nameInput.value = group.name;
+      nameInput.maxLength = 30;
+      nameInput.setAttribute("aria-label", "Group name");
+      nameInput.addEventListener("click", function(e){ e.stopPropagation(); });
+      nameInput.addEventListener("input", function(){ group.name = nameInput.value; });
+      header.appendChild(nameInput);
+
+      var countEl = document.createElement("span");
+      countEl.className = "group-maker-group-count";
+      countEl.textContent = group.members.length + (group.members.length === 1 ? " student" : " students");
+      header.appendChild(countEl);
+
+      box.appendChild(header);
+
+      var list = document.createElement("div");
+      list.className = "group-maker-chip-list";
+      if (!group.members.length){
+        var emptyHint = document.createElement("span");
+        emptyHint.className = "group-maker-empty-hint";
+        emptyHint.textContent = "No students yet.";
+        list.appendChild(emptyHint);
+      } else {
+        group.members.forEach(function(name){
+          list.appendChild(makeGroupChip(name, idx));
+        });
+      }
+      box.appendChild(list);
+
+      groupMakerGroupsEl.appendChild(box);
+    });
+  }
+
+  function shuffleGroups(){
+    if (!groupMaker.groups.length) return;
+    var all = groupMaker.unassigned.slice();
+    groupMaker.groups.forEach(function(g){
+      all = all.concat(g.members);
+      g.members = [];
+    });
+    for (var i = all.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = all[i]; all[i] = all[j]; all[j] = tmp;
+    }
+    groupMaker.unassigned = [];
+    all.forEach(function(name, i){
+      groupMaker.groups[i % groupMaker.groups.length].members.push(name);
+    });
+    groupMaker.selected = null;
+    setGroupMakerStatus("Shuffled " + all.length + (all.length === 1 ? " student" : " students") + " into " + groupMaker.groups.length + " groups.", "success");
+    renderGroupMaker();
+  }
+
+  function sendGroupsToTeams(){
+    var nonEmpty = groupMaker.groups.filter(function(g){ return g.members.length > 0; });
+    if (!nonEmpty.length){
+      setGroupMakerStatus("Build at least one group with students in it first.", "error");
+      return;
+    }
+    var capped = nonEmpty.slice(0, 6);
+    var msg = "Replace the current teams with these " + capped.length + " group" + (capped.length === 1 ? "" : "s") + "? This resets all scores.";
+    if (nonEmpty.length > 6) msg += " Teams are capped at 6, so only the first 6 groups will be used.";
+    openConfirm(msg, "Replace Teams", function(){
+      state.teams = capped.map(function(g){ return { name: g.name.trim() || "Group", score: 0 }; });
+      renderTeams();
+      setGroupMakerStatus("Sent " + capped.length + " group" + (capped.length === 1 ? "" : "s") + " to the scoreboard.", "success");
+    });
+  }
+
+  function openGroupMaker(){ groupMakerOverlay.classList.add("open"); }
+  function closeGroupMaker(){ groupMakerOverlay.classList.remove("open"); }
+
+  updateGroupCountUI();
+  groupMakerBtn.addEventListener("click", openGroupMaker);
+  groupMakerCloseBtn.addEventListener("click", closeGroupMaker);
+  groupMakerBuildBtn.addEventListener("click", buildGroups);
+  groupCountAddBtn.addEventListener("click", function(){ setGroupCount(groupMaker.groupCount + 1); });
+  groupCountRemoveBtn.addEventListener("click", function(){ setGroupCount(groupMaker.groupCount - 1); });
+  groupMakerShuffleBtn.addEventListener("click", shuffleGroups);
+  groupMakerSendBtn.addEventListener("click", sendGroupsToTeams);
+  groupMakerPool.tabIndex = 0;
+  groupMakerPool.setAttribute("aria-label", "Drop into Unassigned");
+  groupMakerPool.addEventListener("click", function(){ onListActivate("pool"); });
+  groupMakerPool.addEventListener("keydown", function(e){
+    if (e.target !== groupMakerPool) return;
+    if (e.key === "Enter" || e.key === " "){ e.preventDefault(); onListActivate("pool"); }
+  });
+
   /* ---------------- palette customization ---------------- */
   var SEMANTIC_SLOTS = ["accent", "info", "good", "danger"];
 
@@ -2154,6 +2654,17 @@ footer{
   }
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyPalette);
 
+  function applyBackgroundImage(){
+    var url = content.backgroundImage;
+    if (url){
+      document.body.style.setProperty("--bg-image-url", 'url("' + url + '")');
+      document.body.classList.add("has-bg-image");
+    } else {
+      document.body.style.removeProperty("--bg-image-url");
+      document.body.classList.remove("has-bg-image");
+    }
+  }
+
   /* ---------------- fit-to-screen ----------------
      On a wide-enough (non-mobile) viewport, uniformly scales the whole game
      down so header + board + teams + controls fit within the visible screen
@@ -2203,6 +2714,7 @@ footer{
     gameTaglineEl.style.display = content.tagline ? "" : "none";
     document.title = content.title;
     applyPalette();
+    applyBackgroundImage();
     scheduleFit();
   }
 
@@ -2715,11 +3227,20 @@ footer{
     });
   }
 
+  function renderBgImageField(){
+    var has = !!draft.backgroundImage;
+    bgImageThumb.classList.toggle("shown", has);
+    bgImageThumb.src = has ? draft.backgroundImage : "";
+    bgImageRemoveBtn.classList.toggle("shown", has);
+    bgImageError.classList.remove("shown");
+  }
+
   function buildEditorForm(){
     editorTitleInput.value = draft.title;
     editorTaglineInput.value = draft.tagline;
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
+    renderBgImageField();
     buildPresetRow();
     buildCustomPaletteGrid();
 
@@ -2876,6 +3397,7 @@ footer{
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
     draft.palette = normalizePalette(draft.palette);
+    draft.backgroundImage = draft.backgroundImage || "";
     commitContent(draft);
     closeEditor();
   }
@@ -2894,6 +3416,24 @@ footer{
     draft.palette = normalizePalette(null);
     buildEditorForm();
   });
+  bgImageFile.addEventListener("change", function(){
+    var file = bgImageFile.files && bgImageFile.files[0];
+    bgImageFile.value = "";
+    if (!file) return;
+    bgImageError.classList.remove("shown");
+    compressImageFile(file, 1600, function(dataUrl){
+      if (!dataUrl){
+        bgImageError.classList.add("shown");
+        return;
+      }
+      draft.backgroundImage = dataUrl;
+      renderBgImageField();
+    });
+  });
+  bgImageRemoveBtn.addEventListener("click", function(){
+    draft.backgroundImage = "";
+    renderBgImageField();
+  });
   editorRestoreBtn.addEventListener("click", function(){
     openConfirm("Restore the default placeholder content? This replaces your title, categories, and all clues, and can't be undone.", "Restore Defaults", restoreDefaultContent);
   });
@@ -2909,7 +3449,8 @@ footer{
     { el: confirmOverlay, close: closeConfirm },
     { el: editorOverlay, close: closeEditor },
     { el: buzzerOverlay, close: closeBuzzerSetup },
-    { el: studentBuzzerOverlay, close: closeStudentBuzzer }
+    { el: studentBuzzerOverlay, close: closeStudentBuzzer },
+    { el: groupMakerOverlay, close: closeGroupMaker }
   ];
   dismissibleOverlays.forEach(function(o){
     o.el.addEventListener("click", function(e){
