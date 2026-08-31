@@ -569,6 +569,8 @@ footer{
   background:var(--accent-soft);
 }
 #dd-wager-row.shown{ display:block; }
+#clue-card.dd-wagering #clue-image,
+#clue-card.dd-wagering #clue-text{ display:none; }
 .dd-wager-label{
   margin:0 0 8px;
   color:var(--ink);
@@ -1772,7 +1774,7 @@ footer{
     <div id="clue-cat" class="eyebrow"></div>
     <div id="clue-value" class="tabular"></div>
     <div id="dd-wager-row">
-      <p class="dd-wager-label">Lock in each team's wager before revealing the response:</p>
+      <p class="dd-wager-label">Lock in each team's wager before the clue is revealed:</p>
       <div id="dd-wager-units"></div>
     </div>
     <div id="clue-timer-row">
@@ -1823,7 +1825,7 @@ footer{
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or just click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue as done with no points awarded.</li>
-      <li>Watch for the hidden Daily Double &mdash; only one team answers, and their wager locks in as soon as you click &ldquo;Reveal Response,&rdquo; so it can&rsquo;t change after they see it.</li>
+      <li>Watch for the hidden Daily Double &mdash; only one team answers, and every wager locks in before the clue itself is shown, so nobody can bet after seeing it.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
       <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
@@ -2314,6 +2316,7 @@ footer{
   var tileGridEl = document.getElementById("tile-grid");
   var teamsEl = document.getElementById("teams");
   var overlay = document.getElementById("overlay");
+  var clueCardEl = document.getElementById("clue-card");
   var clueCatEl = document.getElementById("clue-cat");
   var clueValueEl = document.getElementById("clue-value");
   var ddWagerRow = document.getElementById("dd-wager-row");
@@ -3472,14 +3475,12 @@ footer{
     var clue = cat.clues[rowIdx];
     var value = valueForRow(rowIdx);
     var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
-    current = { catIdx: catIdx, rowIdx: rowIdx, value: value, isDaily: isDaily };
-    startBuzzerRound();
+    current = { catIdx: catIdx, rowIdx: rowIdx, value: value, isDaily: isDaily, wagering: isDaily, timerSeconds: clue.timerSeconds || 0 };
 
     clueCatEl.textContent = cat.name;
     clueValueEl.textContent = "$" + value;
     ddWagerRow.classList.toggle("shown", isDaily);
     renderDDWager();
-    startClueTimer(clue.timerSeconds || 0);
     if (clue.image) {
       clueImageEl.src = clue.image;
       clueImageEl.classList.add("shown");
@@ -3498,7 +3499,31 @@ footer{
 
     renderAwardButtons();
     overlay.classList.add("open");
+
+    if (isDaily){
+      /* True Daily Double rules: the wager locks in while the team knows only
+         the category and dollar value, before the clue itself is shown. */
+      clueCardEl.classList.add("dd-wagering");
+      revealBtn.textContent = "Lock In Wager & Show Clue";
+    } else {
+      clueCardEl.classList.remove("dd-wagering");
+      revealBtn.textContent = "Reveal Response";
+      startBuzzerRound();
+      startClueTimer(current.timerSeconds);
+    }
     revealBtn.focus();
+  }
+
+  /* Second stage of a Daily Double: locks the wager, then reveals the clue
+     itself (starting its timer and buzzer round only now) without yet
+     showing the answer — that still waits for a further "Reveal Response". */
+  function revealDailyDoubleClue(){
+    current.wagering = false;
+    lockDDWagers();
+    clueCardEl.classList.remove("dd-wagering");
+    revealBtn.textContent = "Reveal Response";
+    startBuzzerRound();
+    startClueTimer(current.timerSeconds);
   }
 
   /* Classic Daily Double wagering: a team can risk up to its own score, or
@@ -3645,6 +3670,10 @@ footer{
   }
 
   revealBtn.addEventListener("click", function(){
+    if (current && current.isDaily && current.wagering){
+      revealDailyDoubleClue();
+      return;
+    }
     stopClueTimer();
     lockDDWagers();
     answerTextEl.classList.add("shown");
