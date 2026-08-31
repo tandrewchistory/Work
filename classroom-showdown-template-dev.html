@@ -667,6 +667,36 @@ footer{
 }
 
 /* ---------------------------------- how-to modal ---------------------------------- */
+#rules-overlay{ z-index:60; }
+#rules-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:16px;
+  width:min(640px, 100%);
+  max-height:min(85vh, 700px);
+  padding:32px 34px 26px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.45);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  text-align:center;
+}
+#rules-card h2{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:32px;
+  margin:0;
+  color:var(--ink);
+}
+#rules-body{
+  overflow-y:auto;
+  text-align:left;
+  font-size:17px;
+  line-height:1.6;
+  color:var(--ink);
+}
+#rules-body p{ margin:0 0 12px; }
+#rules-body p:last-child{ margin-bottom:0; }
 #howto-overlay{ z-index:60; }
 #howto-card{
   background:var(--paper);
@@ -899,7 +929,8 @@ footer{
 .field input[type="text"]:focus,
 .field textarea:focus{ border-color:var(--focus); }
 #palette-section,
-#bg-image-section{
+#bg-image-section,
+#rules-section{
   display:flex;
   flex-direction:column;
   gap:10px;
@@ -908,7 +939,20 @@ footer{
   padding:14px;
   background:var(--board);
 }
-#bg-image-section .editor-sub{ margin:0; }
+#bg-image-section .editor-sub,
+#rules-section .editor-sub{ margin:0; }
+#editor-rules-input{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:6px;
+  padding:8px 10px;
+  color:var(--ink);
+  font-size:14px;
+  font-family:inherit;
+  resize:vertical;
+  line-height:1.4;
+}
+#editor-rules-input:focus{ border-color:var(--focus); }
 .editor-bg-image-row{
   display:flex;
   align-items:center;
@@ -1679,6 +1723,7 @@ footer{
     <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
 
+    <button class="btn" id="rules-btn">&#128220; Game Rules</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="end-game-btn">End Game</button>
     <button class="btn danger" id="reset-btn">Reset Game</button>
@@ -1720,6 +1765,14 @@ footer{
       <button class="btn" id="return-btn">Return to Board</button>
       <button class="btn" id="close-btn">Close (No Award)</button>
     </div>
+  </div>
+</div>
+
+<div id="rules-overlay" class="modal-overlay" role="dialog" aria-labelledby="rules-title">
+  <div id="rules-card">
+    <h2 id="rules-title">How We'll Play</h2>
+    <div id="rules-body"></div>
+    <button class="btn primary" id="rules-close-btn">Let's Play!</button>
   </div>
 </div>
 
@@ -1815,6 +1868,11 @@ footer{
           <span>Tagline</span>
           <input type="text" id="editor-tagline-input" maxlength="140">
         </label>
+      </div>
+      <div id="rules-section">
+        <span class="field-group-label">Game Rules (shown to students)</span>
+        <p class="editor-sub">Shown on the projector when the class clicks &ldquo;Game Rules&rdquo; &mdash; keep it in plain, student-facing language.</p>
+        <textarea id="editor-rules-input" rows="6"></textarea>
       </div>
       <div id="palette-section">
         <span class="field-group-label">Board Colors</span>
@@ -1997,6 +2055,14 @@ footer{
     return { clue: "Write your $" + v + " clue here", answer: "Write the answer here", explainer: "", note: "", image: "", timerSeconds: 0 };
   }
 
+  var DEFAULT_RULES = "Here's how we'll play:\n" +
+    "1. Pick a category and a dollar value from the board.\n" +
+    "2. Talk it over with your team — you've got a few seconds to agree on an answer.\n" +
+    "3. When it's your team's turn, say your answer out loud.\n" +
+    "4. Get it right and your team earns the points. Get it wrong, and another team might get a chance to steal!\n" +
+    "5. Watch out for the Daily Double — it's hidden in one clue, and the team that finds it can wager big for even more points.\n" +
+    "6. Whoever has the most points when the board is cleared wins. Good luck!";
+
   function makeDefaultContent(){
     var categories = [];
     for (var c = 0; c < DEFAULT_CATS; c++){
@@ -2010,7 +2076,8 @@ footer{
       categories: categories,
       dailyDouble: { cat: 2, idx: 2 },
       palette: normalizePalette(null),
-      backgroundImage: ""
+      backgroundImage: "",
+      rules: DEFAULT_RULES
     };
   }
 
@@ -2096,6 +2163,7 @@ footer{
       parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
       delete parsed.accentColor;
       if (typeof parsed.backgroundImage !== "string") parsed.backgroundImage = "";
+      if (typeof parsed.rules !== "string" || !parsed.rules.trim()) parsed.rules = DEFAULT_RULES;
       return parsed;
     } catch (err) {
       return null;
@@ -2225,6 +2293,10 @@ footer{
   var awardButtons = document.getElementById("award-buttons");
   var ddBanner = document.getElementById("dd-banner");
   var howtoOverlay = document.getElementById("howto-overlay");
+  var rulesBtn = document.getElementById("rules-btn");
+  var rulesOverlay = document.getElementById("rules-overlay");
+  var rulesBody = document.getElementById("rules-body");
+  var rulesCloseBtn = document.getElementById("rules-close-btn");
   var undoBtn = document.getElementById("undo-btn");
   var randomClueBtn = document.getElementById("random-clue-btn");
   var randomTeamBtn = document.getElementById("random-team-btn");
@@ -2250,6 +2322,7 @@ footer{
   var editorOverlay = document.getElementById("editor-overlay");
   var editorTitleInput = document.getElementById("editor-title-input");
   var editorTaglineInput = document.getElementById("editor-tagline-input");
+  var editorRulesInput = document.getElementById("editor-rules-input");
   var presetPaletteRow = document.getElementById("preset-palette-row");
   var customPaletteGrid = document.getElementById("custom-palette-grid");
   var paletteResetBtn = document.getElementById("palette-reset-btn");
@@ -3565,7 +3638,7 @@ footer{
   }
 
   function otherModalOpen(){
-    return [editorOverlay, buzzerOverlay, studentBuzzerOverlay, teamBuilderOverlay, howtoOverlay, confirmOverlay, victoryOverlay, reviewOverlay, randomTeamOverlay].some(function(el){
+    return [editorOverlay, buzzerOverlay, studentBuzzerOverlay, teamBuilderOverlay, howtoOverlay, rulesOverlay, confirmOverlay, victoryOverlay, reviewOverlay, randomTeamOverlay].some(function(el){
       return el.classList.contains("open");
     });
   }
@@ -3639,6 +3712,29 @@ footer{
     howtoOverlay.classList.add("open");
   });
   document.getElementById("howto-close").addEventListener("click", closeHowto);
+
+  /* Student-facing rules screen — separate from "How to Play" above, which
+     documents this app's own controls (Edit Board, Buzzer, etc.) for the
+     teacher. This one is meant to be projected to the class and is free
+     text the teacher can rewrite entirely from the editor. */
+  function renderRules(){
+    rulesBody.innerHTML = "";
+    var text = content.rules || DEFAULT_RULES;
+    text.split("\n").forEach(function(line){
+      line = line.trim();
+      if (!line) return;
+      var p = document.createElement("p");
+      p.textContent = line;
+      rulesBody.appendChild(p);
+    });
+  }
+  function openRules(){
+    renderRules();
+    rulesOverlay.classList.add("open");
+  }
+  function closeRules(){ rulesOverlay.classList.remove("open"); }
+  rulesBtn.addEventListener("click", openRules);
+  rulesCloseBtn.addEventListener("click", closeRules);
 
   document.getElementById("victory-play-again").addEventListener("click", function(){
     resetGame();
@@ -4041,8 +4137,10 @@ footer{
   function buildEditorForm(){
     editorTitleInput.value = draft.title;
     editorTaglineInput.value = draft.tagline;
+    editorRulesInput.value = draft.rules || "";
     editorTitleInput.oninput = function(){ draft.title = editorTitleInput.value; };
     editorTaglineInput.oninput = function(){ draft.tagline = editorTaglineInput.value; };
+    editorRulesInput.oninput = function(){ draft.rules = editorRulesInput.value; };
     syncBgImageField();
     buildPresetRow();
     buildCustomPaletteGrid();
@@ -4207,6 +4305,7 @@ footer{
   function saveEditor(){
     draft.title = draft.title.trim() || DEFAULT_CONTENT.title;
     draft.tagline = draft.tagline.trim();
+    draft.rules = draft.rules.trim() || DEFAULT_RULES;
     draft.categories.forEach(function(cat, catIdx){
       cat.name = cat.name.trim() || ("Category " + (catIdx + 1));
       cat.clues.forEach(function(clue, rowIdx){
@@ -4250,6 +4349,7 @@ footer{
   var dismissibleOverlays = [
     { el: overlay, close: closeModal },
     { el: howtoOverlay, close: closeHowto },
+    { el: rulesOverlay, close: closeRules },
     { el: victoryOverlay, close: closeVictory },
     { el: confirmOverlay, close: closeConfirm },
     { el: editorOverlay, close: closeEditor },
@@ -4295,6 +4395,7 @@ footer{
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
     rows.push(["Tagline", c.tagline]);
+    rows.push(["Rules", c.rules || ""]);
     PALETTE_SLOTS.forEach(function(slot){
       rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
     });
@@ -4345,12 +4446,13 @@ footer{
       paletteLabelToSlot[(PALETTE_SLOT_META[slot].label + " Color").toLowerCase()] = slot;
     });
 
-    var title = null, tagline = null;
+    var title = null, tagline = null, rules = null;
     var palette = {}; // only holds keys for slots whose row was actually present in the file
     rows.forEach(function(r){
       var label = (r[0] || "").trim().toLowerCase();
       if (label === "title") title = r[1] || "";
       if (label === "tagline") tagline = r[1] || "";
+      if (label === "rules") rules = r[1] || "";
       var slot = paletteLabelToSlot[label];
       if (slot){
         var v = (r[1] || "").trim();
@@ -4404,6 +4506,7 @@ footer{
     return {
       title: title,
       tagline: tagline,
+      rules: rules,
       palette: palette,
       categories: categories,
       dailyDouble: dailyDouble || { cat: 0, idx: 0 }
@@ -4438,6 +4541,7 @@ footer{
     });
     if (imported.title !== null) draft.title = imported.title;
     if (imported.tagline !== null) draft.tagline = imported.tagline;
+    if (imported.rules !== null) draft.rules = imported.rules;
     PALETTE_SLOTS.forEach(function(slot){
       if (Object.prototype.hasOwnProperty.call(imported.palette, slot)) draft.palette[slot] = imported.palette[slot];
     });
