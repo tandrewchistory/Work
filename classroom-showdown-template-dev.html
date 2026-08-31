@@ -459,8 +459,9 @@ footer{
   inset:0;
   background:rgba(15,14,8,0.55);
   display:none;
-  align-items:center;
+  align-items:safe center;
   justify-content:center;
+  overflow-y:auto;
   padding:20px;
 }
 .modal-overlay.open{ display:flex; }
@@ -558,6 +559,39 @@ footer{
   color:var(--ink-soft);
   white-space:nowrap;
   cursor:pointer;
+}
+#dd-wager-row{
+  display:none;
+  margin:0 0 16px;
+  border:1.5px dashed var(--accent);
+  border-radius:10px;
+  padding:12px 14px;
+  background:var(--accent-soft);
+}
+#dd-wager-row.shown{ display:block; }
+.dd-wager-label{
+  margin:0 0 8px;
+  color:var(--ink);
+  font-size:12.5px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+#dd-wager-units{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  justify-content:center;
+}
+.wager-unit.locked .wager-input{
+  opacity:0.7;
+  cursor:not-allowed;
+}
+.wager-locked-note{
+  font-size:11px;
+  font-weight:700;
+  color:var(--ink-soft);
+  margin-left:4px;
 }
 #clue-image{
   display:none;
@@ -1737,6 +1771,10 @@ footer{
     <div class="daily-double-banner" id="dd-banner">Daily Double!</div>
     <div id="clue-cat" class="eyebrow"></div>
     <div id="clue-value" class="tabular"></div>
+    <div id="dd-wager-row">
+      <p class="dd-wager-label">Lock in each team's wager before revealing the response:</p>
+      <div id="dd-wager-units"></div>
+    </div>
     <div id="clue-timer-row">
       <div id="clue-timer-clock">
         <svg viewBox="0 0 44 44" aria-hidden="true">
@@ -1785,7 +1823,7 @@ footer{
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
       <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or just click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue as done with no points awarded.</li>
-      <li>Watch for the hidden Daily Double &mdash; only one team gets to answer, and they wager an amount up to their own score (or up to the board&rsquo;s top dollar value, if their score is lower than that).</li>
+      <li>Watch for the hidden Daily Double &mdash; only one team answers, and their wager locks in as soon as you click &ldquo;Reveal Response,&rdquo; so it can&rsquo;t change after they see it.</li>
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
       <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
@@ -2060,7 +2098,7 @@ footer{
     "2. Talk it over with your team — you've got a few seconds to agree on an answer.\n" +
     "3. When it's your team's turn, say your answer out loud.\n" +
     "4. Get it right and your team earns the points. Get it wrong, and another team might get a chance to steal!\n" +
-    "5. Watch out for the Daily Double — it's hidden in one clue, and the team that finds it can wager big for even more points.\n" +
+    "5. Watch out for the Daily Double — it's hidden in one clue. The team that finds it wagers points before hearing the clue, so choose wisely!\n" +
     "6. Whoever has the most points when the board is cleared wins. Good luck!";
 
   function makeDefaultContent(){
@@ -2278,6 +2316,8 @@ footer{
   var overlay = document.getElementById("overlay");
   var clueCatEl = document.getElementById("clue-cat");
   var clueValueEl = document.getElementById("clue-value");
+  var ddWagerRow = document.getElementById("dd-wager-row");
+  var ddWagerUnits = document.getElementById("dd-wager-units");
   var clueTimerRow = document.getElementById("clue-timer-row");
   var clueTimerArc = document.getElementById("clue-timer-arc");
   var clueTimerLabel = document.getElementById("clue-timer-label");
@@ -3437,6 +3477,8 @@ footer{
 
     clueCatEl.textContent = cat.name;
     clueValueEl.textContent = "$" + value;
+    ddWagerRow.classList.toggle("shown", isDaily);
+    renderDDWager();
     startClueTimer(clue.timerSeconds || 0);
     if (clue.image) {
       clueImageEl.src = clue.image;
@@ -3467,11 +3509,63 @@ footer{
     return Math.max(team.score, boardMax);
   }
 
+  /* One getter per team, in team order, reading that team's current wager
+     input — populated fresh by every renderDDWager() call. The wager UI is
+     shown and editable as soon as a Daily Double clue opens (before the
+     response is revealed), and locked (disabled) once "Reveal Response" is
+     clicked, so a team can't quietly change its bet after seeing whether
+     it got the answer right. */
+  var ddWagerGetters = [];
+
+  function renderDDWager(){
+    ddWagerUnits.innerHTML = "";
+    ddWagerGetters = [];
+    if (!current || !current.isDaily) return;
+    var value = current.value;
+    state.teams.forEach(function(team){
+      var cap = dailyDoubleWagerCap(team);
+      var unit = document.createElement("div");
+      unit.className = "wager-unit";
+
+      var nameEl = document.createElement("span");
+      nameEl.className = "wager-team-name";
+      nameEl.textContent = team.name;
+      unit.appendChild(nameEl);
+
+      var wagerInput = document.createElement("input");
+      wagerInput.type = "number";
+      wagerInput.className = "wager-input";
+      wagerInput.min = "0";
+      wagerInput.max = String(cap);
+      wagerInput.step = "10";
+      wagerInput.value = String(Math.min(value, cap));
+      wagerInput.setAttribute("aria-label", team.name + " Daily Double wager, up to $" + cap);
+      unit.appendChild(wagerInput);
+
+      ddWagerUnits.appendChild(unit);
+      ddWagerGetters.push(function(){
+        var n = parseInt(wagerInput.value, 10);
+        if (!isFinite(n) || n < 0) n = 0;
+        if (n > cap) n = cap;
+        return n;
+      });
+    });
+  }
+
+  function lockDDWagers(){
+    var units = ddWagerUnits.querySelectorAll(".wager-unit");
+    for (var i = 0; i < units.length; i++){
+      units[i].classList.add("locked");
+      var input = units[i].querySelector(".wager-input");
+      if (input) input.disabled = true;
+    }
+  }
+
   /* One {correct, wrong} handler pair per team, in team order — populated
      fresh by every renderAwardButtons() call. Keyboard shortcuts (1-6 /
      Shift+1-6) call these directly rather than re-deriving the award
      amount, so they always agree with whatever the on-screen buttons would
-     do (including reading a Daily Double's current wager input). */
+     do (including reading a Daily Double's locked-in wager). */
   var awardHandlers = [];
 
   function renderAwardButtons(){
@@ -3480,40 +3574,13 @@ footer{
     if (!current) return;
     var value = current.value;
     if (current.isDaily){
-      state.teams.forEach(function(team){
-        var cap = dailyDoubleWagerCap(team);
-        var unit = document.createElement("div");
-        unit.className = "wager-unit";
-
-        var nameEl = document.createElement("span");
-        nameEl.className = "wager-team-name";
-        nameEl.textContent = team.name;
-        unit.appendChild(nameEl);
-
-        var wagerInput = document.createElement("input");
-        wagerInput.type = "number";
-        wagerInput.className = "wager-input";
-        wagerInput.min = "0";
-        wagerInput.max = String(cap);
-        wagerInput.step = "10";
-        wagerInput.value = String(Math.min(value, cap));
-        wagerInput.setAttribute("aria-label", team.name + " Daily Double wager, up to $" + cap);
-        unit.appendChild(wagerInput);
-
-        function currentWager(){
-          var n = parseInt(wagerInput.value, 10);
-          if (!isFinite(n) || n < 0) n = 0;
-          if (n > cap) n = cap;
-          return n;
-        }
-
-        var correct = function(){ awardPoints(team, currentWager()); };
-        var wrong = function(){ awardPoints(team, -currentWager()); };
-        unit.appendChild(makeButton("award-btn correct", "✓", correct, { ariaLabel: team.name + " answered correctly" }));
-        unit.appendChild(makeButton("award-btn wrong", "✗", wrong, { ariaLabel: team.name + " answered incorrectly" }));
+      state.teams.forEach(function(team, idx){
+        var getWager = ddWagerGetters[idx] || function(){ return 0; };
+        var correct = function(){ awardPoints(team, getWager()); };
+        var wrong = function(){ awardPoints(team, -getWager()); };
+        awardButtons.appendChild(makeButton("award-btn correct", "✓ " + team.name, correct, { ariaLabel: team.name + " answered correctly" }));
+        awardButtons.appendChild(makeButton("award-btn wrong", "✗ " + team.name, wrong, { ariaLabel: team.name + " answered incorrectly" }));
         awardHandlers.push({ correct: correct, wrong: wrong });
-
-        awardButtons.appendChild(unit);
       });
     } else {
       state.teams.forEach(function(team){
@@ -3579,6 +3646,7 @@ footer{
 
   revealBtn.addEventListener("click", function(){
     stopClueTimer();
+    lockDDWagers();
     answerTextEl.classList.add("shown");
     if (explainerTextEl.textContent.trim()) explainerTextEl.classList.add("shown");
     awardRow.classList.add("shown");
