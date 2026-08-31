@@ -423,6 +423,8 @@ h1{
   color:var(--accent-ink);
 }
 .btn.primary:hover{ filter:brightness(1.06); }
+.btn.info{ border-color:var(--info); color:var(--info); }
+.btn.info:hover{ background:var(--info-soft); }
 .btn:disabled{
   opacity:0.4;
   cursor:not-allowed;
@@ -1608,6 +1610,33 @@ footer{
   font-size:12.5px;
   margin-top:2px;
 }
+
+/* ---------------------------------- random team ---------------------------------- */
+#random-team-overlay{ z-index:58; }
+#random-team-card{
+  background:var(--paper);
+  border:1px solid var(--paper-edge);
+  border-radius:16px;
+  width:min(360px, 100%);
+  padding:26px 28px 22px;
+  text-align:center;
+  box-shadow:0 30px 70px rgba(0,0,0,0.4);
+}
+#random-team-card h2{
+  font-family:"Board Marker", cursive;
+  font-weight:400;
+  font-size:24px;
+  margin:0 0 14px;
+  color:var(--ink);
+}
+#random-team-result{
+  font-family:"Board Marker", cursive;
+  font-size:clamp(28px, 6vw, 38px);
+  color:var(--accent);
+  margin:0 0 20px;
+  min-height:1.2em;
+  word-break:break-word;
+}
 </style>
 </head>
 <body>
@@ -1640,15 +1669,19 @@ footer{
 
   <div id="controls">
     <button class="btn primary" id="edit-board-btn">&#9998; Edit Board</button>
+    <button class="btn" id="team-builder-btn">&#128101; Team Builder</button>
     <button class="btn" id="add-team-btn">+ Add Team</button>
+
+    <button class="btn info" id="random-clue-btn">&#127922; Random Clue</button>
+    <button class="btn info" id="random-team-btn">&#128587; Random Team</button>
     <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
-    <button class="btn" id="random-clue-btn">&#127922; Random Clue</button>
-    <button class="btn" id="end-game-btn">End Game</button>
+
     <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
     <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
-    <button class="btn" id="team-builder-btn">&#128101; Team Builder</button>
+
     <button class="btn" id="how-to-btn">How to Play</button>
-    <button class="btn" id="reset-btn">Reset Game</button>
+    <button class="btn" id="end-game-btn">End Game</button>
+    <button class="btn danger" id="reset-btn">Reset Game</button>
   </div>
 
   <footer>Pick a dollar value to reveal a clue, then reveal the response and award points to the team that got it.</footer>
@@ -1703,6 +1736,7 @@ footer{
       <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
       <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
       <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
+      <li>Nobody volunteering, or no clear winner of the buzz-in? &ldquo;Random Clue&rdquo; opens a random unplayed tile, and &ldquo;Random Team&rdquo; picks who answers.</li>
       <li>Running the game from a clicker instead of the mouse? Space or Enter reveals the response, 1&ndash;6 awards the clue to that team, Shift+1&ndash;6 docks it instead, and U undoes the last action.</li>
     </ol>
     <button class="btn primary" id="howto-close">Got it</button>
@@ -1736,6 +1770,17 @@ footer{
     </div>
     <div id="review-body"></div>
     <button class="btn primary" id="review-close-btn">Done</button>
+  </div>
+</div>
+
+<div id="random-team-overlay" class="modal-overlay" role="dialog" aria-labelledby="random-team-title">
+  <div id="random-team-card">
+    <h2 id="random-team-title">Random Team</h2>
+    <div id="random-team-result"></div>
+    <div class="victory-actions">
+      <button type="button" class="btn info" id="random-team-again-btn">&#127922; Pick Again</button>
+      <button type="button" class="btn primary" id="random-team-close-btn">Done</button>
+    </div>
   </div>
 </div>
 
@@ -2182,6 +2227,11 @@ footer{
   var howtoOverlay = document.getElementById("howto-overlay");
   var undoBtn = document.getElementById("undo-btn");
   var randomClueBtn = document.getElementById("random-clue-btn");
+  var randomTeamBtn = document.getElementById("random-team-btn");
+  var randomTeamOverlay = document.getElementById("random-team-overlay");
+  var randomTeamResult = document.getElementById("random-team-result");
+  var randomTeamAgainBtn = document.getElementById("random-team-again-btn");
+  var randomTeamCloseBtn = document.getElementById("random-team-close-btn");
   var victoryOverlay = document.getElementById("victory-overlay");
   var victoryTitleEl = document.getElementById("victory-title");
   var victoryScoreEl = document.getElementById("victory-score");
@@ -3515,7 +3565,7 @@ footer{
   }
 
   function otherModalOpen(){
-    return [editorOverlay, buzzerOverlay, studentBuzzerOverlay, teamBuilderOverlay, howtoOverlay, confirmOverlay, victoryOverlay, reviewOverlay].some(function(el){
+    return [editorOverlay, buzzerOverlay, studentBuzzerOverlay, teamBuilderOverlay, howtoOverlay, confirmOverlay, victoryOverlay, reviewOverlay, randomTeamOverlay].some(function(el){
       return el.classList.contains("open");
     });
   }
@@ -3562,6 +3612,23 @@ footer{
     var pick = unused[Math.floor(Math.random() * unused.length)];
     openClue(pick.catIdx, pick.rowIdx);
   });
+
+  /* For settling "who answers" when there's no clear buzz-in — picks
+     uniformly at random among the current teams and announces it. */
+  function pickRandomTeam(){
+    if (!state.teams.length) return;
+    var pick = state.teams[Math.floor(Math.random() * state.teams.length)];
+    randomTeamResult.textContent = pick.name;
+  }
+  function openRandomTeam(){
+    pickRandomTeam();
+    randomTeamOverlay.classList.add("open");
+  }
+  function closeRandomTeam(){ randomTeamOverlay.classList.remove("open"); }
+
+  randomTeamBtn.addEventListener("click", openRandomTeam);
+  randomTeamAgainBtn.addEventListener("click", pickRandomTeam);
+  randomTeamCloseBtn.addEventListener("click", closeRandomTeam);
 
   document.getElementById("end-game-btn").addEventListener("click", function(){
     victoryCelebrated = true;
@@ -4189,7 +4256,8 @@ footer{
     { el: buzzerOverlay, close: closeBuzzerSetup },
     { el: studentBuzzerOverlay, close: closeStudentBuzzer },
     { el: teamBuilderOverlay, close: closeTeamBuilder },
-    { el: reviewOverlay, close: closeReview }
+    { el: reviewOverlay, close: closeReview },
+    { el: randomTeamOverlay, close: closeRandomTeam }
   ];
   dismissibleOverlays.forEach(function(o){
     o.el.addEventListener("click", function(e){
