@@ -1506,6 +1506,11 @@ footer{
   line-height:1.4;
   font-family:inherit;
 }
+#team-builder-import-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 #team-builder-count-row{
   display:flex;
   align-items:center;
@@ -2049,6 +2054,10 @@ footer{
           <span>Student Names (one per line)</span>
           <textarea id="team-builder-roster-input" rows="5" placeholder="Ada&#10;Grace&#10;Alan"></textarea>
         </label>
+        <div id="team-builder-import-row">
+          <button type="button" class="btn" id="team-builder-import-btn">&#8679; Import Students (.txt)</button>
+          <input type="file" id="team-builder-import-file" accept=".txt,text/plain" style="display:none">
+        </div>
         <div id="team-builder-count-row">
           <span class="size-label">Number of Teams</span>
           <div class="size-stepper">
@@ -2411,6 +2420,8 @@ footer{
   var teamBuilderOverlay = document.getElementById("team-builder-overlay");
   var teamBuilderCloseBtn = document.getElementById("team-builder-close-btn");
   var teamBuilderRosterInput = document.getElementById("team-builder-roster-input");
+  var teamBuilderImportBtn = document.getElementById("team-builder-import-btn");
+  var teamBuilderImportFile = document.getElementById("team-builder-import-file");
   var teamCountRemoveBtn = document.getElementById("team-count-remove-btn");
   var teamCountAddBtn = document.getElementById("team-count-add-btn");
   var teamCountLabel = document.getElementById("team-count-label");
@@ -2770,6 +2781,23 @@ footer{
       .filter(function(s){ return s.length > 0; });
   }
 
+  /* Imports a plain-text class list (one student per line) into the roster
+     textarea, appending to whatever's already typed there rather than
+     clobbering it, so a teacher can combine an uploaded list with names
+     typed by hand. */
+  function importStudentsFromText(text){
+    var imported = text.split(/\r\n|\r|\n/)
+      .map(function(s){ return s.trim(); })
+      .filter(function(s){ return s.length > 0; });
+    if (!imported.length){
+      setTeamBuilderStatus("That file didn't contain any student names.", "error");
+      return;
+    }
+    var existing = parseRoster();
+    teamBuilderRosterInput.value = existing.concat(imported).join("\n");
+    setTeamBuilderStatus("Imported " + plural(imported.length, "student") + " from file.", "success");
+  }
+
   /* Reconciles the current teams/pool against a freshly (re)typed roster and
      team count: names removed from the roster are dropped, new names land
      in the unassigned pool, and existing placements are otherwise kept. */
@@ -3028,6 +3056,16 @@ footer{
   teamBuilderBtn.addEventListener("click", openTeamBuilder);
   teamBuilderCloseBtn.addEventListener("click", closeTeamBuilder);
   teamBuilderBuildBtn.addEventListener("click", buildTeams);
+  teamBuilderImportBtn.addEventListener("click", function(){ teamBuilderImportFile.click(); });
+  teamBuilderImportFile.addEventListener("change", function(){
+    var file = teamBuilderImportFile.files && teamBuilderImportFile.files[0];
+    teamBuilderImportFile.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onerror = function(){ setTeamBuilderStatus("Couldn't read that file.", "error"); };
+    reader.onload = function(e){ importStudentsFromText(String(e.target.result)); };
+    reader.readAsText(file);
+  });
   teamCountAddBtn.addEventListener("click", function(){ setBuilderTeamCount(teamBuilder.teamCount + 1); });
   teamCountRemoveBtn.addEventListener("click", function(){ setBuilderTeamCount(teamBuilder.teamCount - 1); });
   teamBuilderShuffleBtn.addEventListener("click", shuffleBuilderTeams);
@@ -3387,7 +3425,7 @@ footer{
 
   function resetGame(){
     state.used = {};
-    state.teams.forEach(function(t){ t.score = 0; });
+    state.teams = [ makeTeam("Team 1"), makeTeam("Team 2") ];
     history = [];
     updateUndoState();
     victoryCelebrated = false;
@@ -3710,7 +3748,7 @@ footer{
   }
 
   document.getElementById("reset-btn").addEventListener("click", function(){
-    openConfirm("Reset the board and all scores? This can't be undone.", "Reset Game", resetGame);
+    openConfirm("Reset the board, all scores, and teams (back to Team 1 / Team 2)? This can't be undone.", "Reset Game", resetGame);
   });
   confirmCancelBtn.addEventListener("click", closeConfirm);
   confirmOkBtn.addEventListener("click", function(){
