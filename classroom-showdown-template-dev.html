@@ -4222,6 +4222,7 @@ footer{
     rows.push(["- Clues per category: " + MIN_ROWS + " to " + MAX_ROWS + " allowed. To add one, add a new row to EVERY category's block so they all stay the same length. To remove one, delete a row from EVERY category's block. The Value column is filled in for reference only — the dollar amount is set by row position, not by what you type there."]);
     rows.push(["- Keep each category's rows together as one unbroken block — don't split a category across two places or leave blank rows inside the table."]);
     rows.push(["- Daily Double: put \"Yes\" in exactly one row's Daily Double column, and leave every other row blank."]);
+    rows.push(["- Timer (seconds): optional per-clue countdown shown on the board. Leave blank for no timer."]);
     rows.push([]);
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
@@ -4230,11 +4231,11 @@ footer{
       rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
     });
     rows.push([]);
-    rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double", "Teacher Note"]);
+    rows.push(["Category", "Value", "Clue", "Answer", "Explainer", "Daily Double", "Teacher Note", "Timer (seconds)"]);
     c.categories.forEach(function(cat, catIdx){
       cat.clues.forEach(function(clue, rowIdx){
         var isDD = (catIdx === c.dailyDouble.cat && rowIdx === c.dailyDouble.idx);
-        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : "", clue.note || ""]);
+        rows.push([cat.name, String(valueForRow(rowIdx)), clue.clue, clue.answer, clue.explainer || "", isDD ? "Yes" : "", clue.note || "", clue.timerSeconds || ""]);
       });
     });
     return rows.map(function(r){ return r.map(csvField).join(","); }).join("\r\n");
@@ -4317,11 +4318,13 @@ footer{
       var clues = byCat.get(name).map(function(r, rowIdx){
         var isDD = /^(y|yes|true|x|✓)$/i.test((r[5] || "").trim());
         if (isDD && !dailyDouble) dailyDouble = { cat: catIdx, idx: rowIdx };
+        var timerSeconds = Math.max(0, Math.min(3600, parseInt(r[7], 10) || 0));
         return {
           clue: r[2] || "",
           answer: r[3] || "",
           explainer: r[4] || "",
           note: r[6] || "",
+          timerSeconds: timerSeconds,
           image: ""
         };
       });
@@ -4339,18 +4342,17 @@ footer{
     };
   }
 
-  /* Clue images and timer settings live outside the CSV entirely, so
-     importing carries them over by grid position (category index, row
-     index) rather than by content. If the imported categories don't line
-     up one-to-one with the current ones — reordered, renamed, or a
-     different cat/row count — an existing image or timer can end up
-     attached to a different clue than the one it was set up for. Callers
-     use this to warn when that risk is real. */
-  function importCarriesPositionalDataRisk(prevCategories, importedCategories){
-    var hadAnyPositionalData = prevCategories.some(function(cat){
-      return cat.clues.some(function(clue){ return !!clue.image || !!clue.timerSeconds; });
+  /* Clue images live outside the CSV entirely, so importing carries them
+     over by grid position (category index, row index) rather than by
+     content. If the imported categories don't line up one-to-one with the
+     current ones — reordered, renamed, or a different cat/row count — an
+     existing image can end up attached to a different clue than the one it
+     was uploaded for. Callers use this to warn when that risk is real. */
+  function importCarriesImageRisk(prevCategories, importedCategories){
+    var hadAnyImage = prevCategories.some(function(cat){
+      return cat.clues.some(function(clue){ return !!clue.image; });
     });
-    if (!hadAnyPositionalData) return false;
+    if (!hadAnyImage) return false;
     if (prevCategories.length !== importedCategories.length) return true;
     var prevRowCount = prevCategories[0] ? prevCategories[0].clues.length : 0;
     var importedRowCount = importedCategories[0] ? importedCategories[0].clues.length : 0;
@@ -4364,7 +4366,6 @@ footer{
         var prevCat = draft.categories[catIdx];
         var prevClue = prevCat && prevCat.clues[rowIdx];
         clue.image = prevClue ? (prevClue.image || "") : "";
-        clue.timerSeconds = prevClue ? (prevClue.timerSeconds || 0) : 0;
       });
     });
     if (imported.title !== null) draft.title = imported.title;
@@ -4443,13 +4444,13 @@ footer{
       try {
         var imported = parseBoardCSV(String(e.target.result));
         var clueCount = imported.categories.length * imported.categories[0].clues.length;
-        var positionalRisk = importCarriesPositionalDataRisk(draft.categories, imported.categories);
+        var imageRisk = importCarriesImageRisk(draft.categories, imported.categories);
         applyImportedBoard(imported);
         var msg = "Imported " + imported.categories.length + " categories and " + clueCount + " clues. Click Save & Close to apply.";
-        if (positionalRisk){
-          msg += " Note: categories or rows changed shape, so any clue images or timers you'd already set up may now be on the wrong clue — check them before saving.";
+        if (imageRisk){
+          msg += " Note: categories or rows changed shape, so any clue images you'd already attached may now be on the wrong clue — check them before saving.";
         }
-        showIoStatus(msg, positionalRisk ? "warning" : "success");
+        showIoStatus(msg, imageRisk ? "warning" : "success");
       } catch (err) {
         showIoStatus(err.message || "Couldn't import that file.", "error");
       }
