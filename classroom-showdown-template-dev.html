@@ -1495,7 +1495,8 @@ footer{
   border-bottom:1px dashed var(--paper-edge);
   margin:2px 0;
 }
-#team-builder-roster-input{
+#team-builder-roster-input,
+#team-builder-banned-pairs-input{
   background:var(--board);
   border:1px solid var(--paper-edge);
   border-radius:6px;
@@ -1528,6 +1529,7 @@ footer{
 }
 #team-builder-status.error{ color:var(--danger); }
 #team-builder-status.success{ color:var(--good); }
+#team-builder-status.warning{ color:var(--danger); font-weight:700; }
 #team-builder-actions{
   display:flex;
   gap:10px;
@@ -2047,7 +2049,7 @@ footer{
 <div id="team-builder-overlay" class="modal-overlay" role="dialog" aria-labelledby="team-builder-title">
   <div id="team-builder-card">
     <h2 id="team-builder-title">Team Builder</h2>
-    <p class="editor-sub">Type or paste your class list, choose how many teams you need, then drag a name onto a team to place it (click also works) — or shuffle to assign everyone at random.</p>
+    <p class="editor-sub">Type or paste your class list, choose how many teams you need, then drag a name onto a team to place it (click also works) — or shuffle to assign everyone at random. List any students who shouldn't be on the same team, and Shuffle will keep them apart wherever possible.</p>
     <div id="team-builder-body">
       <div id="team-builder-setup-row">
         <label class="field">
@@ -2058,6 +2060,10 @@ footer{
           <button type="button" class="btn" id="team-builder-import-btn">&#8679; Import Students (.txt)</button>
           <input type="file" id="team-builder-import-file" accept=".txt,text/plain" style="display:none">
         </div>
+        <label class="field">
+          <span>Banned Pairings (optional &mdash; one pair per line, e.g. Ada, Grace)</span>
+          <textarea id="team-builder-banned-pairs-input" rows="3" placeholder="Ada, Grace"></textarea>
+        </label>
         <div id="team-builder-count-row">
           <span class="size-label">Number of Teams</span>
           <div class="size-stepper">
@@ -2422,6 +2428,7 @@ footer{
   var teamBuilderRosterInput = document.getElementById("team-builder-roster-input");
   var teamBuilderImportBtn = document.getElementById("team-builder-import-btn");
   var teamBuilderImportFile = document.getElementById("team-builder-import-file");
+  var teamBuilderBannedPairsInput = document.getElementById("team-builder-banned-pairs-input");
   var teamCountRemoveBtn = document.getElementById("team-count-remove-btn");
   var teamCountAddBtn = document.getElementById("team-count-add-btn");
   var teamCountLabel = document.getElementById("team-count-label");
@@ -3013,23 +3020,91 @@ footer{
     });
   }
 
+  /* Banned pairings: "Ada, Grace" per line means those two students should
+     never land on the same team. Matched case-insensitively against the
+     roster so a teacher doesn't have to match capitalization exactly. */
+  function pairKey(a, b){
+    var x = a.trim().toLowerCase(), y = b.trim().toLowerCase();
+    return x < y ? x + " " + y : y + " " + x;
+  }
+
+  function parseBannedPairs(){
+    return teamBuilderBannedPairsInput.value.split("\n")
+      .map(function(line){ return line.split(",").map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; }); })
+      .filter(function(parts){ return parts.length === 2 && parts[0].toLowerCase() !== parts[1].toLowerCase(); })
+      .map(function(parts){ return pairKey(parts[0], parts[1]); });
+  }
+
+  function hasBannedConflict(members, name, bannedSet){
+    for (var i = 0; i < members.length; i++){
+      if (bannedSet[pairKey(members[i], name)]) return true;
+    }
+    return false;
+  }
+
+  function countBannedViolations(teams, bannedSet){
+    var count = 0;
+    teams.forEach(function(t){
+      for (var i = 0; i < t.length; i++){
+        for (var j = i + 1; j < t.length; j++){
+          if (bannedSet[pairKey(t[i], t[j])]) count++;
+        }
+      }
+    });
+    return count;
+  }
+
+  /* Tries several random shuffles (greedily keeping banned pairs apart,
+     balancing team sizes among whichever teams are conflict-free for a
+     given student) and keeps whichever attempt has the fewest banned pairs
+     still stuck together. With no banned pairs, the very first attempt is
+     always kept, so behavior is unchanged from a plain random shuffle. */
+  function shuffleIntoTeams(names, teamCount, bannedSet, bannedCount){
+    var attempts = bannedCount ? 40 : 1;
+    var best = null, bestViolations = Infinity;
+    for (var attempt = 0; attempt < attempts && bestViolations > 0; attempt++){
+      var shuffled = names.slice();
+      for (var i = shuffled.length - 1; i > 0; i--){
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = tmp;
+      }
+      var teams = [];
+      for (var t = 0; t < teamCount; t++) teams.push([]);
+      shuffled.forEach(function(name){
+        var candidates = [];
+        for (var idx = 0; idx < teams.length; idx++){
+          if (!hasBannedConflict(teams[idx], name, bannedSet)) candidates.push(idx);
+        }
+        var pool = candidates.length ? candidates : teams.map(function(_, idx){ return idx; });
+        pool.sort(function(a, b){ return teams[a].length - teams[b].length; });
+        teams[pool[0]].push(name);
+      });
+      var violations = countBannedViolations(teams, bannedSet);
+      if (violations < bestViolations){ bestViolations = violations; best = teams; }
+    }
+    return { teams: best, violations: bestViolations };
+  }
+
   function shuffleBuilderTeams(){
     if (!teamBuilder.teams.length) return;
     var all = teamBuilder.unassigned.slice();
     teamBuilder.teams.forEach(function(t){
       all = all.concat(t.members);
-      t.members = [];
     });
-    for (var i = all.length - 1; i > 0; i--){
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = all[i]; all[i] = all[j]; all[j] = tmp;
-    }
+    var bannedKeys = parseBannedPairs();
+    var bannedSet = {};
+    bannedKeys.forEach(function(k){ bannedSet[k] = true; });
+    var result = shuffleIntoTeams(all, teamBuilder.teams.length, bannedSet, bannedKeys.length);
     teamBuilder.unassigned = [];
-    all.forEach(function(name, i){
-      teamBuilder.teams[i % teamBuilder.teams.length].members.push(name);
-    });
+    teamBuilder.teams.forEach(function(t, i){ t.members = result.teams[i]; });
     teamBuilder.selected = null;
-    setTeamBuilderStatus("Shuffled " + plural(all.length, "student") + " into " + teamBuilder.teams.length + " teams.", "success");
+    var msg = "Shuffled " + plural(all.length, "student") + " into " + teamBuilder.teams.length + " teams.";
+    if (bannedKeys.length && result.violations === 0){
+      msg += " All banned pairings were kept apart.";
+    } else if (result.violations > 0){
+      msg += " Couldn't avoid " + plural(result.violations, "banned pairing") + " — check placements and adjust by hand.";
+    }
+    setTeamBuilderStatus(msg, result.violations > 0 ? "warning" : "success");
     renderTeamBuilder();
   }
 
