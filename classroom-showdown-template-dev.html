@@ -509,32 +509,44 @@ footer{
 #clue-timer-row{
   display:none;
   align-items:center;
-  gap:10px;
+  justify-content:center;
+  gap:14px;
   margin:0 auto 16px;
-  max-width:360px;
 }
 #clue-timer-row.shown{ display:flex; }
-#clue-timer-track{
-  flex:1;
-  height:10px;
-  border-radius:6px;
-  background:var(--board);
-  border:1px solid var(--paper-edge);
-  overflow:hidden;
+#clue-timer-clock{
+  position:relative;
+  width:56px;
+  height:56px;
+  flex-shrink:0;
 }
-#clue-timer-fill{
-  height:100%;
+#clue-timer-clock svg{
   width:100%;
-  background:var(--info);
-  transition:width 0.2s linear;
+  height:100%;
+  transform:rotate(-90deg);
 }
-#clue-timer-fill.low{ background:var(--danger); }
+.clue-timer-track{
+  fill:none;
+  stroke:var(--board);
+  stroke-width:4;
+}
+.clue-timer-arc{
+  fill:none;
+  stroke:var(--info);
+  stroke-width:4;
+  stroke-linecap:round;
+  transition:stroke-dashoffset 0.2s linear, stroke 0.2s linear;
+}
+.clue-timer-arc.low{ stroke:var(--danger); }
 #clue-timer-label{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   font-family:"Board Numeral", sans-serif;
   color:var(--ink);
   font-size:15px;
-  min-width:2.5em;
-  text-align:right;
 }
 #clue-timer-chime-label{
   display:flex;
@@ -1545,9 +1557,18 @@ footer{
   margin:0 0 8px;
   color:var(--accent);
 }
+#review-toolbar{
+  display:flex;
+  gap:10px;
+}
+#review-toolbar .btn{
+  padding:6px 12px;
+  font-size:12.5px;
+}
 .review-clue{
   border-top:1px dashed var(--paper-edge);
   padding:8px 0;
+  cursor:pointer;
 }
 .review-clue:first-child{ border-top:none; padding-top:0; }
 .review-clue-value{
@@ -1568,6 +1589,16 @@ footer{
   color:var(--ink);
   margin:4px 0 2px;
 }
+.review-reveal-hint{
+  font-size:11px;
+  font-weight:700;
+  color:var(--info);
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
+.review-clue.revealed .review-reveal-hint{ display:none; }
+.review-clue-hidden{ display:none; }
+.review-clue.revealed .review-clue-hidden{ display:block; }
 .review-clue-answer{
   color:var(--good);
   font-style:italic;
@@ -1629,8 +1660,13 @@ footer{
     <div id="clue-cat" class="eyebrow"></div>
     <div id="clue-value" class="tabular"></div>
     <div id="clue-timer-row">
-      <div id="clue-timer-track"><div id="clue-timer-fill"></div></div>
-      <span id="clue-timer-label" class="tabular"></span>
+      <div id="clue-timer-clock">
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="clue-timer-track" cx="22" cy="22" r="18"></circle>
+          <circle class="clue-timer-arc" id="clue-timer-arc" cx="22" cy="22" r="18" stroke-dasharray="113.097"></circle>
+        </svg>
+        <span id="clue-timer-label" class="tabular"></span>
+      </div>
       <label id="clue-timer-chime-label"><input type="checkbox" id="clue-timer-chime-toggle"> Chime</label>
     </div>
     <img id="clue-image" alt="">
@@ -1693,7 +1729,11 @@ footer{
 <div id="review-overlay" class="modal-overlay" role="dialog" aria-labelledby="review-title">
   <div id="review-card">
     <h2 id="review-title">Review All Clues</h2>
-    <p class="editor-sub">Every clue and its answer, for a post-game recap.</p>
+    <p class="editor-sub">Every clue for a post-game recap &mdash; click a clue to reveal its answer.</p>
+    <div id="review-toolbar">
+      <button type="button" class="btn" id="review-reveal-all-btn">Reveal All</button>
+      <button type="button" class="btn" id="review-hide-all-btn">Hide All</button>
+    </div>
     <div id="review-body"></div>
     <button class="btn primary" id="review-close-btn">Done</button>
   </div>
@@ -2126,7 +2166,7 @@ footer{
   var clueCatEl = document.getElementById("clue-cat");
   var clueValueEl = document.getElementById("clue-value");
   var clueTimerRow = document.getElementById("clue-timer-row");
-  var clueTimerFill = document.getElementById("clue-timer-fill");
+  var clueTimerArc = document.getElementById("clue-timer-arc");
   var clueTimerLabel = document.getElementById("clue-timer-label");
   var clueTimerChimeToggle = document.getElementById("clue-timer-chime-toggle");
   var clueImageEl = document.getElementById("clue-image");
@@ -3226,6 +3266,8 @@ footer{
     } catch (err) { /* audio unavailable */ }
   }
 
+  var TIMER_CIRCUMFERENCE = 113.097;
+
   function stopClueTimer(){
     if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
     clueTimerRow.classList.remove("shown");
@@ -3236,8 +3278,9 @@ footer{
     var remainingSec = Math.ceil(remainingMs / 1000);
     clueTimerLabel.textContent = remainingSec + "s";
     var pct = timerTotalMs ? (remainingMs / timerTotalMs) : 0;
-    clueTimerFill.style.width = Math.max(0, Math.min(1, pct)) * 100 + "%";
-    clueTimerFill.classList.toggle("low", remainingSec <= 5 && remainingSec > 0);
+    pct = Math.max(0, Math.min(1, pct));
+    clueTimerArc.style.strokeDashoffset = String(TIMER_CIRCUMFERENCE * (1 - pct));
+    clueTimerArc.classList.toggle("low", remainingSec <= 5 && remainingSec > 0);
     if (remainingMs <= 0){
       clearInterval(timerInterval);
       timerInterval = null;
@@ -3585,17 +3628,34 @@ footer{
         clueEl.textContent = clue.clue;
         row.appendChild(clueEl);
 
+        var hint = document.createElement("div");
+        hint.className = "review-reveal-hint";
+        hint.textContent = "Click to reveal answer";
+        row.appendChild(hint);
+
+        var hidden = document.createElement("div");
+        hidden.className = "review-clue-hidden";
+
         var answerEl = document.createElement("div");
         answerEl.className = "review-clue-answer";
         answerEl.textContent = clue.answer;
-        row.appendChild(answerEl);
+        hidden.appendChild(answerEl);
 
         if (clue.explainer){
           var explainerEl = document.createElement("div");
           explainerEl.className = "review-clue-explainer";
           explainerEl.textContent = clue.explainer;
-          row.appendChild(explainerEl);
+          hidden.appendChild(explainerEl);
         }
+
+        row.appendChild(hidden);
+        row.setAttribute("role", "button");
+        row.tabIndex = 0;
+        row.setAttribute("aria-label", "Reveal answer for " + clue.clue);
+        row.addEventListener("click", function(){ row.classList.toggle("revealed"); });
+        row.addEventListener("keydown", function(e){
+          if (e.key === "Enter" || e.key === " "){ e.preventDefault(); row.classList.toggle("revealed"); }
+        });
 
         section.appendChild(row);
       });
@@ -3609,6 +3669,13 @@ footer{
     reviewOverlay.classList.add("open");
   }
   function closeReview(){ reviewOverlay.classList.remove("open"); }
+
+  document.getElementById("review-reveal-all-btn").addEventListener("click", function(){
+    reviewBody.querySelectorAll(".review-clue").forEach(function(el){ el.classList.add("revealed"); });
+  });
+  document.getElementById("review-hide-all-btn").addEventListener("click", function(){
+    reviewBody.querySelectorAll(".review-clue").forEach(function(el){ el.classList.remove("revealed"); });
+  });
 
   victoryReviewBtn.addEventListener("click", openReview);
   reviewCloseBtn.addEventListener("click", closeReview);
