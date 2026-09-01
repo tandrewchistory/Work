@@ -1,0 +1,1005 @@
+<title>Classroom Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #f4f5f8;
+  --panel: #ffffff;
+  --border: #dfe3ea;
+  --border-strong: #c7ccd6;
+  --ink: #1c2333;
+  --muted: #66708a;
+  --faint: #97a0b5;
+  --accent: #2f4571;
+  --accent-hover: #24365a;
+  --accent-soft: #e9edf7;
+  --present: #2f8f47;
+  --present-soft: #e6f4e9;
+  --absent: #c2453e;
+  --absent-soft: #fbeae9;
+  --tardy: #b97318;
+  --tardy-soft: #fbf0e0;
+  --excused: #667085;
+  --excused-soft: #eef0f3;
+  --shadow: 0 1px 2px rgba(28, 35, 51, 0.05), 0 1px 8px rgba(28, 35, 51, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d;
+    --panel: #1b1f27;
+    --border: #2b303a;
+    --border-strong: #3a4150;
+    --ink: #e8eaf0;
+    --muted: #97a1b8;
+    --faint: #6c7688;
+    --accent: #93a8de;
+    --accent-hover: #aebceb;
+    --accent-soft: #232c42;
+    --present: #57b06e;
+    --present-soft: #16261b;
+    --absent: #e2827c;
+    --absent-soft: #2c1a1a;
+    --tardy: #dda352;
+    --tardy-soft: #2a2013;
+    --excused: #97a1b8;
+    --excused-soft: #232730;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171d;
+  --panel: #1b1f27;
+  --border: #2b303a;
+  --border-strong: #3a4150;
+  --ink: #e8eaf0;
+  --muted: #97a1b8;
+  --faint: #6c7688;
+  --accent: #93a8de;
+  --accent-hover: #aebceb;
+  --accent-soft: #232c42;
+  --present: #57b06e;
+  --present-soft: #16261b;
+  --absent: #e2827c;
+  --absent-soft: #2c1a1a;
+  --tardy: #dda352;
+  --tardy-soft: #2a2013;
+  --excused: #97a1b8;
+  --excused-soft: #232730;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: "Source Serif 4", Georgia, "Times New Roman", serif; text-wrap: balance; }
+
+header {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 20px 28px 0;
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+.wordmark { display: flex; align-items: baseline; gap: 9px; margin-right: auto; }
+.wordmark .mark {
+  font-family: "Source Serif 4", serif;
+  font-weight: 700;
+  font-size: 21px;
+  color: var(--ink);
+}
+.wordmark .sub {
+  font-size: 12px;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: "IBM Plex Mono", monospace;
+}
+nav { display: flex; gap: 2px; }
+nav a {
+  padding: 9px 16px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  position: relative;
+  top: 1px;
+}
+nav a.active {
+  color: var(--ink);
+  background: var(--panel);
+  border-color: var(--border);
+  box-shadow: 0 -1px 0 var(--accent) inset;
+}
+nav a:hover:not(.active) { color: var(--accent); }
+.toolbar { display: flex; gap: 8px; align-items: center; padding-bottom: 2px; }
+.toolbar button {
+  font-size: 12.5px;
+  padding: 7px 12px;
+  font-family: "IBM Plex Mono", monospace;
+  letter-spacing: 0.01em;
+}
+
+.divider { height: 1px; background: var(--border); margin: 0 28px; }
+
+main { max-width: 1000px; margin: 0 auto; padding: 24px 28px 60px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+h2 { margin: 0 0 16px; font-size: 19px; font-weight: 600; }
+h3 { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin: 22px 0 10px; font-family: "Public Sans", sans-serif; }
+
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+input, select, textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  font-family: inherit;
+}
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+textarea { width: 100%; min-height: 60px; }
+
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+button:hover { background: var(--accent-hover); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.secondary { background: var(--panel); border: 1px solid var(--border-strong); color: var(--ink); }
+button.secondary:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+button.danger { background: var(--absent); }
+button.danger:hover { background: #a4362f; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td.num, th.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--accent-soft); }
+
+.status-btns { display: flex; gap: 4px; }
+.status-btns button {
+  padding: 4px 10px; font-size: 12px; font-family: "IBM Plex Mono", monospace;
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border-strong);
+}
+.status-btns button.selected.present { background: var(--present-soft); color: var(--present); border-color: var(--present); }
+.status-btns button.selected.absent { background: var(--absent-soft); color: var(--absent); border-color: var(--absent); }
+.status-btns button.selected.tardy { background: var(--tardy-soft); color: var(--tardy); border-color: var(--tardy); }
+.status-btns button.selected.excused { background: var(--excused-soft); color: var(--excused); border-color: var(--excused); }
+
+.pill { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-family: "IBM Plex Mono", monospace; }
+.pill.present { background: var(--present-soft); color: var(--present); }
+.pill.absent { background: var(--absent-soft); color: var(--absent); }
+.pill.tardy { background: var(--tardy-soft); color: var(--tardy); }
+.pill.excused { background: var(--excused-soft); color: var(--excused); }
+
+.muted { color: var(--muted); font-size: 13px; }
+.error { color: var(--absent); font-size: 13px; margin-top: 8px; }
+.notice { font-size: 13px; margin-top: 8px; color: var(--present); }
+.crumbs { font-size: 13px; margin-bottom: 14px; color: var(--muted); }
+.crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.score-input { width: 68px; font-family: "IBM Plex Mono", monospace; }
+
+.subtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
+.subtabs button {
+  border-radius: 0; border: none; border-bottom: 2px solid transparent;
+  background: none; color: var(--muted); padding: 8px 4px; margin-right: 16px; font-weight: 500;
+}
+.subtabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.subtabs button:hover:not(.active) { color: var(--ink); background: none; }
+
+.banner {
+  background: var(--tardy-soft); border: 1px solid var(--tardy); color: var(--ink);
+  padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 16px 28px 0;
+}
+.banner strong { color: var(--tardy); }
+#file-input { display: none; }
+</style>
+
+<header>
+  <div class="wordmark">
+    <span class="mark">Classroom Ledger</span>
+    <span class="sub">roster · attendance · grades</span>
+  </div>
+  <nav>
+    <a href="#/classes">Classes</a>
+    <a href="#/students">Students</a>
+  </nav>
+  <div class="toolbar">
+    <button class="secondary" id="export-btn" type="button" disabled>Export backup</button>
+    <button class="secondary" id="import-btn" type="button">Import backup</button>
+    <input type="file" id="file-input" accept="application/json">
+  </div>
+</header>
+<div class="divider"></div>
+<div class="banner" id="storage-banner">
+  Your data lives only in this browser, tied to this page. Clearing site data will erase it —
+  use <strong>Export backup</strong> regularly, and restore with <strong>Import backup</strong> if you ever need to.
+</div>
+<main id="app"></main>
+
+<script>
+'use strict';
+
+/* ============================== storage layer ============================== */
+
+const STORAGE_KEY = 'classroom-ledger:v1';
+const STATUSES = ['present', 'absent', 'tardy', 'excused'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function emptyState() {
+  return { classes: [], students: [], enrollments: [], attendance: [], assignments: [], grades: [] };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return emptyState();
+    const parsed = JSON.parse(raw);
+    return { ...emptyState(), ...parsed };
+  } catch {
+    return emptyState();
+  }
+}
+
+let state = loadState();
+
+function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    alert('Could not save changes: browser storage may be full or disabled here. Export a backup as a precaution.');
+  }
+}
+
+function nextId(collection) {
+  return collection.reduce((max, item) => Math.max(max, item.id), 0) + 1;
+}
+
+function required(value, label, maxLen) {
+  const v = (value || '').trim();
+  if (!v) throw new Error(`${label} is required`);
+  if (maxLen && v.length > maxLen) throw new Error(`${label} must be ${maxLen} characters or fewer`);
+  return v;
+}
+
+function optionalText(value, maxLen) {
+  const v = (value || '').trim();
+  if (!v) return null;
+  if (maxLen && v.length > maxLen) throw new Error(`Value must be ${maxLen} characters or fewer`);
+  return v;
+}
+
+const Store = {
+  /* ---- classes ---- */
+  listClasses() {
+    return state.classes
+      .map((c) => ({ ...c, student_count: state.enrollments.filter((e) => e.class_id === c.id).length }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  },
+  createClass({ name, subject, period, room }) {
+    const cls = {
+      id: nextId(state.classes),
+      name: required(name, 'Name', 200),
+      subject: optionalText(subject, 200),
+      period: optionalText(period, 50),
+      room: optionalText(room, 50),
+      created_at: new Date().toISOString(),
+    };
+    state.classes.push(cls);
+    persist();
+    return cls;
+  },
+  getClass(id) {
+    const cls = state.classes.find((c) => c.id === id);
+    if (!cls) return null;
+    const roster = state.enrollments
+      .filter((e) => e.class_id === id)
+      .map((e) => {
+        const s = state.students.find((s) => s.id === e.student_id);
+        return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name, email: s.email };
+      })
+      .sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+    return { ...cls, roster };
+  },
+  updateClass(id, { name, subject, period, room }) {
+    const cls = state.classes.find((c) => c.id === id);
+    if (!cls) throw new Error('Class not found');
+    Object.assign(cls, {
+      name: required(name, 'Name', 200),
+      subject: optionalText(subject, 200),
+      period: optionalText(period, 50),
+      room: optionalText(room, 50),
+    });
+    persist();
+    return cls;
+  },
+  deleteClass(id) {
+    const enrollmentIds = new Set(state.enrollments.filter((e) => e.class_id === id).map((e) => e.id));
+    const assignmentIds = new Set(state.assignments.filter((a) => a.class_id === id).map((a) => a.id));
+    state.attendance = state.attendance.filter((a) => !enrollmentIds.has(a.enrollment_id));
+    state.grades = state.grades.filter((g) => !enrollmentIds.has(g.enrollment_id) && !assignmentIds.has(g.assignment_id));
+    state.assignments = state.assignments.filter((a) => a.class_id !== id);
+    state.enrollments = state.enrollments.filter((e) => e.class_id !== id);
+    state.classes = state.classes.filter((c) => c.id !== id);
+    persist();
+  },
+
+  /* ---- students ---- */
+  listStudents(q) {
+    let list = state.students;
+    if (q) {
+      const needle = q.trim().toLowerCase();
+      list = list.filter((s) =>
+        s.first_name.toLowerCase().includes(needle) ||
+        s.last_name.toLowerCase().includes(needle) ||
+        (s.email || '').toLowerCase().includes(needle)
+      );
+    }
+    return [...list].sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+  },
+  createStudent({ first_name, last_name, email, notes }) {
+    const cleanEmail = optionalText(email, 254);
+    if (cleanEmail && !EMAIL_RE.test(cleanEmail)) throw new Error('Email must be valid');
+    if (cleanEmail && state.students.some((s) => (s.email || '').toLowerCase() === cleanEmail.toLowerCase())) {
+      throw new Error('A student with that email already exists');
+    }
+    const student = {
+      id: nextId(state.students),
+      first_name: required(first_name, 'First name', 100),
+      last_name: required(last_name, 'Last name', 100),
+      email: cleanEmail,
+      notes: optionalText(notes, 2000),
+      created_at: new Date().toISOString(),
+    };
+    state.students.push(student);
+    persist();
+    return student;
+  },
+  getStudent(id) {
+    const student = state.students.find((s) => s.id === id);
+    if (!student) return null;
+    const classes = state.enrollments
+      .filter((e) => e.student_id === id)
+      .map((e) => {
+        const c = state.classes.find((c) => c.id === e.class_id);
+        return { id: c.id, name: c.name, subject: c.subject, period: c.period, enrollment_id: e.id };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return { ...student, classes };
+  },
+  deleteStudent(id) {
+    const enrollmentIds = new Set(state.enrollments.filter((e) => e.student_id === id).map((e) => e.id));
+    state.attendance = state.attendance.filter((a) => !enrollmentIds.has(a.enrollment_id));
+    state.grades = state.grades.filter((g) => !enrollmentIds.has(g.enrollment_id));
+    state.enrollments = state.enrollments.filter((e) => e.student_id !== id);
+    state.students = state.students.filter((s) => s.id !== id);
+    persist();
+  },
+
+  /* ---- enrollments ---- */
+  enroll(classId, studentId) {
+    if (!state.classes.some((c) => c.id === classId)) throw new Error('Class not found');
+    if (!state.students.some((s) => s.id === studentId)) throw new Error('Student not found');
+    if (state.enrollments.some((e) => e.class_id === classId && e.student_id === studentId)) {
+      throw new Error('Student already enrolled in this class');
+    }
+    const enrollment = { id: nextId(state.enrollments), class_id: classId, student_id: studentId, created_at: new Date().toISOString() };
+    state.enrollments.push(enrollment);
+    persist();
+    return enrollment;
+  },
+  unenroll(enrollmentId) {
+    state.attendance = state.attendance.filter((a) => a.enrollment_id !== enrollmentId);
+    state.grades = state.grades.filter((g) => g.enrollment_id !== enrollmentId);
+    state.enrollments = state.enrollments.filter((e) => e.id !== enrollmentId);
+    persist();
+  },
+
+  /* ---- attendance ---- */
+  getAttendanceForDate(classId, date) {
+    const roster = state.enrollments.filter((e) => e.class_id === classId).map((e) => {
+      const s = state.students.find((s) => s.id === e.student_id);
+      const rec = state.attendance.find((a) => a.enrollment_id === e.id && a.date === date);
+      return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name, status: rec ? rec.status : null, notes: rec ? rec.notes : null };
+    });
+    return roster.sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+  },
+  saveAttendance(classId, date, records) {
+    if (!DATE_RE.test(date)) throw new Error('Date must be YYYY-MM-DD');
+    const validIds = new Set(state.enrollments.filter((e) => e.class_id === classId).map((e) => e.id));
+    for (const r of records) {
+      if (!validIds.has(r.enrollment_id)) throw new Error(`enrollment ${r.enrollment_id} is not in this class`);
+      if (!STATUSES.includes(r.status)) throw new Error('Invalid status');
+    }
+    for (const r of records) {
+      const existing = state.attendance.find((a) => a.enrollment_id === r.enrollment_id && a.date === date);
+      if (existing) {
+        existing.status = r.status;
+        existing.notes = optionalText(r.notes, 500);
+      } else {
+        state.attendance.push({ id: nextId(state.attendance), enrollment_id: r.enrollment_id, date, status: r.status, notes: optionalText(r.notes, 500) });
+      }
+    }
+    persist();
+  },
+
+  /* ---- assignments ---- */
+  listAssignments(classId) {
+    return state.assignments
+      .filter((a) => a.class_id === classId)
+      .sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.id - b.id);
+  },
+  createAssignment(classId, { name, category, max_points, due_date }) {
+    if (!state.classes.some((c) => c.id === classId)) throw new Error('Class not found');
+    const points = max_points === undefined || max_points === null || max_points === '' ? 100 : Number(max_points);
+    if (!(points > 0)) throw new Error('Max points must be a positive number');
+    if (due_date && !DATE_RE.test(due_date)) throw new Error('Due date must be YYYY-MM-DD');
+    const assignment = {
+      id: nextId(state.assignments), class_id: classId,
+      name: required(name, 'Name', 200), category: optionalText(category, 100),
+      max_points: points, due_date: due_date || null, created_at: new Date().toISOString(),
+    };
+    state.assignments.push(assignment);
+    persist();
+    return assignment;
+  },
+  deleteAssignment(id) {
+    state.grades = state.grades.filter((g) => g.assignment_id !== id);
+    state.assignments = state.assignments.filter((a) => a.id !== id);
+    persist();
+  },
+
+  /* ---- grades ---- */
+  saveGrades(assignmentId, records) {
+    const assignment = state.assignments.find((a) => a.id === assignmentId);
+    if (!assignment) throw new Error('Assignment not found');
+    const validIds = new Set(state.enrollments.filter((e) => e.class_id === assignment.class_id).map((e) => e.id));
+    for (const r of records) {
+      if (!validIds.has(r.enrollment_id)) throw new Error(`enrollment ${r.enrollment_id} is not in this class`);
+      if (r.score !== null && r.score !== undefined && !(Number(r.score) >= 0)) throw new Error('Score must be a non-negative number');
+    }
+    for (const r of records) {
+      const existing = state.grades.find((g) => g.assignment_id === assignmentId && g.enrollment_id === r.enrollment_id);
+      const score = r.score === null || r.score === undefined || r.score === '' ? null : Number(r.score);
+      if (existing) existing.score = score;
+      else state.grades.push({ id: nextId(state.grades), assignment_id: assignmentId, enrollment_id: r.enrollment_id, score });
+    }
+    persist();
+  },
+  gradebook(classId) {
+    const cls = state.classes.find((c) => c.id === classId);
+    const students = state.enrollments.filter((e) => e.class_id === classId).map((e) => {
+      const s = state.students.find((s) => s.id === e.student_id);
+      return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name };
+    }).sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+    const assignments = Store.listAssignments(classId);
+    const matrix = students.map((s) => ({
+      ...s,
+      scores: Object.fromEntries(assignments.map((a) => {
+        const g = state.grades.find((g) => g.assignment_id === a.id && g.enrollment_id === s.enrollment_id);
+        return [a.id, g ? g.score : null];
+      })),
+    }));
+    return { class: cls, assignments, students: matrix };
+  },
+};
+
+/* ============================== DOM helper ============================== */
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') node.className = v;
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else if (v !== null && v !== undefined) node.setAttribute(k, v);
+  }
+  for (const child of [].concat(children)) {
+    if (child === null || child === undefined) continue;
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  }
+  return node;
+}
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+function showError(container, err) { container.appendChild(el('div', { class: 'error' }, err.message)); }
+
+/* ============================== router ============================== */
+
+const app = document.getElementById('app');
+
+function currentRoute() {
+  const hash = location.hash.replace(/^#\/?/, '');
+  const parts = hash.split('/').filter(Boolean);
+  return parts.length ? parts : ['classes'];
+}
+
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', () => {
+  if (!location.hash) location.hash = '#/classes';
+  render();
+});
+
+function render() {
+  const parts = currentRoute();
+  document.querySelectorAll('nav a').forEach((a) => {
+    a.classList.toggle('active', parts[0] && a.getAttribute('href') === `#/${parts[0]}`);
+  });
+  clear(app);
+  try {
+    if (parts[0] === 'classes' && parts[1]) renderClassDetail(Number(parts[1]), parts[2] || 'roster');
+    else if (parts[0] === 'students' && parts[1]) renderStudentDetail(Number(parts[1]));
+    else if (parts[0] === 'students') renderStudentsList();
+    else renderClassesList();
+  } catch (err) {
+    app.appendChild(el('div', { class: 'panel' }, [showErrorInline(err)]));
+  }
+}
+
+function linkBack(label, href) {
+  const a = el('a', {}, label);
+  a.addEventListener('click', () => { location.hash = href; });
+  return a;
+}
+function showErrorInline(err) { return el('div', { class: 'error' }, err.message); }
+
+/* ============================== Classes list ============================== */
+
+function renderClassesList() {
+  clear(app);
+  const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Classes')]);
+  app.appendChild(panel);
+
+  const form = el('form', { class: 'row' });
+  const name = el('input', { placeholder: 'Class name', required: 'true', maxlength: '200' });
+  const subject = el('input', { placeholder: 'Subject', maxlength: '200' });
+  const period = el('input', { placeholder: 'Period', maxlength: '50' });
+  const room = el('input', { placeholder: 'Room', maxlength: '50' });
+  const submit = el('button', { type: 'submit' }, 'Add class');
+  form.append(
+    el('div', {}, [el('label', {}, 'Name'), name]),
+    el('div', {}, [el('label', {}, 'Subject'), subject]),
+    el('div', {}, [el('label', {}, 'Period'), period]),
+    el('div', {}, [el('label', {}, 'Room'), room]),
+    submit
+  );
+  const errBox = el('div', {});
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      Store.createClass({ name: name.value, subject: subject.value, period: period.value, room: room.value });
+      renderClassesList();
+    } catch (err) { showError(errBox, err); }
+  });
+  panel.append(form, errBox);
+
+  const listPanel = el('div', { class: 'panel' });
+  app.appendChild(listPanel);
+
+  const classes = Store.listClasses();
+  if (!classes.length) {
+    listPanel.appendChild(el('p', { class: 'muted' }, 'No classes yet. Add one above.'));
+    return;
+  }
+  const table = el('table');
+  table.appendChild(el('thead', {}, el('tr', {}, [
+    el('th', {}, 'Name'), el('th', {}, 'Subject'), el('th', {}, 'Period'), el('th', {}, 'Room'), el('th', { class: 'num' }, 'Students'), el('th', {}, ''),
+  ])));
+  const tbody = el('tbody');
+  for (const c of classes) {
+    const del = el('button', { class: 'danger' }, 'Delete');
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete "${c.name}"? This removes its roster, attendance, and grades.`)) return;
+      Store.deleteClass(c.id);
+      renderClassesList();
+    });
+    const tr = el('tr', { class: 'clickable' }, [
+      el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, c.period || ''),
+      el('td', {}, c.room || ''), el('td', { class: 'num' }, String(c.student_count)), el('td', {}, del),
+    ]);
+    tr.addEventListener('click', () => { location.hash = `#/classes/${c.id}`; });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  listPanel.appendChild(table);
+}
+
+/* ============================== Class detail ============================== */
+
+function renderClassDetail(id, subtab) {
+  clear(app);
+  const cls = Store.getClass(id);
+  if (!cls) { app.appendChild(el('div', { class: 'panel' }, [el('p', {}, 'Class not found.'), linkBack('Back to classes', '#/classes')])); return; }
+
+  app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Classes', '#/classes'), ' / ', el('strong', {}, cls.name)]));
+
+  const subtabs = el('div', { class: 'subtabs' });
+  for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
+    const btn = el('button', { class: key === subtab ? 'active' : '' }, label);
+    btn.addEventListener('click', () => { location.hash = `#/classes/${id}/${key}`; });
+    subtabs.appendChild(btn);
+  }
+  app.appendChild(subtabs);
+
+  const panel = el('div', { class: 'panel' });
+  app.appendChild(panel);
+
+  if (subtab === 'attendance') return renderAttendance(panel, cls);
+  if (subtab === 'gradebook') return renderGradebook(panel, cls, id);
+  return renderRoster(panel, cls, id);
+}
+
+function renderRoster(panel, cls, classId) {
+  panel.appendChild(el('h2', {}, 'Roster'));
+
+  const table = el('table');
+  table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Student'), el('th', {}, 'Email'), el('th', {}, '')])));
+  const tbody = el('tbody');
+  for (const s of cls.roster) {
+    const remove = el('button', { class: 'secondary' }, 'Remove');
+    remove.addEventListener('click', () => { Store.unenroll(s.enrollment_id); renderClassDetail(classId, 'roster'); });
+    tbody.appendChild(el('tr', {}, [el('td', {}, `${s.first_name} ${s.last_name}`), el('td', {}, s.email || ''), el('td', {}, remove)]));
+  }
+  table.appendChild(tbody);
+  panel.appendChild(table);
+  if (!cls.roster.length) panel.appendChild(el('p', { class: 'muted' }, 'No students enrolled yet.'));
+
+  panel.appendChild(el('h3', {}, 'Enroll a student'));
+  const enrollRow = el('div', { class: 'row' });
+  const select = el('select');
+  const enrolledIds = new Set(cls.roster.map((s) => s.student_id));
+  const available = Store.listStudents().filter((s) => !enrolledIds.has(s.id));
+  if (!available.length) {
+    select.appendChild(el('option', { value: '' }, 'No available students'));
+  } else {
+    for (const s of available) select.appendChild(el('option', { value: String(s.id) }, `${s.first_name} ${s.last_name}`));
+  }
+  const enrollBtn = el('button', {}, 'Enroll');
+  const enrollErr = el('div', {});
+  enrollRow.append(el('div', {}, [el('label', {}, 'Existing student'), select]), enrollBtn);
+  panel.append(enrollRow, enrollErr);
+
+  enrollBtn.addEventListener('click', () => {
+    clear(enrollErr);
+    if (!select.value) return;
+    try {
+      Store.enroll(classId, Number(select.value));
+      renderClassDetail(classId, 'roster');
+    } catch (err) { showError(enrollErr, err); }
+  });
+
+  panel.appendChild(el('p', { class: 'muted' }, ['Need a new student? Add them on the ', linkBack('Students', '#/students'), ' page, then enroll them here.']));
+}
+
+function renderAttendance(panel, cls) {
+  panel.appendChild(el('h2', {}, 'Attendance'));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateInput = el('input', { type: 'date', value: today });
+  panel.appendChild(el('div', { class: 'row' }, [el('div', {}, [el('label', {}, 'Date'), dateInput])]));
+
+  const tableWrap = el('div');
+  panel.appendChild(tableWrap);
+  const saveBtn = el('button', {}, 'Save attendance');
+  const errBox = el('div', {});
+  panel.append(saveBtn, errBox);
+
+  let currentRoster = [];
+
+  function loadForDate() {
+    clear(tableWrap);
+    clear(errBox);
+    currentRoster = Store.getAttendanceForDate(cls.id, dateInput.value);
+    const table = el('table');
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Student'), el('th', {}, 'Status'), el('th', {}, 'Notes')])));
+    const tbody = el('tbody');
+    for (const r of currentRoster) {
+      const btnGroup = el('div', { class: 'status-btns' });
+      for (const status of STATUSES) {
+        const b = el('button', { type: 'button', class: status === r.status ? `selected ${status}` : '' }, status);
+        b.addEventListener('click', () => {
+          r.status = status;
+          btnGroup.querySelectorAll('button').forEach((x) => { x.className = x.textContent === status ? `selected ${status}` : ''; });
+        });
+        btnGroup.appendChild(b);
+      }
+      const notesInput = el('input', { value: r.notes || '', maxlength: '500' });
+      notesInput.addEventListener('input', () => { r.notes = notesInput.value; });
+      tbody.appendChild(el('tr', {}, [el('td', {}, `${r.first_name} ${r.last_name}`), el('td', {}, btnGroup), el('td', {}, notesInput)]));
+    }
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    if (!currentRoster.length) tableWrap.appendChild(el('p', { class: 'muted' }, 'No students enrolled in this class yet.'));
+  }
+
+  dateInput.addEventListener('change', loadForDate);
+  saveBtn.addEventListener('click', () => {
+    clear(errBox);
+    const records = currentRoster.filter((r) => r.status).map((r) => ({ enrollment_id: r.enrollment_id, status: r.status, notes: r.notes || undefined }));
+    if (!records.length) { showError(errBox, new Error('Mark at least one status before saving.')); return; }
+    try {
+      Store.saveAttendance(cls.id, dateInput.value, records);
+      loadForDate();
+      errBox.appendChild(el('div', { class: 'notice' }, 'Saved.'));
+    } catch (err) { showError(errBox, err); }
+  });
+
+  loadForDate();
+}
+
+function renderGradebook(panel, cls, classId) {
+  panel.appendChild(el('h2', {}, 'Gradebook'));
+
+  panel.appendChild(el('h3', {}, 'New assignment'));
+  const form = el('form', { class: 'row' });
+  const name = el('input', { placeholder: 'Assignment name', required: 'true', maxlength: '200' });
+  const category = el('input', { placeholder: 'Category', maxlength: '100' });
+  const maxPoints = el('input', { type: 'number', value: '100', min: '0.01', step: '0.01' });
+  const dueDate = el('input', { type: 'date' });
+  const addBtn = el('button', { type: 'submit' }, 'Add assignment');
+  form.append(
+    el('div', {}, [el('label', {}, 'Name'), name]),
+    el('div', {}, [el('label', {}, 'Category'), category]),
+    el('div', {}, [el('label', {}, 'Max points'), maxPoints]),
+    el('div', {}, [el('label', {}, 'Due date'), dueDate]),
+    addBtn
+  );
+  const addErr = el('div', {});
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(addErr);
+    try {
+      Store.createAssignment(classId, { name: name.value, category: category.value, max_points: maxPoints.value, due_date: dueDate.value || undefined });
+      renderClassDetail(classId, 'gradebook');
+    } catch (err) { showError(addErr, err); }
+  });
+  panel.append(form, addErr);
+
+  const tableWrap = el('div');
+  const saveBtn = el('button', {}, 'Save grades');
+  const errBox = el('div', {});
+  panel.append(tableWrap, saveBtn, errBox);
+
+  const gb = Store.gradebook(classId);
+  const assignments = gb.assignments;
+  const students = gb.students;
+  const pendingScores = new Map();
+
+  if (!assignments.length) {
+    tableWrap.appendChild(el('p', { class: 'muted' }, 'No assignments yet. Add one above.'));
+  } else if (!students.length) {
+    tableWrap.appendChild(el('p', { class: 'muted' }, 'No students enrolled in this class yet.'));
+  } else {
+    const table = el('table');
+    const headRow = el('tr', {}, [el('th', {}, 'Student')]);
+    for (const a of assignments) {
+      const del = el('button', { class: 'secondary' }, '×');
+      del.title = `Delete ${a.name}`;
+      del.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!confirm(`Delete assignment "${a.name}"?`)) return;
+        Store.deleteAssignment(a.id);
+        renderClassDetail(classId, 'gradebook');
+      });
+      headRow.appendChild(el('th', { class: 'num' }, [`${a.name} (/${a.max_points})`, ' ', del]));
+    }
+    table.appendChild(el('thead', {}, headRow));
+
+    const tbody = el('tbody');
+    for (const s of students) {
+      const row = el('tr', {}, [el('td', {}, `${s.first_name} ${s.last_name}`)]);
+      for (const a of assignments) {
+        const val = s.scores[a.id];
+        const input = el('input', { class: 'score-input', type: 'number', min: '0', step: '0.01', value: val === null || val === undefined ? '' : String(val) });
+        input.addEventListener('input', () => {
+          const key = `${a.id}:${s.enrollment_id}`;
+          pendingScores.set(key, { assignment_id: a.id, enrollment_id: s.enrollment_id, score: input.value === '' ? null : Number(input.value) });
+        });
+        row.appendChild(el('td', { class: 'num' }, input));
+      }
+      tbody.appendChild(row);
+    }
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+  }
+
+  saveBtn.addEventListener('click', () => {
+    clear(errBox);
+    if (!pendingScores.size) return;
+    const byAssignment = new Map();
+    for (const rec of pendingScores.values()) {
+      if (!byAssignment.has(rec.assignment_id)) byAssignment.set(rec.assignment_id, []);
+      byAssignment.get(rec.assignment_id).push({ enrollment_id: rec.enrollment_id, score: rec.score });
+    }
+    try {
+      for (const [assignmentId, records] of byAssignment) Store.saveGrades(assignmentId, records);
+      renderClassDetail(classId, 'gradebook');
+    } catch (err) { showError(errBox, err); }
+  });
+}
+
+/* ============================== Students ============================== */
+
+function renderStudentsList() {
+  clear(app);
+  const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Students')]);
+  app.appendChild(panel);
+
+  const form = el('form', { class: 'row' });
+  const first = el('input', { placeholder: 'First name', required: 'true', maxlength: '100' });
+  const last = el('input', { placeholder: 'Last name', required: 'true', maxlength: '100' });
+  const email = el('input', { type: 'email', placeholder: 'Email (optional)', maxlength: '254' });
+  const submit = el('button', { type: 'submit' }, 'Add student');
+  form.append(
+    el('div', {}, [el('label', {}, 'First name'), first]),
+    el('div', {}, [el('label', {}, 'Last name'), last]),
+    el('div', {}, [el('label', {}, 'Email'), email]),
+    submit
+  );
+  const errBox = el('div', {});
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      Store.createStudent({ first_name: first.value, last_name: last.value, email: email.value || undefined });
+      renderStudentsList();
+    } catch (err) { showError(errBox, err); }
+  });
+  panel.append(form, errBox);
+
+  const searchBox = el('input', { placeholder: 'Search students…', style: 'margin-bottom:12px;width:100%' });
+  const listPanel = el('div', { class: 'panel' });
+  app.append(searchBox, listPanel);
+
+  function load(q) {
+    clear(listPanel);
+    const students = Store.listStudents(q);
+    if (!students.length) {
+      listPanel.appendChild(el('p', { class: 'muted' }, 'No students found.'));
+      return;
+    }
+    const table = el('table');
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Name'), el('th', {}, 'Email'), el('th', {}, '')])));
+    const tbody = el('tbody');
+    for (const s of students) {
+      const del = el('button', { class: 'danger' }, 'Delete');
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm(`Delete ${s.first_name} ${s.last_name}? This removes their enrollments, attendance, and grades.`)) return;
+        Store.deleteStudent(s.id);
+        load(searchBox.value);
+      });
+      const tr = el('tr', { class: 'clickable' }, [el('td', {}, `${s.first_name} ${s.last_name}`), el('td', {}, s.email || ''), el('td', {}, del)]);
+      tr.addEventListener('click', () => { location.hash = `#/students/${s.id}`; });
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    listPanel.appendChild(table);
+  }
+
+  let debounceTimer;
+  searchBox.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => load(searchBox.value), 200);
+  });
+  load('');
+}
+
+function renderStudentDetail(id) {
+  clear(app);
+  const student = Store.getStudent(id);
+  if (!student) { app.appendChild(el('div', { class: 'panel' }, [el('p', {}, 'Student not found.'), linkBack('Back to students', '#/students')])); return; }
+
+  app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Students', '#/students'), ' / ', el('strong', {}, `${student.first_name} ${student.last_name}`)]));
+
+  const panel = el('div', { class: 'panel' });
+  panel.appendChild(el('h2', {}, `${student.first_name} ${student.last_name}`));
+  if (student.email) panel.appendChild(el('p', { class: 'muted' }, student.email));
+  if (student.notes) panel.appendChild(el('p', {}, student.notes));
+
+  panel.appendChild(el('h3', {}, 'Enrolled classes'));
+  if (!student.classes.length) {
+    panel.appendChild(el('p', { class: 'muted' }, 'Not enrolled in any classes yet.'));
+  } else {
+    const table = el('table');
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Class'), el('th', {}, 'Subject'), el('th', {}, '')])));
+    const tbody = el('tbody');
+    for (const c of student.classes) {
+      const remove = el('button', { class: 'secondary' }, 'Unenroll');
+      remove.addEventListener('click', () => { Store.unenroll(c.enrollment_id); renderStudentDetail(id); });
+      tbody.appendChild(el('tr', {}, [el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, remove)]));
+    }
+    table.appendChild(tbody);
+    panel.appendChild(table);
+  }
+  app.appendChild(panel);
+}
+
+/* ============================== backup: export / import ============================== */
+
+const exportBtn = document.getElementById('export-btn');
+const importBtn = document.getElementById('import-btn');
+const fileInput = document.getElementById('file-input');
+let downloadsApi = null;
+
+(async () => {
+  try {
+    if (window.claude && typeof window.claude.use === 'function') {
+      downloadsApi = await window.claude.use('downloads');
+    }
+  } catch {
+    downloadsApi = null;
+  }
+  exportBtn.disabled = !downloadsApi;
+  exportBtn.title = downloadsApi ? '' : 'Backup export is unavailable in this view.';
+})();
+
+exportBtn.addEventListener('click', async () => {
+  if (!downloadsApi) return;
+  const stamp = new Date().toISOString().slice(0, 10);
+  try {
+    await downloadsApi.save({
+      filename: `classroom-ledger-backup-${stamp}.json`,
+      data: JSON.stringify(state, null, 2),
+    });
+  } catch (err) {
+    if (err && err.code === 'declined') return;
+    alert('Could not save backup: ' + ((err && err.message) || 'unknown error'));
+  }
+});
+
+importBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const requiredKeys = ['classes', 'students', 'enrollments', 'attendance', 'assignments', 'grades'];
+      if (!requiredKeys.every((k) => Array.isArray(parsed[k]))) throw new Error('This file does not look like a Classroom Ledger backup.');
+      if (!confirm('Import this backup? This will replace all data currently in this browser.')) return;
+      state = { ...emptyState(), ...parsed };
+      persist();
+      render();
+      alert('Backup imported.');
+    } catch (err) {
+      alert('Could not import file: ' + err.message);
+    } finally {
+      fileInput.value = '';
+    }
+  };
+  reader.readAsText(file);
+});
+</script>
