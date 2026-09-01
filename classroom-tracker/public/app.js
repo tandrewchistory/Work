@@ -56,7 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function render() {
   const parts = currentRoute();
   document.querySelectorAll('nav a').forEach((a) => {
-    a.classList.toggle('active', parts[0] && a.dataset.route === `#/${parts[0]}`);
+    a.classList.toggle('active', parts[0] && a.getAttribute('href') === `#/${parts[0]}`);
   });
   clear(app);
 
@@ -73,6 +73,7 @@ function render() {
 
 /* ---------- Classes list ---------- */
 async function renderClassesList() {
+  clear(app);
   const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Classes')]);
   app.appendChild(panel);
 
@@ -139,6 +140,7 @@ async function renderClassesList() {
 
 /* ---------- Class detail ---------- */
 async function renderClassDetail(id, subtab) {
+  clear(app);
   let cls;
   try {
     cls = await api(`/api/classes/${id}`);
@@ -394,6 +396,7 @@ async function renderGradebook(panel, cls, classId) {
 
 /* ---------- Students list ---------- */
 async function renderStudentsList() {
+  clear(app);
   const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Students')]);
   app.appendChild(panel);
 
@@ -461,6 +464,7 @@ async function renderStudentsList() {
 
 /* ---------- Student detail ---------- */
 async function renderStudentDetail(id) {
+  clear(app);
   let student;
   try {
     student = await api(`/api/students/${id}`);
