@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS classes (
   name             TEXT NOT NULL CHECK (length(trim(name)) > 0 AND length(name) <= 200),
   subject          TEXT CHECK (length(subject) <= 200),
   venue            TEXT CHECK (length(venue) <= 50),
-  odd_week_slots   TEXT CHECK (length(odd_week_slots) <= 200),
-  even_week_slots  TEXT CHECK (length(even_week_slots) <= 200),
+  odd_week_slots   TEXT CHECK (length(odd_week_slots) <= 2000), -- JSON-encoded array of {day,time}
+  even_week_slots  TEXT CHECK (length(even_week_slots) <= 2000), -- JSON-encoded array of {day,time}
   created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 

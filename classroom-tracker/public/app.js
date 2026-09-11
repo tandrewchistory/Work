@@ -3,6 +3,36 @@
 const app = document.getElementById('app');
 const STATUSES = ['present', 'absent', 'tardy', 'excused'];
 
+const DAYS = [
+  { code: 'Mon', label: 'Monday' },
+  { code: 'Tue', label: 'Tuesday' },
+  { code: 'Wed', label: 'Wednesday' },
+  { code: 'Thu', label: 'Thursday' },
+  { code: 'Fri', label: 'Friday' },
+];
+
+// 20-minute periods from 8:00am to 3:20pm inclusive.
+const TIMES = (() => {
+  const times = [];
+  for (let mins = 8 * 60; mins <= 15 * 60 + 20; mins += 20) {
+    times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  return times;
+})();
+
+function formatTime(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h < 12 ? 'am' : 'pm';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')}${period}`;
+}
+
+function formatSlots(slots) {
+  if (!slots) return '';
+  if (typeof slots === 'string') return slots; // data saved before the day/time picker existed
+  return slots.length ? slots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ') : '';
+}
+
 /* ---------- tiny DOM helper (keeps all user data out of innerHTML) ---------- */
 function el(tag, attrs = {}, children = []) {
   const node = document.createElement(tag);
@@ -77,34 +107,43 @@ async function renderClassesList() {
   const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Classes')]);
   app.appendChild(panel);
 
-  const form = el('form', { class: 'row' });
+  const form = el('form', {});
+  const topRow = el('div', { class: 'row' });
   const subject = el('input', { placeholder: 'Subject', maxlength: '200' });
   const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200' });
   const venue = el('input', { placeholder: 'Venue', maxlength: '50' });
-  const oddSlots = el('input', { placeholder: 'e.g. Mon P1-P2, Wed P5', maxlength: '200' });
-  const evenSlots = el('input', { placeholder: 'e.g. Tue P3-P4, Fri P1', maxlength: '200' });
-  const submit = el('button', { type: 'submit' }, 'Add class');
-  form.append(
+  topRow.append(
     el('div', {}, [el('label', {}, 'Subject'), subject]),
     el('div', {}, [el('label', {}, 'Class'), name]),
-    el('div', {}, [el('label', {}, 'Venue'), venue]),
-    el('div', {}, [el('label', {}, 'Odd week slots'), oddSlots]),
-    el('div', {}, [el('label', {}, 'Even week slots'), evenSlots]),
-    submit
+    el('div', {}, [el('label', {}, 'Venue'), venue])
   );
+
+  const oddPicker = buildSlotPicker();
+  const evenPicker = buildSlotPicker();
+  const slotsRow = el('div', { class: 'row' });
+  slotsRow.append(
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddPicker.element]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenPicker.element])
+  );
+
+  const submit = el('button', { type: 'submit' }, 'Add class');
   const errBox = el('div', {});
+  form.append(topRow, slotsRow, submit, errBox);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     clear(errBox);
     try {
       await api('/api/classes', {
         method: 'POST',
-        body: { name: name.value, subject: subject.value, venue: venue.value, odd_week_slots: oddSlots.value, even_week_slots: evenSlots.value },
+        body: {
+          name: name.value, subject: subject.value, venue: venue.value,
+          odd_week_slots: oddPicker.getSlots(), even_week_slots: evenPicker.getSlots(),
+        },
       });
       renderClassesList();
     } catch (err) { showError(errBox, err); }
   });
-  panel.append(form, errBox);
+  panel.append(form);
 
   const listPanel = el('div', { class: 'panel' });
   app.appendChild(listPanel);
@@ -132,7 +171,7 @@ async function renderClassesList() {
       });
       const tr = el('tr', { class: 'clickable' }, [
         el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''),
-        el('td', { class: 'form-class' }, c.odd_week_slots || ''), el('td', { class: 'form-class' }, c.even_week_slots || ''),
+        el('td', { class: 'form-class' }, formatSlots(c.odd_week_slots)), el('td', { class: 'form-class' }, formatSlots(c.even_week_slots)),
         el('td', {}, String(c.student_count)), el('td', {}, del),
       ]);
       tr.addEventListener('click', () => { location.hash = `#/classes/${c.id}`; });
@@ -161,8 +200,8 @@ async function renderClassDetail(id, subtab) {
   const infoItems = [
     cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
     cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
-    cls.odd_week_slots ? el('span', {}, ['Odd wk ', el('strong', {}, cls.odd_week_slots)]) : null,
-    cls.even_week_slots ? el('span', {}, ['Even wk ', el('strong', {}, cls.even_week_slots)]) : null,
+    cls.odd_week_slots && cls.odd_week_slots.length ? el('span', {}, ['Odd wk ', el('strong', {}, formatSlots(cls.odd_week_slots))]) : null,
+    cls.even_week_slots && cls.even_week_slots.length ? el('span', {}, ['Even wk ', el('strong', {}, formatSlots(cls.even_week_slots))]) : null,
   ].filter(Boolean);
   if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
 
@@ -195,6 +234,45 @@ function studentLink(label, studentId) {
 
 function showErrorInline(err) {
   return el('div', { class: 'error' }, err.message);
+}
+
+// Day + time dropdown pair with an "Add slot" button and removable chips.
+// Returns { element, getSlots() } so a form can pull the current list on submit.
+function buildSlotPicker(initialSlots = []) {
+  let slots = [...initialSlots];
+  const daySelect = el('select');
+  for (const d of DAYS) daySelect.appendChild(el('option', { value: d.code }, d.label));
+  const timeSelect = el('select');
+  for (const t of TIMES) timeSelect.appendChild(el('option', { value: t }, formatTime(t)));
+  const addBtn = el('button', { type: 'button', class: 'secondary' }, '+ Add');
+  const chipRow = el('div', { class: 'slot-chips' });
+
+  function renderChips() {
+    clear(chipRow);
+    if (!slots.length) {
+      chipRow.appendChild(el('span', { class: 'muted' }, 'No slots added yet'));
+      return;
+    }
+    slots.forEach((s, i) => {
+      const remove = el('button', { type: 'button', class: 'chip-remove' }, '×');
+      remove.addEventListener('click', () => { slots.splice(i, 1); renderChips(); });
+      chipRow.appendChild(el('span', { class: 'chip' }, [`${s.day} ${formatTime(s.time)}`, remove]));
+    });
+  }
+  renderChips();
+
+  addBtn.addEventListener('click', () => {
+    const slot = { day: daySelect.value, time: timeSelect.value };
+    if (slots.some((s) => s.day === slot.day && s.time === slot.time)) return;
+    slots.push(slot);
+    renderChips();
+  });
+
+  const element = el('div', {}, [
+    el('div', { class: 'row slot-row' }, [daySelect, timeSelect, addBtn]),
+    chipRow,
+  ]);
+  return { element, getSlots: () => slots };
 }
 
 async function renderRoster(panel, cls, classId) {
@@ -505,7 +583,17 @@ async function renderStudentDetail(id) {
   app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Students', '#/students'), ' / ', el('strong', {}, student.name)]));
 
   const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('h2', {}, student.name));
+  app.appendChild(panel);
+  renderStudentView(panel, id, student);
+}
+
+function renderStudentView(panel, id, student) {
+  clear(panel);
+
+  const editBtn = el('button', { class: 'secondary' }, 'Edit');
+  editBtn.addEventListener('click', () => renderStudentEdit(panel, id, student));
+  panel.appendChild(el('div', { class: 'panel-header' }, [el('h2', {}, student.name), editBtn]));
+
   panel.appendChild(el('div', { class: 'profile-meta' }, [
     el('span', {}, ['Full name ', el('strong', {}, student.full_name)]),
     el('span', {}, ['Form class ', el('strong', {}, student.form_class)]),
@@ -532,6 +620,48 @@ async function renderStudentDetail(id) {
     table.appendChild(tbody);
     panel.appendChild(table);
   }
+}
 
-  app.appendChild(panel);
+function renderStudentEdit(panel, id, student) {
+  clear(panel);
+  panel.appendChild(el('h2', {}, `Edit ${student.name}`));
+
+  const form = el('form', { class: 'row' });
+  const fullName = el('input', { value: student.full_name, required: 'true', maxlength: '200' });
+  const name = el('input', { value: student.name, required: 'true', maxlength: '100' });
+  const formClass = el('input', { value: student.form_class, required: 'true', maxlength: '50' });
+  const email = el('input', { type: 'email', value: student.email || '', maxlength: '254' });
+  const notes = el('textarea', { maxlength: '2000' }, student.notes || '');
+
+  form.append(
+    el('div', {}, [el('label', {}, 'Full name'), fullName]),
+    el('div', {}, [el('label', {}, 'Name'), name]),
+    el('div', {}, [el('label', {}, 'Form class'), formClass]),
+    el('div', {}, [el('label', {}, 'Email'), email]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes])
+  );
+
+  const errBox = el('div', {});
+  const saveBtn = el('button', { type: 'submit' }, 'Save');
+  const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+  form.appendChild(el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+
+  cancelBtn.addEventListener('click', () => renderStudentView(panel, id, student));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      await api(`/api/students/${id}`, {
+        method: 'PUT',
+        body: {
+          full_name: fullName.value, name: name.value, form_class: formClass.value,
+          email: email.value || undefined, notes: notes.value || undefined,
+        },
+      });
+      const refreshed = await api(`/api/students/${id}`);
+      renderStudentView(panel, id, refreshed);
+    } catch (err) { showError(errBox, err); }
+  });
+
+  panel.append(form, errBox);
 }

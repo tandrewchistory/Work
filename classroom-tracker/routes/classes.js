@@ -10,13 +10,56 @@ const router = express.Router();
 
 const idParam = param('id').isInt({ min: 1 }).toInt();
 
+const DAY_CODES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+// 20-minute periods from 8:00am to 3:20pm inclusive.
+const TIME_CODES = (() => {
+  const times = [];
+  for (let mins = 8 * 60; mins <= 15 * 60 + 20; mins += 20) {
+    times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  return times;
+})();
+
+const slotField = (field) => [
+  body(field).optional().isArray({ max: 20 }).withMessage(`${field} must be an array`),
+  body(`${field}.*.day`).isIn(DAY_CODES).withMessage(`${field} day must be one of ${DAY_CODES.join(', ')}`),
+  body(`${field}.*.time`).isIn(TIME_CODES).withMessage(`${field} time must be a valid 20-minute slot between 8:00am and 3:20pm`),
+];
+
 const classBody = [
   body('name').trim().isLength({ min: 1, max: 200 }).withMessage('name is required (max 200 chars)'),
   body('subject').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
   body('venue').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
-  body('odd_week_slots').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
-  body('even_week_slots').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
+  ...slotField('odd_week_slots'),
+  ...slotField('even_week_slots'),
 ];
+
+// De-dupes and sorts a slot list by day order, then time. Assumes entries
+// already passed the isIn() validators above.
+function normalizeSlots(list) {
+  const arr = Array.isArray(list) ? list : [];
+  const seen = new Set();
+  const deduped = arr.filter((s) => {
+    const key = `${s.day}:${s.time}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return deduped.sort((a, b) =>
+    DAY_CODES.indexOf(a.day) - DAY_CODES.indexOf(b.day) || a.time.localeCompare(b.time)
+  );
+}
+
+// Slots are stored as JSON text in a TEXT column (SQLite has no array type);
+// parse them back out for every response that includes a class row.
+function parseClass(cls) {
+  return {
+    ...cls,
+    odd_week_slots: JSON.parse(cls.odd_week_slots || '[]'),
+    even_week_slots: JSON.parse(cls.even_week_slots || '[]'),
+  };
+}
 
 function getClassOr404(id, res) {
   const cls = db.prepare('SELECT * FROM classes WHERE id = ?').get(id);
@@ -36,17 +79,17 @@ router.get('/', asyncHandler(async (req, res) => {
     GROUP BY c.id
     ORDER BY c.name COLLATE NOCASE
   `).all();
-  res.json(classes);
+  res.json(classes.map(parseClass));
 }));
 
 // POST /api/classes - create a class
 router.post('/', classBody, validate, asyncHandler(async (req, res) => {
-  const { name, subject = null, venue = null, odd_week_slots = null, even_week_slots = null } = req.body;
+  const { name, subject = null, venue = null, odd_week_slots, even_week_slots } = req.body;
   const info = db.prepare(
     'INSERT INTO classes (name, subject, venue, odd_week_slots, even_week_slots) VALUES (?, ?, ?, ?, ?)'
-  ).run(name, subject, venue, odd_week_slots, even_week_slots);
+  ).run(name, subject, venue, JSON.stringify(normalizeSlots(odd_week_slots)), JSON.stringify(normalizeSlots(even_week_slots)));
   const cls = db.prepare('SELECT * FROM classes WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json(cls);
+  res.status(201).json(parseClass(cls));
 }));
 
 // GET /api/classes/:id - class detail with roster
@@ -60,17 +103,17 @@ router.get('/:id', idParam, validate, asyncHandler(async (req, res) => {
     WHERE e.class_id = ?
     ORDER BY s.full_name COLLATE NOCASE
   `).all(cls.id);
-  res.json({ ...cls, roster });
+  res.json({ ...parseClass(cls), roster });
 }));
 
 // PUT /api/classes/:id - update a class
 router.put('/:id', [idParam, ...classBody], validate, asyncHandler(async (req, res) => {
   const cls = getClassOr404(req.params.id, res);
   if (!cls) return;
-  const { name, subject = null, venue = null, odd_week_slots = null, even_week_slots = null } = req.body;
+  const { name, subject = null, venue = null, odd_week_slots, even_week_slots } = req.body;
   db.prepare('UPDATE classes SET name = ?, subject = ?, venue = ?, odd_week_slots = ?, even_week_slots = ? WHERE id = ?')
-    .run(name, subject, venue, odd_week_slots, even_week_slots, cls.id);
-  res.json(db.prepare('SELECT * FROM classes WHERE id = ?').get(cls.id));
+    .run(name, subject, venue, JSON.stringify(normalizeSlots(odd_week_slots)), JSON.stringify(normalizeSlots(even_week_slots)), cls.id);
+  res.json(parseClass(db.prepare('SELECT * FROM classes WHERE id = ?').get(cls.id)));
 }));
 
 // DELETE /api/classes/:id - delete a class (cascades to enrollments/attendance/assignments/grades)

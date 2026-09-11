@@ -64,6 +64,19 @@ tr.clickable:hover { background: #f9f9fd; }
 td.form-class { color: var(--muted); font-size: 13px; }
 .profile-meta { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
 .profile-meta strong { color: var(--text); }
+.slot-row { align-items: center; gap: 6px; }
+.slot-row select { padding: 7px 8px; }
+.slot-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 24px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #eef1fd; color: var(--accent);
+  padding: 3px 6px 3px 10px; border-radius: 999px; font-size: 12.5px;
+}
+.chip-remove { background: none; border: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
+.chip-remove:hover { color: var(--danger); background: none; }
+.edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.panel-header h2 { margin-bottom: 0; }
 .score-input { width: 64px; }
 .subtabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .subtabs button { border-radius: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); padding: 8px 4px; }
@@ -101,6 +114,57 @@ const STORAGE_KEY = 'classroom-tracker:v1';
 const STATUSES = ['present', 'absent', 'tardy', 'excused'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const DAYS = [
+  { code: 'Mon', label: 'Monday' },
+  { code: 'Tue', label: 'Tuesday' },
+  { code: 'Wed', label: 'Wednesday' },
+  { code: 'Thu', label: 'Thursday' },
+  { code: 'Fri', label: 'Friday' },
+];
+
+// 20-minute periods from 8:00am to 3:20pm inclusive.
+const TIMES = (() => {
+  const times = [];
+  for (let mins = 8 * 60; mins <= 15 * 60 + 20; mins += 20) {
+    times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  return times;
+})();
+
+function formatTime(hhmm) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const period = h < 12 ? 'am' : 'pm';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, '0')}${period}`;
+}
+
+function isValidSlot(s) {
+  return !!s && DAYS.some((d) => d.code === s.day) && TIMES.includes(s.time);
+}
+
+function validSlots(value, label) {
+  const list = Array.isArray(value) ? value : [];
+  for (const s of list) {
+    if (!isValidSlot(s)) throw new Error(`Invalid ${label} entry`);
+  }
+  const seen = new Set();
+  const deduped = list.filter((s) => {
+    const key = `${s.day}:${s.time}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return deduped.sort((a, b) =>
+    DAYS.findIndex((d) => d.code === a.day) - DAYS.findIndex((d) => d.code === b.day) || a.time.localeCompare(b.time)
+  );
+}
+
+function formatSlots(slots) {
+  if (!slots) return '';
+  if (typeof slots === 'string') return slots; // data saved before the day/time picker existed
+  return slots.length ? slots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ') : '';
+}
 
 function emptyState() {
   return { classes: [], students: [], enrollments: [], attendance: [], assignments: [], grades: [] };
@@ -158,8 +222,8 @@ const Store = {
       name: required(name, 'Class', 200),
       subject: optionalText(subject, 200),
       venue: optionalText(venue, 50),
-      odd_week_slots: optionalText(odd_week_slots, 200),
-      even_week_slots: optionalText(even_week_slots, 200),
+      odd_week_slots: validSlots(odd_week_slots, 'odd week slot'),
+      even_week_slots: validSlots(even_week_slots, 'even week slot'),
       created_at: new Date().toISOString(),
     };
     state.classes.push(cls);
@@ -185,8 +249,8 @@ const Store = {
       name: required(name, 'Class', 200),
       subject: optionalText(subject, 200),
       venue: optionalText(venue, 50),
-      odd_week_slots: optionalText(odd_week_slots, 200),
-      even_week_slots: optionalText(even_week_slots, 200),
+      odd_week_slots: validSlots(odd_week_slots, 'odd week slot'),
+      even_week_slots: validSlots(even_week_slots, 'even week slot'),
     });
     persist();
     return cls;
@@ -232,6 +296,24 @@ const Store = {
       created_at: new Date().toISOString(),
     };
     state.students.push(student);
+    persist();
+    return student;
+  },
+  updateStudent(id, { full_name, name, form_class, email, notes }) {
+    const student = state.students.find((s) => s.id === id);
+    if (!student) throw new Error('Student not found');
+    const cleanEmail = optionalText(email, 254);
+    if (cleanEmail && !EMAIL_RE.test(cleanEmail)) throw new Error('Email must be valid');
+    if (cleanEmail && state.students.some((s) => s.id !== id && (s.email || '').toLowerCase() === cleanEmail.toLowerCase())) {
+      throw new Error('A student with that email already exists');
+    }
+    Object.assign(student, {
+      full_name: required(full_name, 'Full name', 200),
+      name: required(name, 'Name', 100),
+      form_class: required(form_class, 'Form class', 50),
+      email: cleanEmail,
+      notes: optionalText(notes, 2000),
+    });
     persist();
     return student;
   },
@@ -426,6 +508,45 @@ function studentLink(label, studentId) {
 }
 function showErrorInline(err) { return el('div', { class: 'error' }, err.message); }
 
+// Day + time dropdown pair with an "Add slot" button and removable chips.
+// Returns { element, getSlots() } so a form can pull the current list on submit.
+function buildSlotPicker(initialSlots = []) {
+  let slots = validSlots(initialSlots, 'slot');
+  const daySelect = el('select');
+  for (const d of DAYS) daySelect.appendChild(el('option', { value: d.code }, d.label));
+  const timeSelect = el('select');
+  for (const t of TIMES) timeSelect.appendChild(el('option', { value: t }, formatTime(t)));
+  const addBtn = el('button', { type: 'button', class: 'secondary' }, '+ Add');
+  const chipRow = el('div', { class: 'slot-chips' });
+
+  function renderChips() {
+    clear(chipRow);
+    if (!slots.length) {
+      chipRow.appendChild(el('span', { class: 'muted' }, 'No slots added yet'));
+      return;
+    }
+    slots.forEach((s, i) => {
+      const remove = el('button', { type: 'button', class: 'chip-remove' }, '×');
+      remove.addEventListener('click', () => { slots.splice(i, 1); renderChips(); });
+      chipRow.appendChild(el('span', { class: 'chip' }, [`${s.day} ${formatTime(s.time)}`, remove]));
+    });
+  }
+  renderChips();
+
+  addBtn.addEventListener('click', () => {
+    const slot = { day: daySelect.value, time: timeSelect.value };
+    if (slots.some((s) => s.day === slot.day && s.time === slot.time)) return;
+    slots = validSlots([...slots, slot], 'slot');
+    renderChips();
+  });
+
+  const element = el('div', {}, [
+    el('div', { class: 'row slot-row' }, [daySelect, timeSelect, addBtn]),
+    chipRow,
+  ]);
+  return { element, getSlots: () => slots };
+}
+
 /* ============================== Classes list ============================== */
 
 function renderClassesList() {
@@ -433,31 +554,40 @@ function renderClassesList() {
   const panel = el('div', { class: 'panel' }, [el('h2', {}, 'Classes')]);
   app.appendChild(panel);
 
-  const form = el('form', { class: 'row' });
+  const form = el('form', {});
+  const topRow = el('div', { class: 'row' });
   const subject = el('input', { placeholder: 'Subject', maxlength: '200' });
   const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200' });
   const venue = el('input', { placeholder: 'Venue', maxlength: '50' });
-  const oddSlots = el('input', { placeholder: 'e.g. Mon P1-P2, Wed P5', maxlength: '200' });
-  const evenSlots = el('input', { placeholder: 'e.g. Tue P3-P4, Fri P1', maxlength: '200' });
-  const submit = el('button', { type: 'submit' }, 'Add class');
-  form.append(
+  topRow.append(
     el('div', {}, [el('label', {}, 'Subject'), subject]),
     el('div', {}, [el('label', {}, 'Class'), name]),
-    el('div', {}, [el('label', {}, 'Venue'), venue]),
-    el('div', {}, [el('label', {}, 'Odd week slots'), oddSlots]),
-    el('div', {}, [el('label', {}, 'Even week slots'), evenSlots]),
-    submit
+    el('div', {}, [el('label', {}, 'Venue'), venue])
   );
+
+  const oddPicker = buildSlotPicker();
+  const evenPicker = buildSlotPicker();
+  const slotsRow = el('div', { class: 'row' });
+  slotsRow.append(
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddPicker.element]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenPicker.element])
+  );
+
+  const submit = el('button', { type: 'submit' }, 'Add class');
   const errBox = el('div', {});
+  form.append(topRow, slotsRow, submit, errBox);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     clear(errBox);
     try {
-      Store.createClass({ name: name.value, subject: subject.value, venue: venue.value, odd_week_slots: oddSlots.value, even_week_slots: evenSlots.value });
+      Store.createClass({
+        name: name.value, subject: subject.value, venue: venue.value,
+        odd_week_slots: oddPicker.getSlots(), even_week_slots: evenPicker.getSlots(),
+      });
       renderClassesList();
     } catch (err) { showError(errBox, err); }
   });
-  panel.append(form, errBox);
+  panel.append(form);
 
   const listPanel = el('div', { class: 'panel' });
   app.appendChild(listPanel);
@@ -484,7 +614,7 @@ function renderClassesList() {
     });
     const tr = el('tr', { class: 'clickable' }, [
       el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''),
-      el('td', { class: 'form-class' }, c.odd_week_slots || ''), el('td', { class: 'form-class' }, c.even_week_slots || ''),
+      el('td', { class: 'form-class' }, formatSlots(c.odd_week_slots)), el('td', { class: 'form-class' }, formatSlots(c.even_week_slots)),
       el('td', {}, String(c.student_count)), el('td', {}, del),
     ]);
     tr.addEventListener('click', () => { location.hash = `#/classes/${c.id}`; });
@@ -506,8 +636,8 @@ function renderClassDetail(id, subtab) {
   const infoItems = [
     cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
     cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
-    cls.odd_week_slots ? el('span', {}, ['Odd wk ', el('strong', {}, cls.odd_week_slots)]) : null,
-    cls.even_week_slots ? el('span', {}, ['Even wk ', el('strong', {}, cls.even_week_slots)]) : null,
+    cls.odd_week_slots && cls.odd_week_slots.length ? el('span', {}, ['Odd wk ', el('strong', {}, formatSlots(cls.odd_week_slots))]) : null,
+    cls.even_week_slots && cls.even_week_slots.length ? el('span', {}, ['Even wk ', el('strong', {}, formatSlots(cls.even_week_slots))]) : null,
   ].filter(Boolean);
   if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
 
@@ -804,7 +934,19 @@ function renderStudentDetail(id) {
   app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Students', '#/students'), ' / ', el('strong', {}, student.name)]));
 
   const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('h2', {}, student.name));
+  app.appendChild(panel);
+  renderStudentView(panel, id);
+}
+
+function renderStudentView(panel, id) {
+  clear(panel);
+  const student = Store.getStudent(id);
+  if (!student) return;
+
+  const editBtn = el('button', { class: 'secondary' }, 'Edit');
+  editBtn.addEventListener('click', () => renderStudentEdit(panel, id));
+  panel.appendChild(el('div', { class: 'panel-header' }, [el('h2', {}, student.name), editBtn]));
+
   panel.appendChild(el('div', { class: 'profile-meta' }, [
     el('span', {}, ['Full name ', el('strong', {}, student.full_name)]),
     el('span', {}, ['Form class ', el('strong', {}, student.form_class)]),
@@ -821,13 +963,55 @@ function renderStudentDetail(id) {
     const tbody = el('tbody');
     for (const c of student.classes) {
       const remove = el('button', { class: 'secondary' }, 'Unenroll');
-      remove.addEventListener('click', () => { Store.unenroll(c.enrollment_id); renderStudentDetail(id); });
+      remove.addEventListener('click', () => { Store.unenroll(c.enrollment_id); renderStudentView(panel, id); });
       tbody.appendChild(el('tr', {}, [el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''), el('td', {}, remove)]));
     }
     table.appendChild(tbody);
     panel.appendChild(table);
   }
-  app.appendChild(panel);
+}
+
+function renderStudentEdit(panel, id) {
+  clear(panel);
+  const student = Store.getStudent(id);
+  if (!student) return;
+
+  panel.appendChild(el('h2', {}, `Edit ${student.name}`));
+
+  const form = el('form', { class: 'row' });
+  const fullName = el('input', { value: student.full_name, required: 'true', maxlength: '200' });
+  const name = el('input', { value: student.name, required: 'true', maxlength: '100' });
+  const formClass = el('input', { value: student.form_class, required: 'true', maxlength: '50' });
+  const email = el('input', { type: 'email', value: student.email || '', maxlength: '254' });
+  const notes = el('textarea', { maxlength: '2000' }, student.notes || '');
+
+  form.append(
+    el('div', {}, [el('label', {}, 'Full name'), fullName]),
+    el('div', {}, [el('label', {}, 'Name'), name]),
+    el('div', {}, [el('label', {}, 'Form class'), formClass]),
+    el('div', {}, [el('label', {}, 'Email'), email]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes])
+  );
+
+  const errBox = el('div', {});
+  const saveBtn = el('button', { type: 'submit' }, 'Save');
+  const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+  form.appendChild(el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+
+  cancelBtn.addEventListener('click', () => renderStudentView(panel, id));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      Store.updateStudent(id, {
+        full_name: fullName.value, name: name.value, form_class: formClass.value,
+        email: email.value || undefined, notes: notes.value || undefined,
+      });
+      renderStudentView(panel, id);
+    } catch (err) { showError(errBox, err); }
+  });
+
+  panel.append(form, errBox);
 }
 
 /* ============================== backup: export / import ============================== */
