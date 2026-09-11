@@ -25,9 +25,11 @@ Optional environment variables:
 
 - **classes** — a class/section you teach. Has a `name` (the class, e.g.
   "Sec 3 Amanah"), `subject`, `venue`, and `odd_week_slots`/`even_week_slots`
-  — each a list of `{day, time}` picked from a Monday–Friday day dropdown and
-  a 20-minute-interval time dropdown (8:00am–3:20pm), for a fortnightly
-  odd/even-week timetable rotation. Stored as JSON in the database.
+  — each a list of `{day, time, end}` picked from a Monday–Friday day
+  dropdown and 20-minute-interval start/end time dropdowns (8:00am–3:20pm
+  start, 8:20am–3:40pm end, end always after start — so a class can span
+  more than one period), for a fortnightly odd/even-week timetable
+  rotation. Stored as JSON in the database.
 - **students** — a student, independent of any particular class. Has a
   `full_name` (legal/registered name), `name` (preferred/called name, shown
   in rosters), and `form_class` (homeroom/tutor group) — all required, and

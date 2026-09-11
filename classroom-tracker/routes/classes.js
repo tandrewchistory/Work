@@ -12,7 +12,7 @@ const idParam = param('id').isInt({ min: 1 }).toInt();
 
 const DAY_CODES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-// 20-minute periods from 8:00am to 3:20pm inclusive.
+// Period start times: 20-minute steps from 8:00am to 3:20pm inclusive.
 const TIME_CODES = (() => {
   const times = [];
   for (let mins = 8 * 60; mins <= 15 * 60 + 20; mins += 20) {
@@ -21,10 +21,27 @@ const TIME_CODES = (() => {
   return times;
 })();
 
+// Period end times: 20-minute steps from 8:20am to 3:40pm inclusive (one step
+// past every possible start, so the last period can end at 3:40pm).
+const END_TIME_CODES = (() => {
+  const times = [];
+  for (let mins = 8 * 60 + 20; mins <= 15 * 60 + 40; mins += 20) {
+    times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  return times;
+})();
+
 const slotField = (field) => [
   body(field).optional().isArray({ max: 20 }).withMessage(`${field} must be an array`),
   body(`${field}.*.day`).isIn(DAY_CODES).withMessage(`${field} day must be one of ${DAY_CODES.join(', ')}`),
-  body(`${field}.*.time`).isIn(TIME_CODES).withMessage(`${field} time must be a valid 20-minute slot between 8:00am and 3:20pm`),
+  body(`${field}.*.time`).isIn(TIME_CODES).withMessage(`${field} time must be a valid start time between 8:00am and 3:20pm`),
+  body(`${field}.*.end`).isIn(END_TIME_CODES).withMessage(`${field} end must be a valid end time between 8:20am and 3:40pm`),
+  body(field).custom((value) => {
+    if (!Array.isArray(value)) return true;
+    const bad = value.find((s) => s && s.time && s.end && s.end <= s.time);
+    if (bad) throw new Error(`${field} end time must be after the start time`);
+    return true;
+  }),
 ];
 
 const classBody = [
@@ -41,7 +58,7 @@ function normalizeSlots(list) {
   const arr = Array.isArray(list) ? list : [];
   const seen = new Set();
   const deduped = arr.filter((s) => {
-    const key = `${s.day}:${s.time}`;
+    const key = `${s.day}:${s.time}:${s.end}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

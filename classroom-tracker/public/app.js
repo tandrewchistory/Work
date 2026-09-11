@@ -11,10 +11,20 @@ const DAYS = [
   { code: 'Fri', label: 'Friday' },
 ];
 
-// 20-minute periods from 8:00am to 3:20pm inclusive.
+// Period start times: 20-minute steps from 8:00am to 3:20pm inclusive.
 const TIMES = (() => {
   const times = [];
   for (let mins = 8 * 60; mins <= 15 * 60 + 20; mins += 20) {
+    times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
+  }
+  return times;
+})();
+
+// Period end times: 20-minute steps from 8:20am to 3:40pm inclusive (one step
+// past every possible start, so the last period can end at 3:40pm).
+const END_TIMES = (() => {
+  const times = [];
+  for (let mins = 8 * 60 + 20; mins <= 15 * 60 + 40; mins += 20) {
     times.push(`${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`);
   }
   return times;
@@ -27,10 +37,18 @@ function formatTime(hhmm) {
   return `${h12}:${String(m).padStart(2, '0')}${period}`;
 }
 
+function addMinutes(hhmm, delta) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const total = h * 60 + m + delta;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
 function formatSlots(slots) {
   if (!slots) return '';
   if (typeof slots === 'string') return slots; // data saved before the day/time picker existed
-  return slots.length ? slots.map((s) => `${s.day} ${formatTime(s.time)}`).join(', ') : '';
+  return slots.length
+    ? slots.map((s) => `${s.day} ${formatTime(s.time)}${s.end ? '–' + formatTime(s.end) : ''}`).join(', ')
+    : '';
 }
 
 /* ---------- tiny DOM helper (keeps all user data out of innerHTML) ---------- */
@@ -242,10 +260,22 @@ function buildSlotPicker(initialSlots = []) {
   let slots = [...initialSlots];
   const daySelect = el('select');
   for (const d of DAYS) daySelect.appendChild(el('option', { value: d.code }, d.label));
-  const timeSelect = el('select');
-  for (const t of TIMES) timeSelect.appendChild(el('option', { value: t }, formatTime(t)));
+  const startSelect = el('select');
+  for (const t of TIMES) startSelect.appendChild(el('option', { value: t }, formatTime(t)));
+  const endSelect = el('select');
   const addBtn = el('button', { type: 'button', class: 'secondary' }, '+ Add');
   const chipRow = el('div', { class: 'slot-chips' });
+
+  function refreshEndOptions() {
+    const previous = endSelect.value;
+    clear(endSelect);
+    const options = END_TIMES.filter((t) => t > startSelect.value);
+    for (const t of options) endSelect.appendChild(el('option', { value: t }, formatTime(t)));
+    const defaultEnd = addMinutes(startSelect.value, 20);
+    endSelect.value = options.includes(previous) ? previous : (options.includes(defaultEnd) ? defaultEnd : options[0]);
+  }
+  startSelect.addEventListener('change', refreshEndOptions);
+  refreshEndOptions();
 
   function renderChips() {
     clear(chipRow);
@@ -256,20 +286,20 @@ function buildSlotPicker(initialSlots = []) {
     slots.forEach((s, i) => {
       const remove = el('button', { type: 'button', class: 'chip-remove' }, '×');
       remove.addEventListener('click', () => { slots.splice(i, 1); renderChips(); });
-      chipRow.appendChild(el('span', { class: 'chip' }, [`${s.day} ${formatTime(s.time)}`, remove]));
+      chipRow.appendChild(el('span', { class: 'chip' }, [`${s.day} ${formatTime(s.time)}–${formatTime(s.end)}`, remove]));
     });
   }
   renderChips();
 
   addBtn.addEventListener('click', () => {
-    const slot = { day: daySelect.value, time: timeSelect.value };
-    if (slots.some((s) => s.day === slot.day && s.time === slot.time)) return;
+    const slot = { day: daySelect.value, time: startSelect.value, end: endSelect.value };
+    if (slots.some((s) => s.day === slot.day && s.time === slot.time && s.end === slot.end)) return;
     slots.push(slot);
     renderChips();
   });
 
   const element = el('div', {}, [
-    el('div', { class: 'row slot-row' }, [daySelect, timeSelect, addBtn]),
+    el('div', { class: 'row slot-row' }, [daySelect, startSelect, el('span', { class: 'slot-to' }, 'to'), endSelect, addBtn]),
     chipRow,
   ]);
   return { element, getSlots: () => slots };
