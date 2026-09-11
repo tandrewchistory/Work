@@ -69,6 +69,7 @@ main {
   border-radius: 10px;
   padding: 20px;
   margin-bottom: 20px;
+  overflow-x: auto;
 }
 
 h2 { margin-top: 0; font-size: 17px; }
@@ -127,8 +128,11 @@ th, td {
   text-align: left;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
-  white-space: nowrap;
+  vertical-align: top;
+  overflow-wrap: anywhere;
 }
+
+th { white-space: nowrap; }
 
 th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
 
@@ -179,6 +183,8 @@ td.form-class { color: var(--muted); font-size: 13px; }
 .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .panel-header h2 { margin-bottom: 0; }
+.class-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.class-header-row .profile-meta { margin: 0; }
 
 .score-input { width: 64px; }
 

@@ -215,13 +215,25 @@ async function renderClassDetail(id, subtab) {
     linkBack('Classes', '#/classes'), ' / ', el('strong', {}, cls.name),
   ]));
 
+  if (subtab === 'edit') {
+    const editPanel = el('div', { class: 'panel' });
+    app.appendChild(editPanel);
+    renderClassEdit(editPanel, cls, id);
+    return;
+  }
+
   const infoItems = [
     cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
     cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
     cls.odd_week_slots && cls.odd_week_slots.length ? el('span', {}, ['Odd wk ', el('strong', {}, formatSlots(cls.odd_week_slots))]) : null,
     cls.even_week_slots && cls.even_week_slots.length ? el('span', {}, ['Even wk ', el('strong', {}, formatSlots(cls.even_week_slots))]) : null,
   ].filter(Boolean);
-  if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
+  const editBtn = el('button', { class: 'secondary' }, 'Edit class');
+  editBtn.addEventListener('click', () => { location.hash = `#/classes/${id}/edit`; });
+  app.appendChild(el('div', { class: 'class-header-row' }, [
+    infoItems.length ? el('div', { class: 'profile-meta' }, infoItems) : el('div', {}),
+    editBtn,
+  ]));
 
   const subtabs = el('div', { class: 'subtabs' });
   for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
@@ -237,6 +249,52 @@ async function renderClassDetail(id, subtab) {
   if (subtab === 'attendance') return renderAttendance(panel, cls);
   if (subtab === 'gradebook') return renderGradebook(panel, cls, id);
   return renderRoster(panel, cls, id);
+}
+
+function renderClassEdit(panel, cls, id) {
+  panel.appendChild(el('h2', {}, `Edit ${cls.name}`));
+
+  const form = el('form', {});
+  const topRow = el('div', { class: 'row' });
+  const subject = el('input', { placeholder: 'Subject', maxlength: '200', value: cls.subject || '' });
+  const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200', value: cls.name });
+  const venue = el('input', { placeholder: 'Venue', maxlength: '50', value: cls.venue || '' });
+  topRow.append(
+    el('div', {}, [el('label', {}, 'Subject'), subject]),
+    el('div', {}, [el('label', {}, 'Class'), name]),
+    el('div', {}, [el('label', {}, 'Venue'), venue])
+  );
+
+  const oddPicker = buildSlotPicker(cls.odd_week_slots);
+  const evenPicker = buildSlotPicker(cls.even_week_slots);
+  const slotsRow = el('div', { class: 'row' });
+  slotsRow.append(
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddPicker.element]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenPicker.element])
+  );
+
+  const errBox = el('div', {});
+  const saveBtn = el('button', { type: 'submit' }, 'Save');
+  const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+  form.append(topRow, slotsRow, el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+
+  cancelBtn.addEventListener('click', () => { location.hash = `#/classes/${id}/roster`; });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      await api(`/api/classes/${id}`, {
+        method: 'PUT',
+        body: {
+          name: name.value, subject: subject.value, venue: venue.value,
+          odd_week_slots: oddPicker.getSlots(), even_week_slots: evenPicker.getSlots(),
+        },
+      });
+      location.hash = `#/classes/${id}/roster`;
+    } catch (err) { showError(errBox, err); }
+  });
+
+  panel.append(form, errBox);
 }
 
 function linkBack(label, href) {
@@ -257,7 +315,10 @@ function showErrorInline(err) {
 // Day + time dropdown pair with an "Add slot" button and removable chips.
 // Returns { element, getSlots() } so a form can pull the current list on submit.
 function buildSlotPicker(initialSlots = []) {
-  let slots = [...initialSlots];
+  // Lenient on the way in (silently drops anything malformed, e.g. slots
+  // saved before the end-time picker existed) — the server is the strict
+  // gate on save.
+  let slots = (Array.isArray(initialSlots) ? initialSlots : []).filter((s) => s && DAYS.some((d) => d.code === s.day) && TIMES.includes(s.time) && END_TIMES.includes(s.end) && s.end > s.time);
   const daySelect = el('select');
   for (const d of DAYS) daySelect.appendChild(el('option', { value: d.code }, d.label));
   const startSelect = el('select');

@@ -139,6 +139,7 @@ main { max-width: 1000px; margin: 0 auto; padding: 24px 28px 60px; }
   padding: 22px 24px;
   margin-bottom: 20px;
   box-shadow: var(--shadow);
+  overflow-x: auto; /* fallback for a table that still can't fit a narrow viewport */
 }
 h2 { margin: 0 0 16px; font-size: 19px; font-weight: 600; }
 h3 { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin: 22px 0 10px; font-family: "Public Sans", sans-serif; }
@@ -179,7 +180,8 @@ button.danger { background: var(--absent); }
 button.danger:hover { background: #a4362f; }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+th { white-space: nowrap; }
 td.num, th.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
 th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
 tr.clickable { cursor: pointer; }
@@ -230,6 +232,8 @@ td.form-class, td.slot-cell { font-family: "IBM Plex Mono", monospace; font-size
 .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .panel-header h2 { margin-bottom: 0; }
+.class-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.class-header-row .profile-meta { margin: 0; }
 .score-input { width: 68px; font-family: "IBM Plex Mono", monospace; }
 
 .subtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
@@ -696,7 +700,10 @@ function showErrorInline(err) { return el('div', { class: 'error' }, err.message
 // Day + time dropdown pair with an "Add slot" button and removable chips.
 // Returns { element, getSlots() } so a form can pull the current list on submit.
 function buildSlotPicker(initialSlots = []) {
-  let slots = validSlots(initialSlots, 'slot');
+  // Lenient on the way in (silently drops anything malformed, e.g. slots
+  // saved before the end-time picker existed) — validSlots() is still the
+  // strict gate applied on save, in Store.createClass/updateClass.
+  let slots = (Array.isArray(initialSlots) ? initialSlots : []).filter(isValidSlot);
   const daySelect = el('select');
   for (const d of DAYS) daySelect.appendChild(el('option', { value: d.code }, d.label));
   const startSelect = el('select');
@@ -830,13 +837,25 @@ function renderClassDetail(id, subtab) {
 
   app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Classes', '#/classes'), ' / ', el('strong', {}, cls.name)]));
 
+  if (subtab === 'edit') {
+    const editPanel = el('div', { class: 'panel' });
+    app.appendChild(editPanel);
+    renderClassEdit(editPanel, cls, id);
+    return;
+  }
+
   const infoItems = [
     cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
     cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
     cls.odd_week_slots && cls.odd_week_slots.length ? el('span', {}, ['Odd wk ', el('strong', {}, formatSlots(cls.odd_week_slots))]) : null,
     cls.even_week_slots && cls.even_week_slots.length ? el('span', {}, ['Even wk ', el('strong', {}, formatSlots(cls.even_week_slots))]) : null,
   ].filter(Boolean);
-  if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
+  const editBtn = el('button', { class: 'secondary' }, 'Edit class');
+  editBtn.addEventListener('click', () => { location.hash = `#/classes/${id}/edit`; });
+  app.appendChild(el('div', { class: 'class-header-row' }, [
+    infoItems.length ? el('div', { class: 'profile-meta' }, infoItems) : el('div', {}),
+    editBtn,
+  ]));
 
   const subtabs = el('div', { class: 'subtabs' });
   for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
@@ -852,6 +871,49 @@ function renderClassDetail(id, subtab) {
   if (subtab === 'attendance') return renderAttendance(panel, cls);
   if (subtab === 'gradebook') return renderGradebook(panel, cls, id);
   return renderRoster(panel, cls, id);
+}
+
+function renderClassEdit(panel, cls, id) {
+  panel.appendChild(el('h2', {}, `Edit ${cls.name}`));
+
+  const form = el('form', {});
+  const topRow = el('div', { class: 'row' });
+  const subject = el('input', { placeholder: 'Subject', maxlength: '200', value: cls.subject || '' });
+  const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200', value: cls.name });
+  const venue = el('input', { placeholder: 'Venue', maxlength: '50', value: cls.venue || '' });
+  topRow.append(
+    el('div', {}, [el('label', {}, 'Subject'), subject]),
+    el('div', {}, [el('label', {}, 'Class'), name]),
+    el('div', {}, [el('label', {}, 'Venue'), venue])
+  );
+
+  const oddPicker = buildSlotPicker(cls.odd_week_slots);
+  const evenPicker = buildSlotPicker(cls.even_week_slots);
+  const slotsRow = el('div', { class: 'row' });
+  slotsRow.append(
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddPicker.element]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenPicker.element])
+  );
+
+  const errBox = el('div', {});
+  const saveBtn = el('button', { type: 'submit' }, 'Save');
+  const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+  form.append(topRow, slotsRow, el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+
+  cancelBtn.addEventListener('click', () => { location.hash = `#/classes/${id}/roster`; });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      Store.updateClass(id, {
+        name: name.value, subject: subject.value, venue: venue.value,
+        odd_week_slots: oddPicker.getSlots(), even_week_slots: evenPicker.getSlots(),
+      });
+      location.hash = `#/classes/${id}/roster`;
+    } catch (err) { showError(errBox, err); }
+  });
+
+  panel.append(form, errBox);
 }
 
 function renderRoster(panel, cls, classId) {
