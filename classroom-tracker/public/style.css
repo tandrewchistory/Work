@@ -181,6 +181,13 @@ td.form-class { color: var(--muted); font-size: 13px; }
 .chip-remove { background: none; border: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
 .chip-remove:hover { color: var(--danger); background: none; }
 .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+.lesson-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+.lesson-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.lesson-date { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+.lesson-card h4 { margin: 0; font-size: 15px; }
+.lesson-field { margin: 10px 0 0; font-size: 13.5px; }
+.lesson-field-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 3px; }
+.lesson-field-text { white-space: pre-wrap; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .panel-header h2 { margin-bottom: 0; }
 .class-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }

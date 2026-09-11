@@ -40,6 +40,9 @@ Optional environment variables:
 - **attendance** — one record per enrollment per date (present/absent/tardy/excused)
 - **assignments** — belongs to a class
 - **grades** — one score per assignment per enrollment
+- **lessons** — a lesson plan belonging to a class: `date` (optional),
+  `topic` (required), `objectives`, `resources`, and `notes`. Shown and
+  edited on the class's "Lesson Plans" tab, sorted by date
 
 ## Security notes
 

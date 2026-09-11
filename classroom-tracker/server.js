@@ -11,6 +11,7 @@ const enrollmentsRouter = require('./routes/enrollments');
 const attendanceRouter = require('./routes/attendance');
 const assignmentsRouter = require('./routes/assignments');
 const gradesRouter = require('./routes/grades');
+const lessonsRouter = require('./routes/lessons');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -41,6 +42,7 @@ app.use('/api/enrollments', enrollmentsRouter);
 app.use('/api', attendanceRouter);
 app.use('/api', assignmentsRouter);
 app.use('/api', gradesRouter);
+app.use('/api', lessonsRouter);
 
 app.use(express.static(path.join(__dirname, 'public')));
 

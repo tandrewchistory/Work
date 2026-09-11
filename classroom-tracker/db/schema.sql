@@ -75,3 +75,17 @@ CREATE TABLE IF NOT EXISTS grades (
 
 CREATE INDEX IF NOT EXISTS idx_grades_assignment ON grades(assignment_id);
 CREATE INDEX IF NOT EXISTS idx_grades_enrollment ON grades(enrollment_id);
+
+CREATE TABLE IF NOT EXISTS lessons (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  class_id    INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  date        TEXT CHECK (date IS NULL OR date LIKE '____-__-__'),
+  topic       TEXT NOT NULL CHECK (length(trim(topic)) > 0 AND length(topic) <= 200),
+  objectives  TEXT CHECK (objectives IS NULL OR length(objectives) <= 2000),
+  resources   TEXT CHECK (resources IS NULL OR length(resources) <= 500),
+  notes       TEXT CHECK (notes IS NULL OR length(notes) <= 2000),
+  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_lessons_class ON lessons(class_id);
+CREATE INDEX IF NOT EXISTS idx_lessons_date ON lessons(date);

@@ -230,6 +230,13 @@ td.form-class, td.slot-cell { font-family: "IBM Plex Mono", monospace; font-size
 }
 .chip-remove:hover { color: var(--absent); background: none; }
 .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+.lesson-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+.lesson-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.lesson-date { display: block; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+.lesson-card h4 { margin: 0; font-size: 15px; font-family: "Source Serif 4", serif; font-weight: 600; }
+.lesson-field { margin: 10px 0 0; font-size: 13.5px; }
+.lesson-field-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 3px; }
+.lesson-field-text { white-space: pre-wrap; }
 .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .panel-header h2 { margin-bottom: 0; }
 .class-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -356,7 +363,7 @@ function formatSlots(slots) {
 }
 
 function emptyState() {
-  return { classes: [], students: [], enrollments: [], attendance: [], assignments: [], grades: [] };
+  return { classes: [], students: [], enrollments: [], attendance: [], assignments: [], grades: [], lessons: [] };
 }
 
 function loadState() {
@@ -451,7 +458,50 @@ const Store = {
     state.grades = state.grades.filter((g) => !enrollmentIds.has(g.enrollment_id) && !assignmentIds.has(g.assignment_id));
     state.assignments = state.assignments.filter((a) => a.class_id !== id);
     state.enrollments = state.enrollments.filter((e) => e.class_id !== id);
+    state.lessons = state.lessons.filter((l) => l.class_id !== id);
     state.classes = state.classes.filter((c) => c.id !== id);
+    persist();
+  },
+
+  /* ---- lessons ---- */
+  listLessons(classId) {
+    return state.lessons
+      .filter((l) => l.class_id === classId)
+      .sort((a, b) => (a.date || '9999-99-99').localeCompare(b.date || '9999-99-99') || a.id - b.id);
+  },
+  createLesson(classId, { date, topic, objectives, resources, notes }) {
+    if (!state.classes.some((c) => c.id === classId)) throw new Error('Class not found');
+    if (date && !DATE_RE.test(date)) throw new Error('Date must be YYYY-MM-DD');
+    const lesson = {
+      id: nextId(state.lessons),
+      class_id: classId,
+      date: date || null,
+      topic: required(topic, 'Topic', 200),
+      objectives: optionalText(objectives, 2000),
+      resources: optionalText(resources, 500),
+      notes: optionalText(notes, 2000),
+      created_at: new Date().toISOString(),
+    };
+    state.lessons.push(lesson);
+    persist();
+    return lesson;
+  },
+  updateLesson(id, { date, topic, objectives, resources, notes }) {
+    const lesson = state.lessons.find((l) => l.id === id);
+    if (!lesson) throw new Error('Lesson not found');
+    if (date && !DATE_RE.test(date)) throw new Error('Date must be YYYY-MM-DD');
+    Object.assign(lesson, {
+      date: date || null,
+      topic: required(topic, 'Topic', 200),
+      objectives: optionalText(objectives, 2000),
+      resources: optionalText(resources, 500),
+      notes: optionalText(notes, 2000),
+    });
+    persist();
+    return lesson;
+  },
+  deleteLesson(id) {
+    state.lessons = state.lessons.filter((l) => l.id !== id);
     persist();
   },
 
@@ -858,7 +908,7 @@ function renderClassDetail(id, subtab) {
   ]));
 
   const subtabs = el('div', { class: 'subtabs' });
-  for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
+  for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook'], ['lessons', 'Lesson Plans']]) {
     const btn = el('button', { class: key === subtab ? 'active' : '' }, label);
     btn.addEventListener('click', () => { location.hash = `#/classes/${id}/${key}`; });
     subtabs.appendChild(btn);
@@ -870,6 +920,7 @@ function renderClassDetail(id, subtab) {
 
   if (subtab === 'attendance') return renderAttendance(panel, cls);
   if (subtab === 'gradebook') return renderGradebook(panel, cls, id);
+  if (subtab === 'lessons') return renderLessons(panel, cls, id);
   return renderRoster(panel, cls, id);
 }
 
@@ -1109,6 +1160,132 @@ function renderGradebook(panel, cls, classId) {
       renderClassDetail(classId, 'gradebook');
     } catch (err) { showError(errBox, err); }
   });
+}
+
+function renderLessons(panel, cls, classId) {
+  panel.appendChild(el('h2', {}, 'Lesson Plans'));
+
+  const lessons = Store.listLessons(classId);
+  const listWrap = el('div');
+  panel.appendChild(listWrap);
+  if (!lessons.length) {
+    listWrap.appendChild(el('p', { class: 'muted' }, 'No lesson plans yet. Add one below.'));
+  } else {
+    for (const lesson of lessons) {
+      listWrap.appendChild(buildLessonCard(lesson, () => renderClassDetail(classId, 'lessons')));
+    }
+  }
+
+  panel.appendChild(el('h3', {}, 'New lesson'));
+  const { form, errBox } = buildNewLessonForm(classId, () => renderClassDetail(classId, 'lessons'));
+  panel.append(form, errBox);
+}
+
+function lessonField(label, text) {
+  return el('div', { class: 'lesson-field' }, [
+    el('span', { class: 'lesson-field-label' }, label),
+    el('div', { class: 'lesson-field-text' }, text),
+  ]);
+}
+
+// Self-contained card: toggles between a view and an edit form in place,
+// so editing one lesson never disturbs the rest of the list.
+function buildLessonCard(lesson, onChange) {
+  const card = el('div', { class: 'lesson-card' });
+
+  function renderView() {
+    clear(card);
+    const editBtn = el('button', { class: 'secondary' }, 'Edit');
+    const delBtn = el('button', { class: 'danger' }, 'Delete');
+    editBtn.addEventListener('click', renderEdit);
+    delBtn.addEventListener('click', () => {
+      if (!confirm(`Delete lesson "${lesson.topic}"?`)) return;
+      Store.deleteLesson(lesson.id);
+      onChange();
+    });
+    card.appendChild(el('div', { class: 'lesson-card-header' }, [
+      el('div', {}, [
+        lesson.date ? el('span', { class: 'lesson-date' }, lesson.date) : null,
+        el('h4', {}, lesson.topic),
+      ].filter(Boolean)),
+      el('div', { class: 'edit-actions' }, [editBtn, delBtn]),
+    ]));
+    if (lesson.objectives) card.appendChild(lessonField('Objectives', lesson.objectives));
+    if (lesson.resources) card.appendChild(lessonField('Resources', lesson.resources));
+    if (lesson.notes) card.appendChild(lessonField('Notes', lesson.notes));
+  }
+
+  function renderEdit() {
+    clear(card);
+    const form = el('form', { class: 'row' });
+    const date = el('input', { type: 'date', value: lesson.date || '' });
+    const topic = el('input', { value: lesson.topic, required: 'true', maxlength: '200' });
+    const objectives = el('textarea', { maxlength: '2000' }, lesson.objectives || '');
+    const resources = el('input', { value: lesson.resources || '', maxlength: '500' });
+    const notes = el('textarea', { maxlength: '2000' }, lesson.notes || '');
+    form.append(
+      el('div', {}, [el('label', {}, 'Date'), date]),
+      el('div', {}, [el('label', {}, 'Topic'), topic]),
+      el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Objectives'), objectives]),
+      el('div', {}, [el('label', {}, 'Resources'), resources]),
+      el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes])
+    );
+    const errBox = el('div', {});
+    const saveBtn = el('button', { type: 'submit' }, 'Save');
+    const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+    form.appendChild(el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+    cancelBtn.addEventListener('click', renderView);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      clear(errBox);
+      try {
+        Store.updateLesson(lesson.id, {
+          date: date.value || undefined, topic: topic.value,
+          objectives: objectives.value || undefined, resources: resources.value || undefined, notes: notes.value || undefined,
+        });
+        Object.assign(lesson, {
+          date: date.value || null, topic: topic.value,
+          objectives: objectives.value || null, resources: resources.value || null, notes: notes.value || null,
+        });
+        renderView();
+      } catch (err) { showError(errBox, err); }
+    });
+    card.append(form, errBox);
+  }
+
+  renderView();
+  return card;
+}
+
+function buildNewLessonForm(classId, onCreated) {
+  const form = el('form', { class: 'row' });
+  const date = el('input', { type: 'date' });
+  const topic = el('input', { placeholder: 'Topic', required: 'true', maxlength: '200' });
+  const objectives = el('textarea', { placeholder: 'Learning objectives', maxlength: '2000' });
+  const resources = el('input', { placeholder: 'Resources', maxlength: '500' });
+  const notes = el('textarea', { placeholder: 'Notes / activities', maxlength: '2000' });
+  const submit = el('button', { type: 'submit' }, 'Add lesson');
+  form.append(
+    el('div', {}, [el('label', {}, 'Date'), date]),
+    el('div', {}, [el('label', {}, 'Topic'), topic]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Objectives'), objectives]),
+    el('div', {}, [el('label', {}, 'Resources'), resources]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes]),
+    submit
+  );
+  const errBox = el('div', {});
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      Store.createLesson(classId, {
+        date: date.value || undefined, topic: topic.value,
+        objectives: objectives.value || undefined, resources: resources.value || undefined, notes: notes.value || undefined,
+      });
+      onCreated();
+    } catch (err) { showError(errBox, err); }
+  });
+  return { form, errBox };
 }
 
 /* ============================== Students ============================== */

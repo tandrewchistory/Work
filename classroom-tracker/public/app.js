@@ -236,7 +236,7 @@ async function renderClassDetail(id, subtab) {
   ]));
 
   const subtabs = el('div', { class: 'subtabs' });
-  for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
+  for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook'], ['lessons', 'Lesson Plans']]) {
     const btn = el('button', { class: key === subtab ? 'active' : '' }, label);
     btn.addEventListener('click', () => { location.hash = `#/classes/${id}/${key}`; });
     subtabs.appendChild(btn);
@@ -248,6 +248,7 @@ async function renderClassDetail(id, subtab) {
 
   if (subtab === 'attendance') return renderAttendance(panel, cls);
   if (subtab === 'gradebook') return renderGradebook(panel, cls, id);
+  if (subtab === 'lessons') return renderLessons(panel, cls, id);
   return renderRoster(panel, cls, id);
 }
 
@@ -583,6 +584,140 @@ async function renderGradebook(panel, cls, classId) {
       renderClassDetail(classId, 'gradebook');
     } catch (err) { showError(errBox, err); }
   });
+}
+
+/* ---------- Lesson plans ---------- */
+async function renderLessons(panel, cls, classId) {
+  panel.appendChild(el('h2', {}, 'Lesson Plans'));
+
+  const listWrap = el('div');
+  panel.appendChild(listWrap);
+  try {
+    const lessons = await api(`/api/classes/${classId}/lessons`);
+    if (!lessons.length) {
+      listWrap.appendChild(el('p', { class: 'muted' }, 'No lesson plans yet. Add one below.'));
+    } else {
+      for (const lesson of lessons) {
+        listWrap.appendChild(buildLessonCard(lesson, () => renderClassDetail(classId, 'lessons')));
+      }
+    }
+  } catch (err) {
+    listWrap.appendChild(showErrorInline(err));
+  }
+
+  panel.appendChild(el('h3', {}, 'New lesson'));
+  const { form, errBox } = buildNewLessonForm(classId, () => renderClassDetail(classId, 'lessons'));
+  panel.append(form, errBox);
+}
+
+function lessonField(label, text) {
+  return el('div', { class: 'lesson-field' }, [
+    el('span', { class: 'lesson-field-label' }, label),
+    el('div', { class: 'lesson-field-text' }, text),
+  ]);
+}
+
+// Self-contained card: toggles between a view and an edit form in place,
+// so editing one lesson never disturbs the rest of the list.
+function buildLessonCard(lesson, onChange) {
+  const card = el('div', { class: 'lesson-card' });
+
+  function renderView() {
+    clear(card);
+    const editBtn = el('button', { class: 'secondary' }, 'Edit');
+    const delBtn = el('button', { class: 'danger' }, 'Delete');
+    editBtn.addEventListener('click', renderEdit);
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`Delete lesson "${lesson.topic}"?`)) return;
+      await api(`/api/lessons/${lesson.id}`, { method: 'DELETE' });
+      onChange();
+    });
+    card.appendChild(el('div', { class: 'lesson-card-header' }, [
+      el('div', {}, [
+        lesson.date ? el('span', { class: 'lesson-date' }, lesson.date) : null,
+        el('h4', {}, lesson.topic),
+      ].filter(Boolean)),
+      el('div', { class: 'edit-actions' }, [editBtn, delBtn]),
+    ]));
+    if (lesson.objectives) card.appendChild(lessonField('Objectives', lesson.objectives));
+    if (lesson.resources) card.appendChild(lessonField('Resources', lesson.resources));
+    if (lesson.notes) card.appendChild(lessonField('Notes', lesson.notes));
+  }
+
+  function renderEdit() {
+    clear(card);
+    const form = el('form', { class: 'row' });
+    const date = el('input', { type: 'date', value: lesson.date || '' });
+    const topic = el('input', { value: lesson.topic, required: 'true', maxlength: '200' });
+    const objectives = el('textarea', { maxlength: '2000' }, lesson.objectives || '');
+    const resources = el('input', { value: lesson.resources || '', maxlength: '500' });
+    const notes = el('textarea', { maxlength: '2000' }, lesson.notes || '');
+    form.append(
+      el('div', {}, [el('label', {}, 'Date'), date]),
+      el('div', {}, [el('label', {}, 'Topic'), topic]),
+      el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Objectives'), objectives]),
+      el('div', {}, [el('label', {}, 'Resources'), resources]),
+      el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes])
+    );
+    const errBox = el('div', {});
+    const saveBtn = el('button', { type: 'submit' }, 'Save');
+    const cancelBtn = el('button', { type: 'button', class: 'secondary' }, 'Cancel');
+    form.appendChild(el('div', { class: 'edit-actions' }, [saveBtn, cancelBtn]));
+    cancelBtn.addEventListener('click', renderView);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clear(errBox);
+      try {
+        const updated = await api(`/api/lessons/${lesson.id}`, {
+          method: 'PUT',
+          body: {
+            date: date.value || undefined, topic: topic.value,
+            objectives: objectives.value || undefined, resources: resources.value || undefined, notes: notes.value || undefined,
+          },
+        });
+        Object.assign(lesson, updated);
+        renderView();
+      } catch (err) { showError(errBox, err); }
+    });
+    card.append(form, errBox);
+  }
+
+  renderView();
+  return card;
+}
+
+function buildNewLessonForm(classId, onCreated) {
+  const form = el('form', { class: 'row' });
+  const date = el('input', { type: 'date' });
+  const topic = el('input', { placeholder: 'Topic', required: 'true', maxlength: '200' });
+  const objectives = el('textarea', { placeholder: 'Learning objectives', maxlength: '2000' });
+  const resources = el('input', { placeholder: 'Resources', maxlength: '500' });
+  const notes = el('textarea', { placeholder: 'Notes / activities', maxlength: '2000' });
+  const submit = el('button', { type: 'submit' }, 'Add lesson');
+  form.append(
+    el('div', {}, [el('label', {}, 'Date'), date]),
+    el('div', {}, [el('label', {}, 'Topic'), topic]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Objectives'), objectives]),
+    el('div', {}, [el('label', {}, 'Resources'), resources]),
+    el('div', { style: 'flex-basis:100%' }, [el('label', {}, 'Notes'), notes]),
+    submit
+  );
+  const errBox = el('div', {});
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clear(errBox);
+    try {
+      await api(`/api/classes/${classId}/lessons`, {
+        method: 'POST',
+        body: {
+          date: date.value || undefined, topic: topic.value,
+          objectives: objectives.value || undefined, resources: resources.value || undefined, notes: notes.value || undefined,
+        },
+      });
+      onCreated();
+    } catch (err) { showError(errBox, err); }
+  });
+  return { form, errBox };
 }
 
 /* ---------- Students list ---------- */
