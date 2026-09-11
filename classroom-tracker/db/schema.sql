@@ -15,8 +15,9 @@ CREATE TABLE IF NOT EXISTS classes (
 
 CREATE TABLE IF NOT EXISTS students (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  first_name  TEXT NOT NULL CHECK (length(trim(first_name)) > 0 AND length(first_name) <= 100),
-  last_name   TEXT NOT NULL CHECK (length(trim(last_name)) > 0 AND length(last_name) <= 100),
+  full_name   TEXT NOT NULL CHECK (length(trim(full_name)) > 0 AND length(full_name) <= 200),
+  name        TEXT NOT NULL CHECK (length(trim(name)) > 0 AND length(name) <= 100),
+  form_class  TEXT NOT NULL CHECK (length(trim(form_class)) > 0 AND length(form_class) <= 50),
   email       TEXT UNIQUE CHECK (email IS NULL OR length(email) <= 254),
   notes       TEXT CHECK (notes IS NULL OR length(notes) <= 2000),
   created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

@@ -24,7 +24,9 @@ Optional environment variables:
 ## Data model
 
 - **classes** — a class/section you teach
-- **students** — a student, independent of any particular class
+- **students** — a student, independent of any particular class. Has a
+  `full_name` (legal/registered name), `name` (preferred/called name, shown
+  in rosters), and `form_class` (homeroom/tutor group) — all required
 - **enrollments** — join table linking a student to a class (a student can be
   enrolled in multiple classes)
 - **attendance** — one record per enrollment per date (present/absent/tardy/excused)

@@ -207,6 +207,11 @@ tr.clickable:hover td { background: var(--accent-soft); }
 .crumbs { font-size: 13px; margin-bottom: 14px; color: var(--muted); }
 .crumbs a { color: var(--accent); cursor: pointer; text-decoration: none; }
 .crumbs a:hover { text-decoration: underline; }
+.student-link { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500; }
+.student-link:hover { text-decoration: underline; }
+td.form-class { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--muted); }
+.profile-meta { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
+.profile-meta strong { color: var(--ink); font-weight: 600; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
 .score-input { width: 68px; font-family: "IBM Plex Mono", monospace; }
 
 .subtabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
@@ -327,9 +332,9 @@ const Store = {
       .filter((e) => e.class_id === id)
       .map((e) => {
         const s = state.students.find((s) => s.id === e.student_id);
-        return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name, email: s.email };
+        return { enrollment_id: e.id, student_id: s.id, full_name: s.full_name, name: s.name, form_class: s.form_class, email: s.email };
       })
-      .sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
     return { ...cls, roster };
   },
   updateClass(id, { name, subject, period, room }) {
@@ -361,14 +366,15 @@ const Store = {
     if (q) {
       const needle = q.trim().toLowerCase();
       list = list.filter((s) =>
-        s.first_name.toLowerCase().includes(needle) ||
-        s.last_name.toLowerCase().includes(needle) ||
+        s.full_name.toLowerCase().includes(needle) ||
+        s.name.toLowerCase().includes(needle) ||
+        s.form_class.toLowerCase().includes(needle) ||
         (s.email || '').toLowerCase().includes(needle)
       );
     }
-    return [...list].sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+    return [...list].sort((a, b) => a.full_name.localeCompare(b.full_name));
   },
-  createStudent({ first_name, last_name, email, notes }) {
+  createStudent({ full_name, name, form_class, email, notes }) {
     const cleanEmail = optionalText(email, 254);
     if (cleanEmail && !EMAIL_RE.test(cleanEmail)) throw new Error('Email must be valid');
     if (cleanEmail && state.students.some((s) => (s.email || '').toLowerCase() === cleanEmail.toLowerCase())) {
@@ -376,8 +382,9 @@ const Store = {
     }
     const student = {
       id: nextId(state.students),
-      first_name: required(first_name, 'First name', 100),
-      last_name: required(last_name, 'Last name', 100),
+      full_name: required(full_name, 'Full name', 200),
+      name: required(name, 'Name', 100),
+      form_class: required(form_class, 'Form class', 50),
       email: cleanEmail,
       notes: optionalText(notes, 2000),
       created_at: new Date().toISOString(),
@@ -431,9 +438,9 @@ const Store = {
     const roster = state.enrollments.filter((e) => e.class_id === classId).map((e) => {
       const s = state.students.find((s) => s.id === e.student_id);
       const rec = state.attendance.find((a) => a.enrollment_id === e.id && a.date === date);
-      return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name, status: rec ? rec.status : null, notes: rec ? rec.notes : null };
+      return { enrollment_id: e.id, student_id: s.id, name: s.name, full_name: s.full_name, status: rec ? rec.status : null, notes: rec ? rec.notes : null };
     });
-    return roster.sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+    return roster.sort((a, b) => a.full_name.localeCompare(b.full_name));
   },
   saveAttendance(classId, date, records) {
     if (!DATE_RE.test(date)) throw new Error('Date must be YYYY-MM-DD');
@@ -501,8 +508,8 @@ const Store = {
     const cls = state.classes.find((c) => c.id === classId);
     const students = state.enrollments.filter((e) => e.class_id === classId).map((e) => {
       const s = state.students.find((s) => s.id === e.student_id);
-      return { enrollment_id: e.id, student_id: s.id, first_name: s.first_name, last_name: s.last_name };
-    }).sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
+      return { enrollment_id: e.id, student_id: s.id, name: s.name, full_name: s.full_name };
+    }).sort((a, b) => a.full_name.localeCompare(b.full_name));
     const assignments = Store.listAssignments(classId);
     const matrix = students.map((s) => ({
       ...s,
@@ -568,6 +575,11 @@ function render() {
 function linkBack(label, href) {
   const a = el('a', {}, label);
   a.addEventListener('click', () => { location.hash = href; });
+  return a;
+}
+function studentLink(label, studentId) {
+  const a = el('a', { class: 'student-link' }, label);
+  a.addEventListener('click', (e) => { e.stopPropagation(); location.hash = `#/students/${studentId}`; });
   return a;
 }
 function showErrorInline(err) { return el('div', { class: 'error' }, err.message); }
@@ -664,12 +676,18 @@ function renderRoster(panel, cls, classId) {
   panel.appendChild(el('h2', {}, 'Roster'));
 
   const table = el('table');
-  table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Student'), el('th', {}, 'Email'), el('th', {}, '')])));
+  table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Name'), el('th', {}, 'Full Name'), el('th', {}, 'Form Class'), el('th', {}, 'Email'), el('th', {}, '')])));
   const tbody = el('tbody');
   for (const s of cls.roster) {
     const remove = el('button', { class: 'secondary' }, 'Remove');
     remove.addEventListener('click', () => { Store.unenroll(s.enrollment_id); renderClassDetail(classId, 'roster'); });
-    tbody.appendChild(el('tr', {}, [el('td', {}, `${s.first_name} ${s.last_name}`), el('td', {}, s.email || ''), el('td', {}, remove)]));
+    tbody.appendChild(el('tr', {}, [
+      el('td', {}, studentLink(s.name, s.student_id)),
+      el('td', {}, s.full_name),
+      el('td', { class: 'form-class' }, s.form_class),
+      el('td', {}, s.email || ''),
+      el('td', {}, remove),
+    ]));
   }
   table.appendChild(tbody);
   panel.appendChild(table);
@@ -683,7 +701,7 @@ function renderRoster(panel, cls, classId) {
   if (!available.length) {
     select.appendChild(el('option', { value: '' }, 'No available students'));
   } else {
-    for (const s of available) select.appendChild(el('option', { value: String(s.id) }, `${s.first_name} ${s.last_name}`));
+    for (const s of available) select.appendChild(el('option', { value: String(s.id) }, `${s.name} — ${s.full_name} (${s.form_class})`));
   }
   const enrollBtn = el('button', {}, 'Enroll');
   const enrollErr = el('div', {});
@@ -736,7 +754,7 @@ function renderAttendance(panel, cls) {
       }
       const notesInput = el('input', { value: r.notes || '', maxlength: '500' });
       notesInput.addEventListener('input', () => { r.notes = notesInput.value; });
-      tbody.appendChild(el('tr', {}, [el('td', {}, `${r.first_name} ${r.last_name}`), el('td', {}, btnGroup), el('td', {}, notesInput)]));
+      tbody.appendChild(el('tr', {}, [el('td', {}, studentLink(r.name, r.student_id)), el('td', {}, btnGroup), el('td', {}, notesInput)]));
     }
     table.appendChild(tbody);
     tableWrap.appendChild(table);
@@ -818,7 +836,7 @@ function renderGradebook(panel, cls, classId) {
 
     const tbody = el('tbody');
     for (const s of students) {
-      const row = el('tr', {}, [el('td', {}, `${s.first_name} ${s.last_name}`)]);
+      const row = el('tr', {}, [el('td', {}, studentLink(s.name, s.student_id))]);
       for (const a of assignments) {
         const val = s.scores[a.id];
         const input = el('input', { class: 'score-input', type: 'number', min: '0', step: '0.01', value: val === null || val === undefined ? '' : String(val) });
@@ -857,13 +875,15 @@ function renderStudentsList() {
   app.appendChild(panel);
 
   const form = el('form', { class: 'row' });
-  const first = el('input', { placeholder: 'First name', required: 'true', maxlength: '100' });
-  const last = el('input', { placeholder: 'Last name', required: 'true', maxlength: '100' });
+  const fullName = el('input', { placeholder: 'Full name', required: 'true', maxlength: '200' });
+  const name = el('input', { placeholder: 'Name (preferred)', required: 'true', maxlength: '100' });
+  const formClass = el('input', { placeholder: 'Form class', required: 'true', maxlength: '50' });
   const email = el('input', { type: 'email', placeholder: 'Email (optional)', maxlength: '254' });
   const submit = el('button', { type: 'submit' }, 'Add student');
   form.append(
-    el('div', {}, [el('label', {}, 'First name'), first]),
-    el('div', {}, [el('label', {}, 'Last name'), last]),
+    el('div', {}, [el('label', {}, 'Full name'), fullName]),
+    el('div', {}, [el('label', {}, 'Name'), name]),
+    el('div', {}, [el('label', {}, 'Form class'), formClass]),
     el('div', {}, [el('label', {}, 'Email'), email]),
     submit
   );
@@ -872,7 +892,7 @@ function renderStudentsList() {
     e.preventDefault();
     clear(errBox);
     try {
-      Store.createStudent({ first_name: first.value, last_name: last.value, email: email.value || undefined });
+      Store.createStudent({ full_name: fullName.value, name: name.value, form_class: formClass.value, email: email.value || undefined });
       renderStudentsList();
     } catch (err) { showError(errBox, err); }
   });
@@ -890,17 +910,22 @@ function renderStudentsList() {
       return;
     }
     const table = el('table');
-    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Name'), el('th', {}, 'Email'), el('th', {}, '')])));
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Name'), el('th', {}, 'Full Name'), el('th', {}, 'Form Class'), el('th', {}, '')])));
     const tbody = el('tbody');
     for (const s of students) {
       const del = el('button', { class: 'danger' }, 'Delete');
       del.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (!confirm(`Delete ${s.first_name} ${s.last_name}? This removes their enrollments, attendance, and grades.`)) return;
+        if (!confirm(`Delete ${s.full_name}? This removes their enrollments, attendance, and grades.`)) return;
         Store.deleteStudent(s.id);
         load(searchBox.value);
       });
-      const tr = el('tr', { class: 'clickable' }, [el('td', {}, `${s.first_name} ${s.last_name}`), el('td', {}, s.email || ''), el('td', {}, del)]);
+      const tr = el('tr', { class: 'clickable' }, [
+        el('td', {}, studentLink(s.name, s.id)),
+        el('td', {}, s.full_name),
+        el('td', { class: 'form-class' }, s.form_class),
+        el('td', {}, del),
+      ]);
       tr.addEventListener('click', () => { location.hash = `#/students/${s.id}`; });
       tbody.appendChild(tr);
     }
@@ -921,10 +946,14 @@ function renderStudentDetail(id) {
   const student = Store.getStudent(id);
   if (!student) { app.appendChild(el('div', { class: 'panel' }, [el('p', {}, 'Student not found.'), linkBack('Back to students', '#/students')])); return; }
 
-  app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Students', '#/students'), ' / ', el('strong', {}, `${student.first_name} ${student.last_name}`)]));
+  app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Students', '#/students'), ' / ', el('strong', {}, student.name)]));
 
   const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('h2', {}, `${student.first_name} ${student.last_name}`));
+  panel.appendChild(el('h2', {}, student.name));
+  panel.appendChild(el('div', { class: 'profile-meta' }, [
+    el('span', {}, ['Full name ', el('strong', {}, student.full_name)]),
+    el('span', {}, ['Form class ', el('strong', {}, student.form_class)]),
+  ]));
   if (student.email) panel.appendChild(el('p', { class: 'muted' }, student.email));
   if (student.notes) panel.appendChild(el('p', {}, student.notes));
 

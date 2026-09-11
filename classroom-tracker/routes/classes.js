@@ -53,11 +53,11 @@ router.get('/:id', idParam, validate, asyncHandler(async (req, res) => {
   const cls = getClassOr404(req.params.id, res);
   if (!cls) return;
   const roster = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name, s.email
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.full_name, s.name, s.form_class, s.email
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(cls.id);
   res.json({ ...cls, roster });
 }));

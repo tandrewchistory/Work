@@ -160,6 +160,11 @@ tr.clickable:hover { background: #f9f9fd; }
 .error { color: var(--danger); font-size: 13px; margin-top: 6px; }
 .crumbs { font-size: 13px; margin-bottom: 12px; }
 .crumbs a { color: var(--accent); cursor: pointer; }
+.student-link { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500; }
+.student-link:hover { text-decoration: underline; }
+td.form-class { color: var(--muted); font-size: 13px; }
+.profile-meta { display: flex; gap: 22px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 4px 0 14px; }
+.profile-meta strong { color: var(--text); }
 
 .score-input { width: 64px; }
 

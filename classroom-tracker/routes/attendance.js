@@ -20,13 +20,13 @@ router.get('/classes/:id/attendance', [
   if (!cls) return res.status(404).json({ error: 'Class not found' });
 
   const rows = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name,
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.name, s.full_name,
            a.status, a.notes
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
     LEFT JOIN attendance a ON a.enrollment_id = e.id AND a.date = ?
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(req.query.date, cls.id);
 
   res.json({ class: cls, date: req.query.date, roster: rows });
@@ -76,13 +76,13 @@ router.post('/classes/:id/attendance', [
   applyAll(records);
 
   const rows = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name,
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.name, s.full_name,
            a.status, a.notes
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
     LEFT JOIN attendance a ON a.enrollment_id = e.id AND a.date = ?
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(date, cls.id);
 
   res.json({ class: cls, date, roster: rows });

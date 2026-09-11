@@ -14,13 +14,13 @@ router.get('/assignments/:id/grades', param('id').isInt({ min: 1 }).toInt(), val
   if (!assignment) return res.status(404).json({ error: 'Assignment not found' });
 
   const rows = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name,
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.name, s.full_name,
            g.score, g.notes
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
     LEFT JOIN grades g ON g.enrollment_id = e.id AND g.assignment_id = ?
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(assignment.id, assignment.class_id);
 
   res.json({ assignment, roster: rows });
@@ -68,13 +68,13 @@ router.post('/assignments/:id/grades', [
   applyAll(records);
 
   const rows = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name,
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.name, s.full_name,
            g.score, g.notes
     FROM enrollments e
     JOIN students s ON s.id = e.student_id
     LEFT JOIN grades g ON g.enrollment_id = e.id AND g.assignment_id = ?
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(assignment.id, assignment.class_id);
 
   res.json({ assignment, roster: rows });
@@ -86,10 +86,10 @@ router.get('/classes/:id/gradebook', param('id').isInt({ min: 1 }).toInt(), vali
   if (!cls) return res.status(404).json({ error: 'Class not found' });
 
   const students = db.prepare(`
-    SELECT e.id AS enrollment_id, s.id AS student_id, s.first_name, s.last_name
+    SELECT e.id AS enrollment_id, s.id AS student_id, s.name, s.full_name
     FROM enrollments e JOIN students s ON s.id = e.student_id
     WHERE e.class_id = ?
-    ORDER BY s.last_name COLLATE NOCASE, s.first_name COLLATE NOCASE
+    ORDER BY s.full_name COLLATE NOCASE
   `).all(cls.id);
 
   const assignments = db.prepare(

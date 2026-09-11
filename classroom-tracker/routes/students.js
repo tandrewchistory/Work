@@ -11,8 +11,9 @@ const router = express.Router();
 const idParam = param('id').isInt({ min: 1 }).toInt();
 
 const studentBody = [
-  body('first_name').trim().isLength({ min: 1, max: 100 }).withMessage('first_name is required (max 100 chars)'),
-  body('last_name').trim().isLength({ min: 1, max: 100 }).withMessage('last_name is required (max 100 chars)'),
+  body('full_name').trim().isLength({ min: 1, max: 200 }).withMessage('full_name is required (max 200 chars)'),
+  body('name').trim().isLength({ min: 1, max: 100 }).withMessage('name is required (max 100 chars)'),
+  body('form_class').trim().isLength({ min: 1, max: 50 }).withMessage('form_class is required (max 50 chars)'),
   body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('email must be valid').isLength({ max: 254 }),
   body('notes').optional({ values: 'falsy' }).trim().isLength({ max: 2000 }),
 ];
@@ -32,20 +33,20 @@ router.get('/', query('q').optional().trim().isLength({ max: 200 }), validate, a
   const students = q
     ? db.prepare(`
         SELECT * FROM students
-        WHERE first_name LIKE ? ESCAPE '\\' OR last_name LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\'
-        ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE
-      `).all(...Array(3).fill(`%${q.replace(/[%_\\]/g, '\\$&')}%`))
-    : db.prepare('SELECT * FROM students ORDER BY last_name COLLATE NOCASE, first_name COLLATE NOCASE').all();
+        WHERE full_name LIKE ? ESCAPE '\\' OR name LIKE ? ESCAPE '\\' OR form_class LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\'
+        ORDER BY full_name COLLATE NOCASE
+      `).all(...Array(4).fill(`%${q.replace(/[%_\\]/g, '\\$&')}%`))
+    : db.prepare('SELECT * FROM students ORDER BY full_name COLLATE NOCASE').all();
   res.json(students);
 }));
 
 // POST /api/students - create a student
 router.post('/', studentBody, validate, asyncHandler(async (req, res) => {
-  const { first_name, last_name, email = null, notes = null } = req.body;
+  const { full_name, name, form_class, email = null, notes = null } = req.body;
   try {
     const info = db.prepare(
-      'INSERT INTO students (first_name, last_name, email, notes) VALUES (?, ?, ?, ?)'
-    ).run(first_name, last_name, email, notes);
+      'INSERT INTO students (full_name, name, form_class, email, notes) VALUES (?, ?, ?, ?, ?)'
+    ).run(full_name, name, form_class, email, notes);
     res.status(201).json(db.prepare('SELECT * FROM students WHERE id = ?').get(info.lastInsertRowid));
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -73,10 +74,10 @@ router.get('/:id', idParam, validate, asyncHandler(async (req, res) => {
 router.put('/:id', [idParam, ...studentBody], validate, asyncHandler(async (req, res) => {
   const student = getStudentOr404(req.params.id, res);
   if (!student) return;
-  const { first_name, last_name, email = null, notes = null } = req.body;
+  const { full_name, name, form_class, email = null, notes = null } = req.body;
   try {
-    db.prepare('UPDATE students SET first_name = ?, last_name = ?, email = ?, notes = ? WHERE id = ?')
-      .run(first_name, last_name, email, notes, student.id);
+    db.prepare('UPDATE students SET full_name = ?, name = ?, form_class = ?, email = ?, notes = ? WHERE id = ?')
+      .run(full_name, name, form_class, email, notes, student.id);
   } catch (err) {
     if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
       return res.status(409).json({ error: 'A student with that email already exists' });
