@@ -61,7 +61,7 @@ router.get('/:id', idParam, validate, asyncHandler(async (req, res) => {
   const student = getStudentOr404(req.params.id, res);
   if (!student) return;
   const classes = db.prepare(`
-    SELECT c.id, c.name, c.subject, c.period, e.id AS enrollment_id
+    SELECT c.id, c.name, c.subject, c.venue, e.id AS enrollment_id
     FROM enrollments e
     JOIN classes c ON c.id = e.class_id
     WHERE e.student_id = ?

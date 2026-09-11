@@ -152,13 +152,14 @@ const Store = {
       .map((c) => ({ ...c, student_count: state.enrollments.filter((e) => e.class_id === c.id).length }))
       .sort((a, b) => a.name.localeCompare(b.name));
   },
-  createClass({ name, subject, period, room }) {
+  createClass({ name, subject, venue, odd_week_slots, even_week_slots }) {
     const cls = {
       id: nextId(state.classes),
-      name: required(name, 'Name', 200),
+      name: required(name, 'Class', 200),
       subject: optionalText(subject, 200),
-      period: optionalText(period, 50),
-      room: optionalText(room, 50),
+      venue: optionalText(venue, 50),
+      odd_week_slots: optionalText(odd_week_slots, 200),
+      even_week_slots: optionalText(even_week_slots, 200),
       created_at: new Date().toISOString(),
     };
     state.classes.push(cls);
@@ -177,14 +178,15 @@ const Store = {
       .sort((a, b) => a.full_name.localeCompare(b.full_name));
     return { ...cls, roster };
   },
-  updateClass(id, { name, subject, period, room }) {
+  updateClass(id, { name, subject, venue, odd_week_slots, even_week_slots }) {
     const cls = state.classes.find((c) => c.id === id);
     if (!cls) throw new Error('Class not found');
     Object.assign(cls, {
-      name: required(name, 'Name', 200),
+      name: required(name, 'Class', 200),
       subject: optionalText(subject, 200),
-      period: optionalText(period, 50),
-      room: optionalText(room, 50),
+      venue: optionalText(venue, 50),
+      odd_week_slots: optionalText(odd_week_slots, 200),
+      even_week_slots: optionalText(even_week_slots, 200),
     });
     persist();
     return cls;
@@ -240,7 +242,7 @@ const Store = {
       .filter((e) => e.student_id === id)
       .map((e) => {
         const c = state.classes.find((c) => c.id === e.class_id);
-        return { id: c.id, name: c.name, subject: c.subject, period: c.period, enrollment_id: e.id };
+        return { id: c.id, name: c.name, subject: c.subject, venue: c.venue, enrollment_id: e.id };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
     return { ...student, classes };
@@ -432,16 +434,18 @@ function renderClassesList() {
   app.appendChild(panel);
 
   const form = el('form', { class: 'row' });
-  const name = el('input', { placeholder: 'Class name', required: 'true', maxlength: '200' });
   const subject = el('input', { placeholder: 'Subject', maxlength: '200' });
-  const period = el('input', { placeholder: 'Period', maxlength: '50' });
-  const room = el('input', { placeholder: 'Room', maxlength: '50' });
+  const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200' });
+  const venue = el('input', { placeholder: 'Venue', maxlength: '50' });
+  const oddSlots = el('input', { placeholder: 'e.g. Mon P1-P2, Wed P5', maxlength: '200' });
+  const evenSlots = el('input', { placeholder: 'e.g. Tue P3-P4, Fri P1', maxlength: '200' });
   const submit = el('button', { type: 'submit' }, 'Add class');
   form.append(
-    el('div', {}, [el('label', {}, 'Name'), name]),
     el('div', {}, [el('label', {}, 'Subject'), subject]),
-    el('div', {}, [el('label', {}, 'Period'), period]),
-    el('div', {}, [el('label', {}, 'Room'), room]),
+    el('div', {}, [el('label', {}, 'Class'), name]),
+    el('div', {}, [el('label', {}, 'Venue'), venue]),
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddSlots]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenSlots]),
     submit
   );
   const errBox = el('div', {});
@@ -449,7 +453,7 @@ function renderClassesList() {
     e.preventDefault();
     clear(errBox);
     try {
-      Store.createClass({ name: name.value, subject: subject.value, period: period.value, room: room.value });
+      Store.createClass({ name: name.value, subject: subject.value, venue: venue.value, odd_week_slots: oddSlots.value, even_week_slots: evenSlots.value });
       renderClassesList();
     } catch (err) { showError(errBox, err); }
   });
@@ -465,7 +469,9 @@ function renderClassesList() {
   }
   const table = el('table');
   table.appendChild(el('thead', {}, el('tr', {}, [
-    el('th', {}, 'Name'), el('th', {}, 'Subject'), el('th', {}, 'Period'), el('th', {}, 'Room'), el('th', {}, 'Students'), el('th', {}, ''),
+    el('th', {}, 'Subject'), el('th', {}, 'Class'), el('th', {}, 'Venue'),
+    el('th', {}, 'Odd Week Slots'), el('th', {}, 'Even Week Slots'),
+    el('th', {}, 'Students'), el('th', {}, ''),
   ])));
   const tbody = el('tbody');
   for (const c of classes) {
@@ -477,8 +483,9 @@ function renderClassesList() {
       renderClassesList();
     });
     const tr = el('tr', { class: 'clickable' }, [
-      el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, c.period || ''),
-      el('td', {}, c.room || ''), el('td', {}, String(c.student_count)), el('td', {}, del),
+      el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''),
+      el('td', { class: 'form-class' }, c.odd_week_slots || ''), el('td', { class: 'form-class' }, c.even_week_slots || ''),
+      el('td', {}, String(c.student_count)), el('td', {}, del),
     ]);
     tr.addEventListener('click', () => { location.hash = `#/classes/${c.id}`; });
     tbody.appendChild(tr);
@@ -495,6 +502,14 @@ function renderClassDetail(id, subtab) {
   if (!cls) { app.appendChild(el('div', { class: 'panel' }, [el('p', {}, 'Class not found.'), linkBack('Back to classes', '#/classes')])); return; }
 
   app.appendChild(el('div', { class: 'crumbs' }, [linkBack('Classes', '#/classes'), ' / ', el('strong', {}, cls.name)]));
+
+  const infoItems = [
+    cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
+    cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
+    cls.odd_week_slots ? el('span', {}, ['Odd wk ', el('strong', {}, cls.odd_week_slots)]) : null,
+    cls.even_week_slots ? el('span', {}, ['Even wk ', el('strong', {}, cls.even_week_slots)]) : null,
+  ].filter(Boolean);
+  if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
 
   const subtabs = el('div', { class: 'subtabs' });
   for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
@@ -802,12 +817,12 @@ function renderStudentDetail(id) {
     panel.appendChild(el('p', { class: 'muted' }, 'Not enrolled in any classes yet.'));
   } else {
     const table = el('table');
-    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Class'), el('th', {}, 'Subject'), el('th', {}, '')])));
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Subject'), el('th', {}, 'Class'), el('th', {}, 'Venue'), el('th', {}, '')])));
     const tbody = el('tbody');
     for (const c of student.classes) {
       const remove = el('button', { class: 'secondary' }, 'Unenroll');
       remove.addEventListener('click', () => { Store.unenroll(c.enrollment_id); renderStudentDetail(id); });
-      tbody.appendChild(el('tr', {}, [el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, remove)]));
+      tbody.appendChild(el('tr', {}, [el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''), el('td', {}, remove)]));
     }
     table.appendChild(tbody);
     panel.appendChild(table);

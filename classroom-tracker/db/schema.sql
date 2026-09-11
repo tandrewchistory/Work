@@ -5,12 +5,13 @@
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS classes (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  name        TEXT NOT NULL CHECK (length(trim(name)) > 0 AND length(name) <= 200),
-  subject     TEXT CHECK (length(subject) <= 200),
-  period      TEXT CHECK (length(period) <= 50),
-  room        TEXT CHECK (length(room) <= 50),
-  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  name             TEXT NOT NULL CHECK (length(trim(name)) > 0 AND length(name) <= 200),
+  subject          TEXT CHECK (length(subject) <= 200),
+  venue            TEXT CHECK (length(venue) <= 50),
+  odd_week_slots   TEXT CHECK (length(odd_week_slots) <= 200),
+  even_week_slots  TEXT CHECK (length(even_week_slots) <= 200),
+  created_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE TABLE IF NOT EXISTS students (

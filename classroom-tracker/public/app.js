@@ -78,16 +78,18 @@ async function renderClassesList() {
   app.appendChild(panel);
 
   const form = el('form', { class: 'row' });
-  const name = el('input', { placeholder: 'Class name', required: 'true', maxlength: '200' });
   const subject = el('input', { placeholder: 'Subject', maxlength: '200' });
-  const period = el('input', { placeholder: 'Period', maxlength: '50' });
-  const room = el('input', { placeholder: 'Room', maxlength: '50' });
+  const name = el('input', { placeholder: 'Class', required: 'true', maxlength: '200' });
+  const venue = el('input', { placeholder: 'Venue', maxlength: '50' });
+  const oddSlots = el('input', { placeholder: 'e.g. Mon P1-P2, Wed P5', maxlength: '200' });
+  const evenSlots = el('input', { placeholder: 'e.g. Tue P3-P4, Fri P1', maxlength: '200' });
   const submit = el('button', { type: 'submit' }, 'Add class');
   form.append(
-    el('div', {}, [el('label', {}, 'Name'), name]),
     el('div', {}, [el('label', {}, 'Subject'), subject]),
-    el('div', {}, [el('label', {}, 'Period'), period]),
-    el('div', {}, [el('label', {}, 'Room'), room]),
+    el('div', {}, [el('label', {}, 'Class'), name]),
+    el('div', {}, [el('label', {}, 'Venue'), venue]),
+    el('div', {}, [el('label', {}, 'Odd week slots'), oddSlots]),
+    el('div', {}, [el('label', {}, 'Even week slots'), evenSlots]),
     submit
   );
   const errBox = el('div', {});
@@ -97,7 +99,7 @@ async function renderClassesList() {
     try {
       await api('/api/classes', {
         method: 'POST',
-        body: { name: name.value, subject: subject.value, period: period.value, room: room.value },
+        body: { name: name.value, subject: subject.value, venue: venue.value, odd_week_slots: oddSlots.value, even_week_slots: evenSlots.value },
       });
       renderClassesList();
     } catch (err) { showError(errBox, err); }
@@ -115,7 +117,9 @@ async function renderClassesList() {
     }
     const table = el('table');
     table.appendChild(el('thead', {}, el('tr', {}, [
-      el('th', {}, 'Name'), el('th', {}, 'Subject'), el('th', {}, 'Period'), el('th', {}, 'Room'), el('th', {}, 'Students'), el('th', {}, ''),
+      el('th', {}, 'Subject'), el('th', {}, 'Class'), el('th', {}, 'Venue'),
+      el('th', {}, 'Odd Week Slots'), el('th', {}, 'Even Week Slots'),
+      el('th', {}, 'Students'), el('th', {}, ''),
     ])));
     const tbody = el('tbody');
     for (const c of classes) {
@@ -127,8 +131,9 @@ async function renderClassesList() {
         renderClassesList();
       });
       const tr = el('tr', { class: 'clickable' }, [
-        el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, c.period || ''),
-        el('td', {}, c.room || ''), el('td', {}, String(c.student_count)), el('td', {}, del),
+        el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''),
+        el('td', { class: 'form-class' }, c.odd_week_slots || ''), el('td', { class: 'form-class' }, c.even_week_slots || ''),
+        el('td', {}, String(c.student_count)), el('td', {}, del),
       ]);
       tr.addEventListener('click', () => { location.hash = `#/classes/${c.id}`; });
       tbody.appendChild(tr);
@@ -152,6 +157,14 @@ async function renderClassDetail(id, subtab) {
   app.appendChild(el('div', { class: 'crumbs' }, [
     linkBack('Classes', '#/classes'), ' / ', el('strong', {}, cls.name),
   ]));
+
+  const infoItems = [
+    cls.subject ? el('span', {}, ['Subject ', el('strong', {}, cls.subject)]) : null,
+    cls.venue ? el('span', {}, ['Venue ', el('strong', {}, cls.venue)]) : null,
+    cls.odd_week_slots ? el('span', {}, ['Odd wk ', el('strong', {}, cls.odd_week_slots)]) : null,
+    cls.even_week_slots ? el('span', {}, ['Even wk ', el('strong', {}, cls.even_week_slots)]) : null,
+  ].filter(Boolean);
+  if (infoItems.length) app.appendChild(el('div', { class: 'profile-meta' }, infoItems));
 
   const subtabs = el('div', { class: 'subtabs' });
   for (const [key, label] of [['roster', 'Roster'], ['attendance', 'Attendance'], ['gradebook', 'Gradebook']]) {
@@ -505,7 +518,7 @@ async function renderStudentDetail(id) {
     panel.appendChild(el('p', { class: 'muted' }, 'Not enrolled in any classes yet.'));
   } else {
     const table = el('table');
-    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Class'), el('th', {}, 'Subject'), el('th', {}, '')])));
+    table.appendChild(el('thead', {}, el('tr', {}, [el('th', {}, 'Subject'), el('th', {}, 'Class'), el('th', {}, 'Venue'), el('th', {}, '')])));
     const tbody = el('tbody');
     for (const c of student.classes) {
       const remove = el('button', { class: 'secondary' }, 'Unenroll');
@@ -513,7 +526,7 @@ async function renderStudentDetail(id) {
         await api(`/api/enrollments/${c.enrollment_id}`, { method: 'DELETE' });
         renderStudentDetail(id);
       });
-      const tr = el('tr', {}, [el('td', {}, c.name), el('td', {}, c.subject || ''), el('td', {}, remove)]);
+      const tr = el('tr', {}, [el('td', {}, c.subject || ''), el('td', {}, c.name), el('td', {}, c.venue || ''), el('td', {}, remove)]);
       tbody.appendChild(tr);
     }
     table.appendChild(tbody);

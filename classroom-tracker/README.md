@@ -23,7 +23,9 @@ Optional environment variables:
 
 ## Data model
 
-- **classes** — a class/section you teach
+- **classes** — a class/section you teach. Has a `name` (the class, e.g.
+  "Sec 3 Amanah"), `subject`, `venue`, and `odd_week_slots`/`even_week_slots`
+  (free-text timetable slots for a fortnightly odd/even-week rotation)
 - **students** — a student, independent of any particular class. Has a
   `full_name` (legal/registered name), `name` (preferred/called name, shown
   in rosters), and `form_class` (homeroom/tutor group) — all required

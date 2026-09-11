@@ -13,8 +13,9 @@ const idParam = param('id').isInt({ min: 1 }).toInt();
 const classBody = [
   body('name').trim().isLength({ min: 1, max: 200 }).withMessage('name is required (max 200 chars)'),
   body('subject').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
-  body('period').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
-  body('room').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('venue').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+  body('odd_week_slots').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
+  body('even_week_slots').optional({ values: 'falsy' }).trim().isLength({ max: 200 }),
 ];
 
 function getClassOr404(id, res) {
@@ -40,10 +41,10 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // POST /api/classes - create a class
 router.post('/', classBody, validate, asyncHandler(async (req, res) => {
-  const { name, subject = null, period = null, room = null } = req.body;
+  const { name, subject = null, venue = null, odd_week_slots = null, even_week_slots = null } = req.body;
   const info = db.prepare(
-    'INSERT INTO classes (name, subject, period, room) VALUES (?, ?, ?, ?)'
-  ).run(name, subject, period, room);
+    'INSERT INTO classes (name, subject, venue, odd_week_slots, even_week_slots) VALUES (?, ?, ?, ?, ?)'
+  ).run(name, subject, venue, odd_week_slots, even_week_slots);
   const cls = db.prepare('SELECT * FROM classes WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(cls);
 }));
@@ -66,9 +67,9 @@ router.get('/:id', idParam, validate, asyncHandler(async (req, res) => {
 router.put('/:id', [idParam, ...classBody], validate, asyncHandler(async (req, res) => {
   const cls = getClassOr404(req.params.id, res);
   if (!cls) return;
-  const { name, subject = null, period = null, room = null } = req.body;
-  db.prepare('UPDATE classes SET name = ?, subject = ?, period = ?, room = ? WHERE id = ?')
-    .run(name, subject, period, room, cls.id);
+  const { name, subject = null, venue = null, odd_week_slots = null, even_week_slots = null } = req.body;
+  db.prepare('UPDATE classes SET name = ?, subject = ?, venue = ?, odd_week_slots = ?, even_week_slots = ? WHERE id = ?')
+    .run(name, subject, venue, odd_week_slots, even_week_slots, cls.id);
   res.json(db.prepare('SELECT * FROM classes WHERE id = ?').get(cls.id));
 }));
 
