@@ -1775,6 +1775,7 @@ footer{
     <button class="btn" id="rules-btn">&#128220; Game Rules</button>
     <button class="btn" id="how-to-btn">How to Play</button>
     <button class="btn" id="end-game-btn">End Game</button>
+    <button class="btn" id="reset-board-btn">Reset Board</button>
     <button class="btn danger" id="reset-btn">Reset Game</button>
   </div>
 
@@ -1800,6 +1801,7 @@ footer{
       </div>
       <div id="clue-timer-controls">
         <button type="button" class="size-btn" id="clue-timer-pause-btn" aria-label="Pause timer" title="Pause timer">&#9208;</button>
+        <button type="button" class="size-btn" id="clue-timer-restart-btn" aria-label="Restart timer" title="Restart timer">&#8635;</button>
         <button type="button" class="size-btn" id="clue-timer-stop-btn" aria-label="Stop timer" title="Stop timer">&#9209;</button>
       </div>
       <label id="clue-timer-chime-label"><input type="checkbox" id="clue-timer-chime-toggle"> Chime</label>
@@ -2352,6 +2354,7 @@ footer{
   var clueTimerLabel = document.getElementById("clue-timer-label");
   var clueTimerChimeToggle = document.getElementById("clue-timer-chime-toggle");
   var clueTimerPauseBtn = document.getElementById("clue-timer-pause-btn");
+  var clueTimerRestartBtn = document.getElementById("clue-timer-restart-btn");
   var clueTimerStopBtn = document.getElementById("clue-timer-stop-btn");
   var clueImageEl = document.getElementById("clue-image");
   var clueTextEl = document.getElementById("clue-text");
@@ -3511,9 +3514,13 @@ footer{
     launchConfetti();
   }
 
-  function resetGame(){
+  /* Shared by both Reset Board and Reset Game: clears played tiles, undo
+     history, and the persisted snapshot, and zeroes every team's score.
+     The two differ only in whether the team list itself (names, rosters —
+     the "groupings") survives. */
+  function resetBoardState(){
     state.used = {};
-    state.teams = [ makeTeam("Team 1"), makeTeam("Team 2") ];
+    state.teams.forEach(function(t){ t.score = 0; });
     history = [];
     updateUndoState();
     victoryCelebrated = false;
@@ -3523,14 +3530,20 @@ footer{
     renderTeams();
   }
 
+  function resetGame(){
+    state.teams = [ makeTeam("Team 1"), makeTeam("Team 2") ];
+    resetBoardState();
+  }
+
   /* ---------------- clue countdown timer ----------------
      Configurable per clue (0/blank = no timer, set from the editor).
      Counts down from when the clue opens; stops on reveal or close, and
      optionally chimes at zero. The chime preference persists across
      sessions since it's a personal "how I like to run this" setting, not
-     board content. Pause/Resume/Stop let the teacher freeze the clock for
-     a class discussion, pick back up where it left off, or cancel it early
-     without waiting it out — timerPaused and timerRemainingMs track the
+     board content. Pause/Resume/Stop/Restart let the teacher freeze the
+     clock for a class discussion, pick back up where it left off, cancel
+     it early without waiting it out, or reset it back to the clue's full
+     configured duration — timerPaused and timerRemainingMs track the
      frozen state while timerInterval is cleared during a pause. */
   var TIMER_CHIME_KEY = "classroom-showdown-timer-chime-v1";
   var timerInterval = null;
@@ -3594,11 +3607,15 @@ footer{
 
   /* Pause/Stop only make sense while the clock is actually counting down or
      frozen mid-count — not before a timer's been started, and not once it's
-     already run out on its own. */
+     already run out on its own or been stopped. Restart is available any
+     time the clock is visible at all (running, paused, or run all the way
+     out) and disables only once Stop has hidden it. */
   function updateTimerControlsUI(){
+    var timerVisible = clueTimerRow.classList.contains("shown");
     var hasTime = !!timerInterval || timerPaused;
     clueTimerPauseBtn.disabled = !hasTime;
     clueTimerStopBtn.disabled = !hasTime;
+    clueTimerRestartBtn.disabled = !timerVisible;
     clueTimerPauseBtn.textContent = timerPaused ? "▶" : "⏸";
     clueTimerPauseBtn.title = timerPaused ? "Resume timer" : "Pause timer";
     clueTimerPauseBtn.setAttribute("aria-label", clueTimerPauseBtn.title);
@@ -3636,6 +3653,14 @@ footer{
     updateTimerControlsUI();
   }
 
+  /* Resets the clock back to the clue's full configured duration and starts
+     it counting down again, regardless of whether it was running, paused,
+     or had already run out — a fresh attempt rather than a continuation. */
+  function restartClueTimer(){
+    if (!current || !clueTimerRow.classList.contains("shown")) return;
+    startClueTimer(current.timerSeconds);
+  }
+
   clueTimerChimeToggle.addEventListener("change", function(){
     saveTimerChimePref(clueTimerChimeToggle.checked);
   });
@@ -3643,6 +3668,8 @@ footer{
   clueTimerPauseBtn.addEventListener("click", function(){
     if (timerPaused) resumeClueTimer(); else pauseClueTimer();
   });
+
+  clueTimerRestartBtn.addEventListener("click", restartClueTimer);
 
   clueTimerStopBtn.addEventListener("click", stopClueTimer);
 
@@ -3886,6 +3913,9 @@ footer{
     pendingConfirmAction = null;
   }
 
+  document.getElementById("reset-board-btn").addEventListener("click", function(){
+    openConfirm("Reset the board and all scores, keeping the current teams and their groupings? This can't be undone.", "Reset Board", resetBoardState);
+  });
   document.getElementById("reset-btn").addEventListener("click", function(){
     openConfirm("Reset the board, all scores, and teams (back to Team 1 / Team 2)? This can't be undone.", "Reset Game", resetGame);
   });
