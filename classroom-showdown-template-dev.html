@@ -1827,7 +1827,7 @@ footer{
   <div id="howto-card">
     <h2>How to Play</h2>
     <ol>
-      <li>Split the class into 2&ndash;6 teams and give each one a name.</li>
+      <li>Split the class into 2&ndash;10 teams and give each one a name.</li>
       <li>A team picks a category and dollar value from the board.</li>
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
@@ -2101,6 +2101,7 @@ footer{
   var MAX_CATS = 6;
   var MIN_ROWS = 3;
   var MAX_ROWS = 6;
+  var MAX_TEAMS = 10;
   var PALETTE_SLOTS = ["background", "board", "card", "text", "accent", "info", "good", "danger"];
 
   function valueForRow(rowIdx){ return (rowIdx + 1) * 100; }
@@ -2763,7 +2764,7 @@ footer{
      teams. Not persisted: each open of the modal starts fresh unless teams
      were already built earlier in this same page session. */
   var MIN_BUILDER_TEAMS = 2;
-  var MAX_BUILDER_TEAMS = 8;
+  var MAX_BUILDER_TEAMS = MAX_TEAMS;
   var teamBuilder = { teamCount: 2, teams: [], unassigned: [], selected: null };
 
   function setTeamBuilderStatus(msg, kind){
@@ -3114,9 +3115,9 @@ footer{
       setTeamBuilderStatus("Build at least one team with students in it first.", "error");
       return;
     }
-    var capped = nonEmpty.slice(0, 6);
+    var capped = nonEmpty.slice(0, MAX_TEAMS);
     var msg = "Replace the current scoreboard teams with these " + plural(capped.length, "team") + "? This resets all scores.";
-    if (nonEmpty.length > 6) msg += " Teams are capped at 6, so only the first 6 will be used.";
+    if (nonEmpty.length > MAX_TEAMS) msg += " Teams are capped at " + MAX_TEAMS + ", so only the first " + MAX_TEAMS + " will be used.";
     openConfirm(msg, "Replace Teams", function(){
       state.teams = capped.map(function(t){ return makeTeam(t.name.trim() || "Team", t.members); });
       renderTeams();
@@ -3394,7 +3395,7 @@ footer{
 
   function renderTeams(){
     teamsEl.innerHTML = "";
-    addTeamBtn.disabled = state.teams.length >= 6;
+    addTeamBtn.disabled = state.teams.length >= MAX_TEAMS;
     var scores = state.teams.map(function(t){ return t.score; });
     var maxScore = Math.max.apply(null, scores);
     var minScore = Math.min.apply(null, scores);
@@ -3700,8 +3701,8 @@ footer{
   }
 
   /* One {correct, wrong} handler pair per team, in team order — populated
-     fresh by every renderAwardButtons() call. Keyboard shortcuts (1-6 /
-     Shift+1-6) call these directly rather than re-deriving the award
+     fresh by every renderAwardButtons() call. Keyboard shortcuts (digits /
+     Shift+digit) call these directly rather than re-deriving the award
      amount, so they always agree with whatever the on-screen buttons would
      do (including reading a Daily Double's locked-in wager). */
   var awardHandlers = [];
@@ -3802,7 +3803,7 @@ footer{
   returnBtn.addEventListener("click", closeModal);
 
   addTeamBtn.addEventListener("click", function(){
-    if (state.teams.length >= 6) return;
+    if (state.teams.length >= MAX_TEAMS) return;
     state.teams.push(makeTeam("Team " + (state.teams.length + 1)));
     renderTeams();
   });
@@ -3836,11 +3837,12 @@ footer{
 
   /* ---------------- keyboard shortcuts ----------------
      Lets a teacher run the whole game from a clicker/keyboard without
-     standing at the laptop: Space/Enter reveals the response, 1-6 awards
-     the clue to that team (Shift+1-6 docks it instead), and U undoes.
-     Disabled while typing anywhere, or while any other modal (editor,
-     buzzer setup, Team Builder, confirm, etc.) is open, so it never fights
-     with normal typing or a different dialog's own controls. */
+     standing at the laptop: Space/Enter reveals the response, 1-9 awards
+     the clue to that team and 0 awards the 10th (Shift+digit docks it
+     instead), and U undoes. Disabled while typing anywhere, or while any
+     other modal (editor, buzzer setup, Team Builder, confirm, etc.) is
+     open, so it never fights with normal typing or a different dialog's
+     own controls. */
   function isEditableTarget(el){
     if (!el) return false;
     var tag = el.tagName;
@@ -3870,11 +3872,15 @@ footer{
       return;
     }
 
-    /* e.code (not e.key) so Shift+1..6 still reads as "Digit1".."Digit6" —
-       e.key would report the shifted symbol ("!", "@", ...) instead. */
-    var digitMatch = /^Digit([1-6])$/.exec(e.code);
+    /* e.code (not e.key) so Shift+digit still reads as "Digit0".."Digit9" —
+       e.key would report the shifted symbol ("!", "@", ...) instead. 0 maps
+       to the 10th team (there's no "Digit10" key), matching how "0" wraps
+       around on a numeric row in most other clicker/hotkey schemes. */
+    var digitMatch = /^Digit([0-9])$/.exec(e.code);
     if (awardRow.classList.contains("shown") && digitMatch){
-      var handler = awardHandlers[parseInt(digitMatch[1], 10) - 1];
+      var digit = parseInt(digitMatch[1], 10);
+      var teamIdx = digit === 0 ? 9 : digit - 1;
+      var handler = awardHandlers[teamIdx];
       if (handler){
         e.preventDefault();
         if (e.shiftKey) handler.wrong(); else handler.correct();
