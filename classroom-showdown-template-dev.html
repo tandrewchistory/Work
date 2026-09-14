@@ -557,6 +557,8 @@ footer{
   gap:6px;
 }
 #clue-timer-pause-btn.paused{ background:var(--accent-soft); border-color:var(--accent); }
+#clue-timer-start-btn{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+#clue-timer-start-btn:hover:not(:disabled){ filter:brightness(1.06); }
 #clue-timer-chime-label{
   display:flex;
   align-items:center;
@@ -1110,6 +1112,7 @@ footer{
 }
 .size-btn:hover:not(:disabled){ background:var(--accent-soft); border-color:var(--accent); }
 .size-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+.size-btn[hidden]{ display:none; }
 .size-count{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
@@ -1800,7 +1803,8 @@ footer{
         <span id="clue-timer-label" class="tabular"></span>
       </div>
       <div id="clue-timer-controls">
-        <button type="button" class="size-btn" id="clue-timer-pause-btn" aria-label="Pause timer" title="Pause timer">&#9208;</button>
+        <button type="button" class="size-btn" id="clue-timer-start-btn" aria-label="Start timer" title="Start timer">&#9654;</button>
+        <button type="button" class="size-btn" id="clue-timer-pause-btn" aria-label="Pause timer" title="Pause timer" hidden>&#9208;</button>
         <button type="button" class="size-btn" id="clue-timer-restart-btn" aria-label="Restart timer" title="Restart timer">&#8635;</button>
         <button type="button" class="size-btn" id="clue-timer-stop-btn" aria-label="Stop timer" title="Stop timer">&#9209;</button>
       </div>
@@ -2353,6 +2357,7 @@ footer{
   var clueTimerArc = document.getElementById("clue-timer-arc");
   var clueTimerLabel = document.getElementById("clue-timer-label");
   var clueTimerChimeToggle = document.getElementById("clue-timer-chime-toggle");
+  var clueTimerStartBtn = document.getElementById("clue-timer-start-btn");
   var clueTimerPauseBtn = document.getElementById("clue-timer-pause-btn");
   var clueTimerRestartBtn = document.getElementById("clue-timer-restart-btn");
   var clueTimerStopBtn = document.getElementById("clue-timer-stop-btn");
@@ -3537,20 +3542,25 @@ footer{
 
   /* ---------------- clue countdown timer ----------------
      Configurable per clue (0/blank = no timer, set from the editor).
-     Counts down from when the clue opens; stops on reveal or close, and
-     optionally chimes at zero. The chime preference persists across
+     Opening the clue only loads the clock at its full duration — it never
+     counts down on its own; the teacher clicks Start when they actually
+     want it running, so students aren't caught off guard by a clock nobody
+     asked to begin. From there, Pause/Resume freezes and continues it,
+     Restart jumps back to the full duration and resumes running, and Stop
+     cancels it outright and hides the row. Stops on reveal or close too,
+     and optionally chimes at zero. The chime preference persists across
      sessions since it's a personal "how I like to run this" setting, not
-     board content. Pause/Resume/Stop/Restart let the teacher freeze the
-     clock for a class discussion, pick back up where it left off, cancel
-     it early without waiting it out, or reset it back to the clue's full
-     configured duration — timerPaused and timerRemainingMs track the
-     frozen state while timerInterval is cleared during a pause. */
+     board content. timerStarted distinguishes "loaded, waiting for Start"
+     from "already begun (running or paused)"; timerPaused and
+     timerRemainingMs track the frozen state while timerInterval is cleared
+     during a pause. */
   var TIMER_CHIME_KEY = "classroom-showdown-timer-chime-v1";
   var timerInterval = null;
   var timerEndAt = 0;
   var timerTotalMs = 0;
   var timerRemainingMs = 0;
   var timerPaused = false;
+  var timerStarted = false;
 
   function loadTimerChimePref(){
     try { return window.localStorage.getItem(TIMER_CHIME_KEY) === "1"; } catch (err) { return false; }
@@ -3581,6 +3591,7 @@ footer{
   function stopClueTimer(){
     if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
     timerPaused = false;
+    timerStarted = false;
     clueTimerRow.classList.remove("shown");
     updateTimerControlsUI();
   }
@@ -3605,30 +3616,46 @@ footer{
     }
   }
 
-  /* Pause/Stop only make sense while the clock is actually counting down or
-     frozen mid-count — not before a timer's been started, and not once it's
-     already run out on its own or been stopped. Restart is available any
-     time the clock is visible at all (running, paused, or run all the way
-     out) and disables only once Stop has hidden it. */
+  /* Start only makes sense before the clock has been set running for the
+     first time; Pause/Resume and Restart only apply once it has. Stop can
+     cancel it at any point — running, paused, or still waiting to be
+     started — as long as there's a timer loaded for this clue at all. */
   function updateTimerControlsUI(){
     var timerVisible = clueTimerRow.classList.contains("shown");
     var hasTime = !!timerInterval || timerPaused;
+    clueTimerStartBtn.hidden = timerStarted;
+    clueTimerStartBtn.disabled = !timerVisible || timerStarted;
+    clueTimerPauseBtn.hidden = !timerStarted;
     clueTimerPauseBtn.disabled = !hasTime;
-    clueTimerStopBtn.disabled = !hasTime;
-    clueTimerRestartBtn.disabled = !timerVisible;
+    clueTimerRestartBtn.disabled = !timerStarted;
+    clueTimerStopBtn.disabled = !timerVisible;
     clueTimerPauseBtn.textContent = timerPaused ? "▶" : "⏸";
     clueTimerPauseBtn.title = timerPaused ? "Resume timer" : "Pause timer";
     clueTimerPauseBtn.setAttribute("aria-label", clueTimerPauseBtn.title);
     clueTimerPauseBtn.classList.toggle("paused", timerPaused);
   }
 
-  function startClueTimer(seconds){
+  /* Loads the clock at a clue's full configured duration and shows it, but
+     does not start counting down — that only happens once the teacher
+     clicks Start (or Restart), so nobody is caught off guard by a clock
+     that began ticking the moment the clue opened. */
+  function prepareClueTimer(seconds){
     stopClueTimer();
     if (!seconds || seconds <= 0) return;
     clueTimerRow.classList.add("shown");
     clueTimerChimeToggle.checked = loadTimerChimePref();
     timerTotalMs = seconds * 1000;
+    renderTimerRemaining(timerTotalMs);
+    updateTimerControlsUI();
+  }
+
+  /* Used by both Start and Restart — Restart is just "begin again from the
+     top" applied to a clock that's already running, paused, or run out. */
+  function beginClueTimer(){
+    if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
     timerEndAt = Date.now() + timerTotalMs;
+    timerPaused = false;
+    timerStarted = true;
     updateClueTimerDisplay();
     timerInterval = setInterval(updateClueTimerDisplay, 200);
     updateTimerControlsUI();
@@ -3653,23 +3680,17 @@ footer{
     updateTimerControlsUI();
   }
 
-  /* Resets the clock back to the clue's full configured duration and starts
-     it counting down again, regardless of whether it was running, paused,
-     or had already run out — a fresh attempt rather than a continuation. */
-  function restartClueTimer(){
-    if (!current || !clueTimerRow.classList.contains("shown")) return;
-    startClueTimer(current.timerSeconds);
-  }
-
   clueTimerChimeToggle.addEventListener("change", function(){
     saveTimerChimePref(clueTimerChimeToggle.checked);
   });
+
+  clueTimerStartBtn.addEventListener("click", beginClueTimer);
 
   clueTimerPauseBtn.addEventListener("click", function(){
     if (timerPaused) resumeClueTimer(); else pauseClueTimer();
   });
 
-  clueTimerRestartBtn.addEventListener("click", restartClueTimer);
+  clueTimerRestartBtn.addEventListener("click", beginClueTimer);
 
   clueTimerStopBtn.addEventListener("click", stopClueTimer);
 
@@ -3713,21 +3734,23 @@ footer{
       clueCardEl.classList.remove("dd-wagering");
       revealBtn.textContent = "Reveal Response";
       startBuzzerRound();
-      startClueTimer(current.timerSeconds);
+      prepareClueTimer(current.timerSeconds);
     }
     revealBtn.focus();
   }
 
   /* Second stage of a Daily Double: locks the wager, then reveals the clue
-     itself (starting its timer and buzzer round only now) without yet
-     showing the answer — that still waits for a further "Reveal Response". */
+     itself (loading its timer and starting the buzzer round only now)
+     without yet showing the answer — that still waits for a further
+     "Reveal Response". The timer itself still waits for the teacher to
+     click Start. */
   function revealDailyDoubleClue(){
     current.wagering = false;
     lockDDWagers();
     clueCardEl.classList.remove("dd-wagering");
     revealBtn.textContent = "Reveal Response";
     startBuzzerRound();
-    startClueTimer(current.timerSeconds);
+    prepareClueTimer(current.timerSeconds);
   }
 
   /* Classic Daily Double wagering: a team can risk up to its own score, or
