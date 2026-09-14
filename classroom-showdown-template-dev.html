@@ -551,6 +551,12 @@ footer{
   color:var(--ink);
   font-size:15px;
 }
+#clue-timer-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+#clue-timer-pause-btn.paused{ background:var(--accent-soft); border-color:var(--accent); }
 #clue-timer-chime-label{
   display:flex;
   align-items:center;
@@ -1792,6 +1798,10 @@ footer{
         </svg>
         <span id="clue-timer-label" class="tabular"></span>
       </div>
+      <div id="clue-timer-controls">
+        <button type="button" class="size-btn" id="clue-timer-pause-btn" aria-label="Pause timer" title="Pause timer">&#9208;</button>
+        <button type="button" class="size-btn" id="clue-timer-stop-btn" aria-label="Stop timer" title="Stop timer">&#9209;</button>
+      </div>
       <label id="clue-timer-chime-label"><input type="checkbox" id="clue-timer-chime-toggle"> Chime</label>
     </div>
     <img id="clue-image" alt="">
@@ -2341,6 +2351,8 @@ footer{
   var clueTimerArc = document.getElementById("clue-timer-arc");
   var clueTimerLabel = document.getElementById("clue-timer-label");
   var clueTimerChimeToggle = document.getElementById("clue-timer-chime-toggle");
+  var clueTimerPauseBtn = document.getElementById("clue-timer-pause-btn");
+  var clueTimerStopBtn = document.getElementById("clue-timer-stop-btn");
   var clueImageEl = document.getElementById("clue-image");
   var clueTextEl = document.getElementById("clue-text");
   var answerTextEl = document.getElementById("answer-text");
@@ -3516,11 +3528,16 @@ footer{
      Counts down from when the clue opens; stops on reveal or close, and
      optionally chimes at zero. The chime preference persists across
      sessions since it's a personal "how I like to run this" setting, not
-     board content. */
+     board content. Pause/Resume/Stop let the teacher freeze the clock for
+     a class discussion, pick back up where it left off, or cancel it early
+     without waiting it out — timerPaused and timerRemainingMs track the
+     frozen state while timerInterval is cleared during a pause. */
   var TIMER_CHIME_KEY = "classroom-showdown-timer-chime-v1";
   var timerInterval = null;
   var timerEndAt = 0;
   var timerTotalMs = 0;
+  var timerRemainingMs = 0;
+  var timerPaused = false;
 
   function loadTimerChimePref(){
     try { return window.localStorage.getItem(TIMER_CHIME_KEY) === "1"; } catch (err) { return false; }
@@ -3550,22 +3567,42 @@ footer{
 
   function stopClueTimer(){
     if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+    timerPaused = false;
     clueTimerRow.classList.remove("shown");
+    updateTimerControlsUI();
   }
 
-  function updateClueTimerDisplay(){
-    var remainingMs = Math.max(0, timerEndAt - Date.now());
+  function renderTimerRemaining(remainingMs){
     var remainingSec = Math.ceil(remainingMs / 1000);
     clueTimerLabel.textContent = remainingSec + "s";
     var pct = timerTotalMs ? (remainingMs / timerTotalMs) : 0;
     pct = Math.max(0, Math.min(1, pct));
     clueTimerArc.style.strokeDashoffset = String(TIMER_CIRCUMFERENCE * (1 - pct));
     clueTimerArc.classList.toggle("low", remainingSec <= 5 && remainingSec > 0);
+  }
+
+  function updateClueTimerDisplay(){
+    var remainingMs = Math.max(0, timerEndAt - Date.now());
+    renderTimerRemaining(remainingMs);
     if (remainingMs <= 0){
       clearInterval(timerInterval);
       timerInterval = null;
+      updateTimerControlsUI();
       if (clueTimerChimeToggle.checked) playChime();
     }
+  }
+
+  /* Pause/Stop only make sense while the clock is actually counting down or
+     frozen mid-count — not before a timer's been started, and not once it's
+     already run out on its own. */
+  function updateTimerControlsUI(){
+    var hasTime = !!timerInterval || timerPaused;
+    clueTimerPauseBtn.disabled = !hasTime;
+    clueTimerStopBtn.disabled = !hasTime;
+    clueTimerPauseBtn.textContent = timerPaused ? "▶" : "⏸";
+    clueTimerPauseBtn.title = timerPaused ? "Resume timer" : "Pause timer";
+    clueTimerPauseBtn.setAttribute("aria-label", clueTimerPauseBtn.title);
+    clueTimerPauseBtn.classList.toggle("paused", timerPaused);
   }
 
   function startClueTimer(seconds){
@@ -3577,11 +3614,37 @@ footer{
     timerEndAt = Date.now() + timerTotalMs;
     updateClueTimerDisplay();
     timerInterval = setInterval(updateClueTimerDisplay, 200);
+    updateTimerControlsUI();
+  }
+
+  function pauseClueTimer(){
+    if (!timerInterval || timerPaused) return;
+    timerRemainingMs = Math.max(0, timerEndAt - Date.now());
+    clearInterval(timerInterval);
+    timerInterval = null;
+    timerPaused = true;
+    renderTimerRemaining(timerRemainingMs);
+    updateTimerControlsUI();
+  }
+
+  function resumeClueTimer(){
+    if (!timerPaused) return;
+    timerPaused = false;
+    timerEndAt = Date.now() + timerRemainingMs;
+    updateClueTimerDisplay();
+    timerInterval = setInterval(updateClueTimerDisplay, 200);
+    updateTimerControlsUI();
   }
 
   clueTimerChimeToggle.addEventListener("change", function(){
     saveTimerChimePref(clueTimerChimeToggle.checked);
   });
+
+  clueTimerPauseBtn.addEventListener("click", function(){
+    if (timerPaused) resumeClueTimer(); else pauseClueTimer();
+  });
+
+  clueTimerStopBtn.addEventListener("click", stopClueTimer);
 
   function openClue(catIdx, rowIdx){
     if (state.used[tileKey(catIdx, rowIdx)]) return;
