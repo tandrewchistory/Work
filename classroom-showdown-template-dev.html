@@ -700,8 +700,6 @@ footer{
   font-size:13px;
   font-family:inherit;
 }
-.wager-unit .award-btn{ padding:6px 10px; }
-
 #modal-actions{
   margin-top:24px;
   display:flex;
@@ -1276,6 +1274,17 @@ footer{
   text-align:left;
 }
 .field-group-label{ color:var(--ink); }
+#dd-enabled-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:700;
+  font-size:13px;
+  color:var(--ink);
+  cursor:pointer;
+}
+#dd-picker.dd-disabled .field-group-label,
+#dd-picker.dd-disabled .dd-row{ opacity:0.5; }
 .dd-row{
   display:flex;
   gap:10px;
@@ -1963,6 +1972,7 @@ footer{
       </div>
       <div id="editor-categories"></div>
       <div id="dd-picker">
+        <label id="dd-enabled-row"><input type="checkbox" id="dd-enabled-toggle" checked> Enable Daily Double</label>
         <span class="field-group-label">Daily Double location</span>
         <div class="dd-row">
           <select id="dd-cat-select" aria-label="Daily Double category"></select>
@@ -2147,6 +2157,7 @@ footer{
       tagline: "A build-your-own trivia board for any subject — customize every category and clue in the editor.",
       categories: categories,
       dailyDouble: { cat: 2, idx: 2 },
+      dailyDoubleEnabled: true,
       palette: normalizePalette(null),
       backgroundImage: "",
       rules: DEFAULT_RULES
@@ -2236,6 +2247,7 @@ footer{
       delete parsed.accentColor;
       if (typeof parsed.backgroundImage !== "string") parsed.backgroundImage = "";
       if (typeof parsed.rules !== "string" || !parsed.rules.trim()) parsed.rules = DEFAULT_RULES;
+      if (typeof parsed.dailyDoubleEnabled !== "boolean") parsed.dailyDoubleEnabled = true;
       return parsed;
     } catch (err) {
       return null;
@@ -2413,6 +2425,8 @@ footer{
   var rowRemoveBtn = document.getElementById("row-remove-btn");
   var rowAddBtn = document.getElementById("row-add-btn");
   var rowCountLabel = document.getElementById("row-count-label");
+  var ddPicker = document.getElementById("dd-picker");
+  var ddEnabledToggle = document.getElementById("dd-enabled-toggle");
   var ddCatSelect = document.getElementById("dd-cat-select");
   var ddValueSelect = document.getElementById("dd-value-select");
   var editBoardBtn = document.getElementById("edit-board-btn");
@@ -3431,6 +3445,11 @@ footer{
       nameInput.maxLength = 20;
       nameInput.setAttribute("aria-label", "Team name");
       nameInput.addEventListener("input", function(){ team.name = nameInput.value; renderAwardButtons(); });
+      /* Persist on blur rather than every keystroke — a rename otherwise
+         never reaches the saved snapshot until some unrelated action (a
+         score change, say) happens to trigger persistGameState(), so a
+         refresh or crash right after typing a new name could lose it. */
+      nameInput.addEventListener("blur", persistGameState);
       box.appendChild(nameInput);
 
       if (team.members.length){
@@ -3699,7 +3718,7 @@ footer{
     var cat = content.categories[catIdx];
     var clue = cat.clues[rowIdx];
     var value = valueForRow(rowIdx);
-    var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
+    var isDaily = content.dailyDoubleEnabled !== false && catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx;
     current = { catIdx: catIdx, rowIdx: rowIdx, value: value, isDaily: isDaily, wagering: isDaily, timerSeconds: clue.timerSeconds || 0 };
 
     clueCatEl.textContent = cat.name;
@@ -4101,7 +4120,7 @@ footer{
       section.appendChild(heading);
 
       cat.clues.forEach(function(clue, rowIdx){
-        var isDaily = (catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx);
+        var isDaily = content.dailyDoubleEnabled !== false && catIdx === content.dailyDouble.cat && rowIdx === content.dailyDouble.idx;
         var row = document.createElement("div");
         row.className = "review-clue";
 
@@ -4613,7 +4632,21 @@ footer{
     ddCatSelect.value = String(draft.dailyDouble.cat);
     refreshDDValueOptions();
     ddValueSelect.value = String(draft.dailyDouble.idx);
+    ddEnabledToggle.checked = draft.dailyDoubleEnabled !== false;
+    updateDDEnabledUI();
   }
+
+  /* Greys out (but doesn't hide) the location pickers when Daily Double is
+     disabled — the last-chosen cat/row stays selected underneath, so
+     re-enabling doesn't lose the placement. */
+  function updateDDEnabledUI(){
+    var enabled = ddEnabledToggle.checked;
+    ddCatSelect.disabled = !enabled;
+    ddValueSelect.disabled = !enabled;
+    ddPicker.classList.toggle("dd-disabled", !enabled);
+  }
+
+  ddEnabledToggle.addEventListener("change", updateDDEnabledUI);
 
   function openEditor(){
     draft = cloneContent(content);
@@ -4650,6 +4683,7 @@ footer{
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
+    draft.dailyDoubleEnabled = ddEnabledToggle.checked;
     draft.palette = normalizePalette(draft.palette);
     draft.backgroundImage = draft.backgroundImage || "";
     commitContent(draft);
@@ -4721,13 +4755,14 @@ footer{
     rows.push(["- Categories: " + MIN_CATS + " to " + MAX_CATS + " allowed. To add one, add a new block of rows below with a new name in column A, matching the row count of the other categories. To remove one, delete that whole block."]);
     rows.push(["- Clues per category: " + MIN_ROWS + " to " + MAX_ROWS + " allowed. To add one, add a new row to EVERY category's block so they all stay the same length. To remove one, delete a row from EVERY category's block. The Value column is filled in for reference only — the dollar amount is set by row position, not by what you type there."]);
     rows.push(["- Keep each category's rows together as one unbroken block — don't split a category across two places or leave blank rows inside the table."]);
-    rows.push(["- Daily Double: put \"Yes\" in exactly one row's Daily Double column, and leave every other row blank."]);
+    rows.push(["- Daily Double: put \"Yes\" in exactly one row's Daily Double column, and leave every other row blank. Set \"Daily Double Enabled\" below to No to turn the mechanic off entirely, regardless of which row is marked."]);
     rows.push(["- Timer (seconds): optional per-clue countdown shown on the board. Leave blank for no timer."]);
     rows.push([]);
     rows.push(["Field", "Value"]);
     rows.push(["Title", c.title]);
     rows.push(["Tagline", c.tagline]);
     rows.push(["Rules", c.rules || ""]);
+    rows.push(["Daily Double Enabled", c.dailyDoubleEnabled === false ? "No" : "Yes"]);
     PALETTE_SLOTS.forEach(function(slot){
       rows.push([PALETTE_SLOT_META[slot].label + " Color", (c.palette && c.palette[slot]) || ""]);
     });
@@ -4778,13 +4813,14 @@ footer{
       paletteLabelToSlot[(PALETTE_SLOT_META[slot].label + " Color").toLowerCase()] = slot;
     });
 
-    var title = null, tagline = null, rules = null;
+    var title = null, tagline = null, rules = null, dailyDoubleEnabled = null;
     var palette = {}; // only holds keys for slots whose row was actually present in the file
     rows.forEach(function(r){
       var label = (r[0] || "").trim().toLowerCase();
       if (label === "title") title = r[1] || "";
       if (label === "tagline") tagline = r[1] || "";
       if (label === "rules") rules = r[1] || "";
+      if (label === "daily double enabled") dailyDoubleEnabled = !/^(n|no|false|0)$/i.test((r[1] || "").trim());
       var slot = paletteLabelToSlot[label];
       if (slot){
         var v = (r[1] || "").trim();
@@ -4841,7 +4877,8 @@ footer{
       rules: rules,
       palette: palette,
       categories: categories,
-      dailyDouble: dailyDouble || { cat: 0, idx: 0 }
+      dailyDouble: dailyDouble || { cat: 0, idx: 0 },
+      dailyDoubleEnabled: dailyDoubleEnabled
     };
   }
 
@@ -4879,6 +4916,7 @@ footer{
     });
     draft.categories = imported.categories;
     draft.dailyDouble = imported.dailyDouble;
+    if (imported.dailyDoubleEnabled !== null) draft.dailyDoubleEnabled = imported.dailyDoubleEnabled;
     buildEditorForm();
   }
 
