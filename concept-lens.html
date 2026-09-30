@@ -3,9 +3,9 @@
 <title>Social Studies Concept Lens</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
 <style>
-  /* Layout: a news brief on the left, the student's concept workbench on the right; feedback spans below. */
+  /* Layout: generator bar on top; a news article on the left, the student's concept workbench on the right; feedback spans below. */
   :root {
     --bg: #eef1f0;
     --paper: #fbfcfb;
@@ -73,18 +73,21 @@
   .steps li { counter-increment: st; font-size: 14px; display: flex; gap: 6px; align-items: baseline; }
   .steps li::before { content: counter(st); font: 500 11px var(--f-mono); border: 1px solid var(--line); border-radius: 50%; width: 20px; height: 20px; display: inline-grid; place-items: center; flex: none; }
 
-  /* Issue picker */
-  .picker { display: flex; gap: 10px; overflow-x: auto; padding-block: 6px 12px; scrollbar-width: thin; }
-  .pick {
-    flex: 0 0 auto; width: 210px; text-align: left; background: var(--paper); border: 1.5px solid var(--line);
-    border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 6px; align-content: start;
-  }
-  .pick:hover { border-color: var(--muted); }
-  .pick[aria-current="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-  .pick b { font-family: var(--f-news); font-weight: 600; font-size: 16px; line-height: 1.25; }
-  .pick .meta { display: flex; gap: 6px; align-items: center; font: 500 10.5px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  /* Issue name tags keep the syllabus's own capitalisation */
+  .badge { font-size: 12.5px; font-weight: 700; line-height: 1.25; padding: 4px 8px; border-radius: 5px; background: var(--t); color: var(--c); display: inline-block; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); display: inline-block; flex: none; }
-  .pick.add { place-content: center; text-align: center; border-style: dashed; color: var(--muted); width: 150px; font-weight: 700; }
+
+  /* Generator */
+  .gen { margin-bottom: 20px; display: grid; gap: 12px; }
+  .gen-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+  .gen-row .field { flex: 1 1 240px; }
+  .gen-row .btn { flex: 0 0 auto; padding: 11px 20px; }
+  .gen-status { margin: 0; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-height: 1.4em; }
+  .gen-status.err { color: var(--miss); }
+  .spin { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .gen-row2 { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
+  .gen-row2 select { flex: 1 1 260px; max-width: 520px; border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); }
 
   /* Workspace */
   .work { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -93,10 +96,10 @@
 
   .news { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow: auto; }
   @media (max-width: 880px) { .news { position: static; max-height: none; } }
-  .news-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 10px; }
-  .badge { font: 500 10.5px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 7px; border-radius: 4px; background: var(--t); color: var(--c); }
+  .news-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
   .news h2 { font-family: var(--f-news); font-weight: 600; font-size: clamp(24px, 3.2vw, 32px); letter-spacing: -.01em; }
-  .dek { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+  .dateline { font: 500 11px/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+  .dek { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
   .hint { margin: 14px 0 6px; font-size: 14px; padding: 8px 10px; border-radius: 8px; background: var(--bg); transition: background .3s; }
   .hint.flash { background: var(--warn-t); }
   .body { font-family: var(--f-news); font-size: 19px; line-height: 1.65; max-width: 62ch; }
@@ -110,21 +113,25 @@
   .dots { display: inline-flex; gap: 2px; margin-left: 3px; vertical-align: 2px; }
   .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); display: inline-block; }
   .srcnote { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+  .emptyart { display: grid; gap: 10px; justify-items: start; padding-block: 20px; }
+  .emptyart h2 { font-family: var(--f-news); font-size: 28px; }
+  .emptyart p { margin: 0; color: var(--muted); max-width: 52ch; }
 
   /* Concept board */
   .side { display: grid; gap: 16px; min-width: 0; }
   .side h2 { font-size: 20px; }
   .side .sub { margin: 4px 0 12px; font-size: 14px; color: var(--muted); }
-  .board { display: grid; gap: 12px; }
+  .board { display: grid; gap: 14px; }
   .grp { display: grid; gap: 6px; }
-  .grp .lbl { color: var(--c); }
+  .grp .inq { font-family: var(--f-news); font-style: italic; font-size: 14.5px; color: var(--muted); margin: 0; }
   .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   @media (max-width: 460px) { .chips { grid-template-columns: minmax(0, 1fr); } }
   .concept {
     text-align: left; border: 1.5px solid var(--line); background: var(--paper); border-radius: 8px;
     padding: 8px 10px; cursor: pointer; display: grid; gap: 2px; min-width: 0;
   }
-  .concept:hover { border-color: var(--c); }
+  .concept:hover:not(:disabled) { border-color: var(--c); }
+  .concept:disabled { opacity: .55; cursor: not-allowed; }
   .concept b { font-size: 15px; }
   .concept small { font-size: 12px; color: var(--muted); line-height: 1.35; }
   .concept[aria-pressed="true"] { background: var(--t); border-color: var(--c); }
@@ -133,7 +140,7 @@
   /* Analysis cards */
   .cards { display: grid; gap: 12px; }
   .empty { border: 1.5px dashed var(--line); border-radius: 10px; padding: 16px; color: var(--muted); font-size: 14px; }
-  .card { border: 1.5px solid var(--line); border-left: 5px solid var(--c); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: var(--paper); }
+  .card { border: 1.5px solid var(--line); border-left: 5px solid var(--c); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: var(--paper); min-width: 0; }
   .card.active { border-color: var(--c); box-shadow: 0 0 0 3px var(--t); }
   .card header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .card h3 { font-size: 18px; margin-right: auto; }
@@ -143,8 +150,12 @@
   .evbtn { margin-left: auto; font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1.5px solid var(--c); background: transparent; color: var(--c); cursor: pointer; font-weight: 700; }
   .card.active .evbtn { background: var(--c); color: var(--paper); }
   details.pts summary { cursor: pointer; font-size: 14px; color: var(--muted); }
-  details.pts .ptlist { display: grid; gap: 4px; margin-top: 8px; }
-  .pt { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.4; }
+  .tree { display: grid; gap: 10px; margin-top: 8px; }
+  .gqq { font-size: 14px; font-weight: 700; }
+  .tree ul { list-style: none; margin: 4px 0 0; padding-left: 14px; font-size: 14px; line-height: 1.4; display: grid; gap: 3px; }
+  .tree > .gq > ul { padding-left: 0; }
+  .tree li > span { color: var(--muted); }
+  .pt { display: flex; gap: 8px; align-items: flex-start; }
   .pt input { margin-top: 3px; accent-color: var(--c); flex: none; }
   .card label.q { font-size: 14px; font-weight: 700; }
   textarea { width: 100%; min-height: 76px; resize: vertical; border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg); line-height: 1.45; }
@@ -180,7 +191,7 @@
   .ai-out { white-space: pre-wrap; font-size: 15px; line-height: 1.55; max-width: 75ch; background: var(--bg); border-radius: 8px; padding: 12px 14px; margin-top: 10px; }
 
   /* Add-article form */
-  .form { display: grid; gap: 14px; margin-top: 16px; }
+  .form { display: grid; gap: 14px; margin-bottom: 20px; }
   .form h2 { font-size: 24px; }
   .fgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 640px) { .fgrid { grid-template-columns: minmax(0, 1fr); } }
@@ -201,28 +212,39 @@
   .ref summary { cursor: pointer; font-weight: 700; }
   .ref .inq { font-family: var(--f-news); font-style: italic; font-size: 18px; margin: 8px 0; }
   .ref ul { margin: 6px 0; padding-left: 20px; font-size: 15px; }
-  .ref .cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 10px; }
-  .ref .cgrid h3 { font-size: 16px; color: var(--c); }
-  .ref .cgrid p { margin: 4px 0; font-size: 14px; }
+  .ref .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 10px; }
+  .ref .tree ul { font-size: 14.5px; }
   footer { margin-top: 28px; font-size: 13px; color: var(--muted); max-width: 80ch; }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 </style>
 
 <div class="wrap">
   <header class="mast">
     <div class="lbl">G3 Humanities · Social Studies · Syllabus K336 (2027)</div>
     <h1>Concept Lens <span>for issues in the news</span></h1>
-    <p>Read a news brief and find the Social Studies concepts inside it. Back each concept with evidence from the text, then check your analysis.</p>
+    <p>Generate a news article from somewhere in the world. Find the Social Studies concepts inside it, back each one with evidence from the text, then check your analysis.</p>
     <ol class="steps">
-      <li>Pick a news issue</li>
+      <li>Generate a news article</li>
       <li>Choose the concepts you see</li>
       <li>Tap sentences as evidence</li>
-      <li>Explain the link</li>
+      <li>Link to the syllabus and explain</li>
       <li>Check your analysis</li>
     </ol>
   </header>
 
-  <nav class="picker" id="picker" aria-label="News issues"></nav>
+  <section class="panel gen" aria-label="Generate a news article">
+    <div class="gen-row">
+      <div class="field"><label for="g-issue">Issue</label><select id="g-issue"></select></div>
+      <div class="field"><label for="g-region">Where in the world</label><select id="g-region"></select></div>
+      <button class="btn" id="genBtn" type="button">Generate a news article</button>
+    </div>
+    <p class="gen-status" id="genStatus" role="status"></p>
+    <div class="gen-row2">
+      <label for="g-saved">Your articles</label>
+      <select id="g-saved"></select>
+      <button class="linkbtn" id="addBtn" type="button">Add your own article</button>
+    </div>
+  </section>
 
   <section class="form panel" id="addForm" hidden aria-labelledby="addTitle"></section>
 
@@ -231,12 +253,12 @@
     <div class="side">
       <section class="panel">
         <h2>1 · Choose concepts</h2>
-        <p class="sub">These are the nine concepts from the three Issues in the syllabus. Choose every one you can find in this news issue.</p>
+        <p class="sub">These are the concepts listed for each Issue in the syllabus. Choose every one you can find in this article.</p>
         <div class="board" id="board"></div>
       </section>
       <section class="panel">
         <h2>2 · Build your analysis</h2>
-        <p class="sub">For each concept, tap the sentences in the article that show it, link it to the syllabus content, and explain how it applies.</p>
+        <p class="sub">For each concept, tap the sentences that show it, link it to the content under the Issue's guiding questions, and explain how it applies.</p>
         <div class="cards" id="cards"></div>
         <div class="actions" style="margin-top:14px">
           <button class="btn" id="checkBtn" type="button">Check my analysis</button>
@@ -257,94 +279,166 @@
   </section>
 
   <footer>
-    Concepts, key understandings and content points follow the SEAB G3 Humanities (Social Studies) syllabus K336 for 2027. The one-line concept descriptions are simplified for students. Practice briefs are written for class from recent news themes and simplified, so check the linked searches for current reporting. Your work on this page is saved in this browser only.
+    Issue titles, inquiry focuses, key understandings, concepts, guiding questions and content follow the SEAB G3 Humanities (Social Studies) syllabus K336 for 2027. The one-line concept descriptions are simplified for students. Generated articles are written by Claude from real-world issues it knows about. They can contain mistakes, so check them against the linked search for real coverage. Your work on this page is saved in this browser only.
   </footer>
 </div>
 
 <script>
-/* ---------- Syllabus data (K336 Paper 1, pages 5–15) ---------- */
+/* ---------- Syllabus data (K336 Paper 1, pages 5–15), wording as in the syllabus ---------- */
 const ISSUES = {
-  1: { name: 'Exploring Citizenship and Governance', short: 'Citizenship & Governance', c: '--i1', t: '--i1-t',
+  1: { name: 'Exploring Citizenship and Governance', c: '--i1', t: '--i1-t',
        inq: 'Working for the good of society: Whose responsibility is it?',
        ku: ['Citizenship is varied and complex.',
             'Government is a political institution with important functions and roles to govern.',
             'Different groups of people in society have differing needs, interests and priorities, and experience unequal sharing of costs. Managing these differences often requires trade-offs to be made.',
             'Both citizens and government can play complementary roles in working for the good of society.'] },
-  2: { name: 'Living in a Diverse Society', short: 'Diverse Society', c: '--i2', t: '--i2-t',
+  2: { name: 'Living in a Diverse Society', c: '--i2', t: '--i2-t',
        inq: 'Living in a diverse society: Is harmony achievable?',
        ku: ['Identities are diverse and complex.',
             'Living harmoniously in a diverse society means respecting our differences and appreciating what we share in common.',
             'People respond to diversity in a variety of ways to achieve harmony.'] },
-  3: { name: 'Being Part of a Globalised World', short: 'Globalised World', c: '--i3', t: '--i3-t',
+  3: { name: 'Being Part of a Globalised World', c: '--i3', t: '--i3-t',
        inq: 'Being part of a globalised world: How can we respond to globalisation?',
        ku: ['Globalisation shapes the interconnections and interdependence among countries and people.',
             'Globalisation creates impacts in the economy, culture and security.',
             'The impacts of globalisation result in differing responses from countries and people.'] }
 };
+const issueName = n => `Issue ${n}: ${ISSUES[n].name}`;
 
+/* Guiding questions and content. Nodes with an id are tickable content points. */
+const CONTENT = {
+  1: [
+    { gq: 'What does citizenship mean to me?', items: [
+      { t: 'Attributes can shape one’s understanding of citizenship', kids: [
+        { t: 'Legal status', kids: [{ id: '1-legal', t: 'Rights and obligations of citizens' }] },
+        { id: '1-identity', t: 'A sense of identity' },
+        { id: '1-values', t: 'Shared values' },
+        { t: 'Civic participation', kids: [{ id: '1-civic', t: 'Participate in public affairs as individuals and community groups' }] }] }] },
+    { gq: 'What are the functions and roles of government in working for the good of society?', items: [
+      { t: 'Functions and roles of government in a representative democracy', kids: [
+        { t: 'Functions of government', kids: [
+          { id: '1-makes', t: 'Makes and passes laws' },
+          { id: '1-implements', t: 'Implements and enforces laws' },
+          { id: '1-interprets', t: 'Interprets and applies laws' }] },
+        { t: 'Roles of government', kids: [
+          { id: '1-order', t: 'Maintains law and order' },
+          { id: '1-wellbeing', t: 'Ensures economic and social well-being of citizens' },
+          { id: '1-national', t: 'Promotes and protects a country’s national interests' }] }] }] },
+    { gq: 'How do we decide what is good for society?', items: [
+      { t: 'Deciding what is good for society', kids: [
+        { t: 'Challenges in deciding what is good for society', kids: [
+          { id: '1-needs', t: 'Differing needs and interests' },
+          { id: '1-priorities', t: 'Differing priorities' },
+          { id: '1-costs', t: 'Unequal sharing of costs' }] },
+        { id: '1-tradeoffs', t: 'Managing trade-offs' },
+        { t: 'Principles shaping governance', kids: [
+          { id: '1-leadership', t: 'Having good leadership' },
+          { id: '1-change', t: 'Anticipating change and staying relevant' },
+          { id: '1-stake', t: 'A stake for everyone, opportunities for all' },
+          { id: '1-meritocracy', t: 'Practising meritocracy' }] }] }] },
+    { gq: 'How can we work together for the good of society?', items: [
+      { t: 'Citizens and government working together for the good of society', kids: [
+        { id: '1-needs-soc', t: 'Addressing the needs of society' },
+        { id: '1-influence', t: 'Influencing decision making in public affairs' },
+        { id: '1-belonging', t: 'Strengthening citizens’ sense of belonging' }] }] }
+  ],
+  2: [
+    { gq: 'What are the factors that shape the identities of people and contribute to a diverse society?', items: [
+      { t: 'Factors that shape the identities of people and contribute to a diverse society', kids: [
+        { id: '2-race', t: 'Race and ethnicity' },
+        { id: '2-religion', t: 'Religion' },
+        { id: '2-ses', t: 'Socio-economic status' },
+        { id: '2-nationality', t: 'Nationality' }] }] },
+    { gq: 'What are the experiences and effects of living in a diverse society?', items: [
+      { id: '2-interact', t: 'Interactions in a diverse society and common space' },
+      { t: 'Experiences and effects of living in a diverse society', kids: [
+        { id: '2-cultural', t: 'Cultural exchange and appreciation' },
+        { id: '2-knowledge', t: 'Exchange of knowledge and skills' },
+        { id: '2-stereo', t: 'Stereotypes, prejudice and discrimination' },
+        { id: '2-compete', t: 'Competition for resources' }] }] },
+    { gq: 'How can we respond to diversity in society?', items: [
+      { t: 'Citizens and government responding to socio-cultural diversity', kids: [
+        { id: '2-sc-citizens', t: 'Responses of citizens as individuals and community groups' },
+        { t: 'Responses of government', kids: [
+          { id: '2-assim', t: 'Assimilationist policy and its tensions' },
+          { id: '2-integ', t: 'Integration policy and its tensions' }] }] },
+      { t: 'Citizens and government responding to socio-economic diversity', kids: [
+        { id: '2-se-citizens', t: 'Responses of citizens as individuals and community groups' },
+        { t: 'Responses of government', kids: [
+          { id: '2-govfin', t: 'A government-financed approach and its challenges' },
+          { id: '2-shared', t: 'A shared responsibility approach and its challenges' }] }] }] }
+  ],
+  3: [
+    { gq: 'What are the factors that contribute to globalisation?', items: [
+      { t: 'Driving forces of globalisation', kids: [
+        { t: 'Technological advancements', kids: [
+          { id: '3-transport', t: 'Developments in transportation' },
+          { id: '3-digital', t: 'Developments in digital technology' }] },
+        { id: '3-mnc', t: 'Growth of Multinational Corporations' }] }] },
+    { gq: 'How can we respond to the economic impacts of globalisation?', items: [
+      { t: 'Economic impacts of globalisation and responses of countries and individuals', kids: [
+        { t: 'Economic impacts of globalisation', kids: [
+          { id: '3-growth', t: 'Economic growth and economic vulnerability experienced by countries' },
+          { id: '3-jobs', t: 'Employment opportunities and challenges experienced by individuals' }] },
+        { t: 'Responses to economic impacts of globalisation', kids: [
+          { id: '3-govsupport', t: 'Government support' },
+          { id: '3-skills', t: 'Acquisition of knowledge and skills by individuals' }] }] }] },
+    { gq: 'How can we respond to the cultural impacts of globalisation?', items: [
+      { t: 'Cultural impacts of globalisation and responses of countries and individuals', kids: [
+        { t: 'Cultural impacts of globalisation', kids: [
+          { id: '3-spread', t: 'Spread of culture' },
+          { id: '3-dilution', t: 'Dilution of culture' }] },
+        { t: 'Responses to cultural impacts of globalisation', kids: [
+          { id: '3-accept', t: 'Varying degrees of acceptance and rejection' }] }] }] },
+    { gq: 'How can we respond to the security impacts of globalisation?', items: [
+      { t: 'Security impacts of globalisation and responses of countries and individuals', kids: [
+        { t: 'Security impacts of globalisation', kids: [
+          { id: '3-terror', t: 'Transnational terrorism' },
+          { id: '3-cyber', t: 'Cyber threats' }] },
+        { t: 'Responses to security impacts of globalisation', kids: [
+          { id: '3-vigilance', t: 'Vigilance by individuals' },
+          { id: '3-measures', t: 'Security measures by governments within their countries' },
+          { id: '3-coop', t: 'Cooperation among countries' }] }] }] }
+  ]
+};
+
+/* Flatten content points: id -> { issue, gq, label } where label is the path below the top bullet. */
+const PMAP = {};
+(() => {
+  const raw = [];
+  [1, 2, 3].forEach(n => CONTENT[n].forEach((g, gi) => {
+    const walk = (nodes, path) => nodes.forEach(nd => {
+      const p = [...path, nd.t];
+      if (nd.id) raw.push({ id: nd.id, issue: n, gq: gi + 1, path: p });
+      if (nd.kids) walk(nd.kids, p);
+    });
+    walk(g.items, []);
+  }));
+  const short = r => r.path.length > 1 ? r.path.slice(1).join(' › ') : r.path[0];
+  const count = {};
+  raw.forEach(r => { count[short(r)] = (count[short(r)] || 0) + 1; });
+  raw.forEach(r => { PMAP[r.id] = { issue: r.issue, gq: r.gq, label: count[short(r)] > 1 ? r.path.join(' › ') : short(r) }; });
+})();
+const ptLabel = id => PMAP[id] ? `Issue ${PMAP[id].issue} GQ${PMAP[id].gq}: ${PMAP[id].label}` : id;
+
+/* Concepts as listed in each Issue's "Concepts" column. Descriptions are simplified for students. */
 const CONCEPTS = [
-  { id: 'citizenship', issue: 1, name: 'Citizenship',
-    def: 'Belonging to a country: legal status, identity, shared values and taking part in public life.',
-    pts: [['cz-legal', 'Legal status: rights and obligations of citizens'],
-          ['cz-identity', 'A sense of identity'],
-          ['cz-values', 'Shared values'],
-          ['cz-civic', 'Civic participation in public affairs, as individuals and community groups']] },
-  { id: 'governance', issue: 1, name: 'Governance',
-    def: 'How government makes decisions and uses its functions and roles for the good of society.',
-    pts: [['gv-laws', 'Functions of government: makes and passes, implements and enforces, interprets and applies laws'],
-          ['gv-order', 'Role: maintains law and order'],
-          ['gv-wellbeing', 'Role: ensures economic and social well-being of citizens'],
-          ['gv-national', 'Role: promotes and protects national interests'],
-          ['gv-principles', 'Principles of governance: good leadership, anticipating change and staying relevant, a stake for everyone and opportunities for all, meritocracy'],
-          ['gv-together', 'Citizens and government working together: addressing needs, influencing decision making, strengthening sense of belonging']] },
-  { id: 'tradeoffs', issue: 1, name: 'Trade-offs',
-    def: 'Giving up some of one thing to gain another when groups want different things.',
-    pts: [['to-needs', 'Differing needs and interests'],
-          ['to-priorities', 'Differing priorities'],
-          ['to-costs', 'Unequal sharing of costs'],
-          ['to-manage', 'Managing trade-offs']] },
-  { id: 'identity', issue: 2, name: 'Identity',
-    def: 'How people see themselves and are seen by others.',
-    pts: [['id-race', 'Race and ethnicity'],
-          ['id-religion', 'Religion'],
-          ['id-ses', 'Socio-economic status'],
-          ['id-nationality', 'Nationality']] },
-  { id: 'diversity', issue: 2, name: 'Diversity',
-    def: 'Differences among people in a society, and what it is like to live with them.',
-    pts: [['dv-common', 'Interactions in a diverse society and common space'],
-          ['dv-exchange', 'Cultural exchange and appreciation; exchange of knowledge and skills'],
-          ['dv-stereo', 'Stereotypes, prejudice and discrimination'],
-          ['dv-compete', 'Competition for resources'],
-          ['dv-ses', 'Responding to socio-economic diversity: a government-financed approach or a shared responsibility approach']] },
-  { id: 'harmony', issue: 2, name: 'Harmony',
-    def: 'Living peacefully by respecting differences and appreciating what we share.',
-    pts: [['hm-citizens', 'Responses of citizens as individuals and community groups'],
-          ['hm-policy', 'Responses of government: assimilationist policy or integration policy, and their tensions'],
-          ['hm-respect', 'Respecting differences and appreciating what we share in common']] },
-  { id: 'globalisation', issue: 3, name: 'Globalisation',
-    def: 'Countries and people becoming more connected through flows of goods, ideas, people and technology.',
-    pts: [['gl-drivers', 'Driving forces: developments in transportation and digital technology; growth of MNCs'],
-          ['gl-econ', 'Economic impacts: growth and vulnerability for countries; jobs and challenges for individuals'],
-          ['gl-econ-resp', 'Responses to economic impacts: government support; individuals gaining knowledge and skills'],
-          ['gl-culture', 'Cultural impacts: spread of culture and dilution of culture'],
-          ['gl-culture-resp', 'Responses to cultural impacts: varying degrees of acceptance and rejection'],
-          ['gl-security', 'Security impacts: transnational terrorism and cyber threats'],
-          ['gl-security-resp', 'Responses to security impacts: vigilance by individuals, security measures by governments, cooperation among countries']] },
-  { id: 'interconnectedness', issue: 3, name: 'Interconnectedness',
-    def: 'The links between countries and people, so events in one place affect others.',
-    pts: [['ic-links', 'Links between countries and people through trade, technology, travel and ideas'],
-          ['ic-spread', 'Events and decisions in one place quickly affect people elsewhere']] },
-  { id: 'interdependence', issue: 3, name: 'Interdependence',
-    def: 'Countries and people relying on one another for what they need.',
-    pts: [['ip-rely', 'Countries rely on one another for goods, markets, investment and resources'],
-          ['ip-coop', 'Countries need one another to solve shared problems']] }
+  { id: 'citizenship', issue: 1, name: 'Citizenship', def: 'Belonging to a country: legal status, identity, shared values and civic participation.' },
+  { id: 'governance', issue: 1, name: 'Governance', def: 'How government uses its functions and roles, guided by principles, for the good of society.' },
+  { id: 'tradeoffs', issue: 1, name: 'Trade-offs', def: 'Giving up some of one thing to gain another when groups have differing needs and priorities.' },
+  { id: 'identity', issue: 2, name: 'Identity', def: 'Who people are, shaped by race and ethnicity, religion, socio-economic status and nationality.' },
+  { id: 'diversity', issue: 2, name: 'Diversity', def: 'Differences among people in a society, and the experiences and effects of living with them.' },
+  { id: 'harmony', issue: 2, name: 'Harmony', def: 'Living peacefully by respecting differences and appreciating what we share in common.' },
+  { id: 'globalisation', issue: 3, name: 'Globalisation', def: 'Countries and people becoming more connected, with impacts on the economy, culture and security.' },
+  { id: 'interconnectedness', issue: 3, name: 'Interconnectedness', def: 'The links between countries and people, so events in one place affect others.' },
+  { id: 'interdependence', issue: 3, name: 'Interdependence', def: 'Countries and people relying on one another for what they need.' }
 ];
 const CMAP = Object.fromEntries(CONCEPTS.map(c => [c.id, c]));
-const PMAP = Object.fromEntries(CONCEPTS.flatMap(c => c.pts.map(([id, label]) => [id, label])));
 
-/* ---------- Practice briefs ---------- */
+
+/* ---------- Built-in practice briefs (used when Claude cannot generate an article) ---------- */
 const CASES = [
-  { id: 'tariffs', title: 'Tariff hikes put jobs and growth at risk', focus: [3, 1], kind: 'practice',
+  { id: 'tariffs', title: 'Tariff hikes put jobs and growth at risk', focus: [3, 1], kind: 'practice', place: 'Singapore',
     search: 'Singapore tariffs economy jobs taskforce',
     body: [[
       'A major trading partner has announced higher tariffs on a wide range of imported goods, and economists warn that Singapore\'s growth could slow this year.',
@@ -358,13 +452,13 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'globalisation', ev: [0, 2, 3], pts: ['gl-econ', 'gl-drivers', 'gl-econ-resp'],
+        { c: 'globalisation', ev: [0, 2, 3], pts: ['3-growth', '3-jobs', '3-mnc', '3-skills'],
           why: 'The tariffs show an economic impact of globalisation. Singapore faces economic vulnerability (slower growth), MNCs may not expand here, and workers face job challenges. Training in new skills is an individual response.' },
-        { c: 'interdependence', ev: [0, 1], pts: ['ip-rely'],
+        { c: 'interdependence', ev: [0, 1], pts: ['3-growth'],
           why: 'Singapore relies on trading partners to buy its exports. Because trade is so large compared to its economy, another country\'s tariff decision affects Singapore\'s growth and jobs.' },
-        { c: 'governance', ev: [4], pts: ['gv-wellbeing', 'gv-together', 'gl-econ-resp'],
+        { c: 'governance', ev: [4], pts: ['1-wellbeing', '1-needs-soc'],
           why: 'The government acts on its role to ensure the economic well-being of citizens. It gives support and works with unions and businesses to protect jobs.' },
-        { c: 'tradeoffs', ev: [6], pts: ['to-priorities', 'to-costs'],
+        { c: 'tradeoffs', ev: [6], pts: ['1-priorities', '1-costs', '1-tradeoffs'],
           why: 'Groups have differing priorities. Spending public money on support means less money for other needs, while unions put jobs first. Deciding how much to spend is a trade-off.' }
       ],
       also: [
@@ -374,7 +468,7 @@ const CASES = [
     },
     question: '"Government support is the most important way to respond to the economic impacts of globalisation." Do you agree? Explain your answer.' },
 
-  { id: 'harmony-law', title: 'New law to protect racial harmony', focus: [2, 1], kind: 'practice',
+  { id: 'harmony-law', title: 'New law to protect racial harmony', focus: [2, 1], kind: 'practice', place: 'Singapore',
     search: 'Maintenance of Racial Harmony Act Singapore',
     body: [[
       'Parliament has passed a new law that brings together Singapore\'s rules for protecting racial harmony into a single Act.',
@@ -388,13 +482,13 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'harmony', ev: [0, 5, 6], pts: ['hm-policy', 'hm-citizens', 'hm-respect'],
+        { c: 'harmony', ev: [0, 5, 6], pts: ['2-integ', '2-sc-citizens'],
           why: 'The law is a government response to diversity that aims to keep harmony. The restorative option and everyday friendships show that citizens also help build harmony by respecting differences.' },
-        { c: 'diversity', ev: [1, 3], pts: ['dv-stereo'],
+        { c: 'diversity', ev: [1, 3], pts: ['2-stereo'],
           why: 'Living in a diverse society can lead to stereotypes, prejudice and hostility between groups, especially when content spreads quickly online.' },
-        { c: 'governance', ev: [0, 1], pts: ['gv-laws', 'gv-order'],
+        { c: 'governance', ev: [0, 1], pts: ['1-makes', '1-implements', '1-order'],
           why: 'Parliament makes and passes laws, and the government enforces them to maintain law and order.' },
-        { c: 'identity', ev: [1, 2], pts: ['id-race'],
+        { c: 'identity', ev: [1, 2], pts: ['2-race'],
           why: 'Race and ethnicity are factors that shape people\'s identities, and the law protects racial groups and race-based organisations.' }
       ],
       also: [
@@ -405,7 +499,7 @@ const CASES = [
     },
     question: 'Explain why laws alone may not be enough to achieve harmony in a diverse society such as Singapore.' },
 
-  { id: 'cyber', title: 'Hackers target systems that run essential services', focus: [3, 1], kind: 'practice',
+  { id: 'cyber', title: 'Hackers target systems that run essential services', focus: [3, 1], kind: 'practice', place: 'Singapore',
     search: 'Singapore cyber attack critical infrastructure',
     body: [[
       'Authorities revealed that a highly skilled group of hackers has been attacking computer systems that run essential services such as power and water.',
@@ -418,13 +512,13 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'globalisation', ev: [0, 1, 5], pts: ['gl-security', 'gl-drivers'],
+        { c: 'globalisation', ev: [0, 1, 5], pts: ['3-digital', '3-cyber'],
           why: 'Cyber threats are a security impact of globalisation. Developments in digital technology let attackers overseas reach systems in Singapore.' },
-        { c: 'interconnectedness', ev: [1, 5], pts: ['ic-links', 'ic-spread'],
+        { c: 'interconnectedness', ev: [1, 5], pts: ['3-digital', '3-cyber'],
           why: 'Systems and countries are linked online, so an attack in one place can spread and affect many people at once.' },
-        { c: 'governance', ev: [2, 3], pts: ['gv-order', 'gv-national', 'gl-security-resp'],
+        { c: 'governance', ev: [2, 3], pts: ['1-order', '1-national'],
           why: 'The government maintains law and order and protects national interests. It takes security measures and cooperates with other countries.' },
-        { c: 'citizenship', ev: [4], pts: ['cz-civic', 'gl-security-resp'],
+        { c: 'citizenship', ev: [4], pts: ['1-civic'],
           why: 'Individuals play their part by staying vigilant, updating devices and reporting suspicious messages.' }
       ],
       also: [
@@ -433,7 +527,7 @@ const CASES = [
     },
     question: '"Individuals play a more important role than governments in responding to cyber threats." Do you agree? Explain your answer.' },
 
-  { id: 'eldercare', title: 'Eldercare centre plan divides neighbours', focus: [1], kind: 'practice',
+  { id: 'eldercare', title: 'Eldercare centre plan divides neighbours', focus: [1], kind: 'practice', place: 'Singapore',
     search: 'Singapore residents eldercare centre objection',
     body: [[
       'A town council has shared plans to build an eldercare centre on a field next to several blocks of flats.',
@@ -446,11 +540,11 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'tradeoffs', ev: [1, 2, 4, 5], pts: ['to-needs', 'to-priorities', 'to-manage'],
+        { c: 'tradeoffs', ev: [1, 2, 4, 5], pts: ['1-needs', '1-priorities', '1-tradeoffs'],
           why: 'Residents have differing needs and interests: open space for families versus care for the elderly. The final plan gives up some field space to meet both needs, which is a trade-off.' },
-        { c: 'governance', ev: [0, 4], pts: ['gv-wellbeing', 'gv-principles'],
+        { c: 'governance', ev: [0, 4], pts: ['1-wellbeing', '1-change', '1-stake'],
           why: 'The plan ensures the social well-being of an ageing population, which shows the government anticipating change. Adjusting the plan gives everyone a stake.' },
-        { c: 'citizenship', ev: [3, 5], pts: ['cz-civic', 'gv-together'],
+        { c: 'citizenship', ev: [3, 5], pts: ['1-civic', '1-influence'],
           why: 'Residents took part in public affairs through dialogue and feedback, and influenced the decision.' }
       ],
       also: [
@@ -460,7 +554,7 @@ const CASES = [
     },
     question: 'Explain how citizens can influence decision making in public affairs. Use examples from Singapore.' },
 
-  { id: 'void-deck', title: 'Void deck celebrations spark noise complaints', focus: [2], kind: 'practice',
+  { id: 'void-deck', title: 'Void deck celebrations spark noise complaints', focus: [2], kind: 'practice', place: 'Singapore',
     search: 'Singapore void deck wedding funeral noise neighbours',
     body: [[
       'Community mediators say disputes between neighbours over noise are among the most common cases they handle.',
@@ -473,11 +567,11 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'diversity', ev: [1, 2], pts: ['dv-common', 'dv-stereo'],
+        { c: 'diversity', ev: [1, 2], pts: ['2-interact', '2-stereo'],
           why: 'People of different races and religions interact in a common space. Different customs can cause friction and negative views when people do not understand each other.' },
-        { c: 'harmony', ev: [3, 4, 5], pts: ['hm-citizens', 'hm-respect', 'dv-exchange'],
+        { c: 'harmony', ev: [3, 4, 5], pts: ['2-sc-citizens', '2-cultural'],
           why: 'Residents and a community group responded by explaining their customs, which is cultural exchange and appreciation. Respecting differences helped rebuild harmony.' },
-        { c: 'identity', ev: [1, 4], pts: ['id-race', 'id-religion'],
+        { c: 'identity', ev: [1, 4], pts: ['2-race', '2-religion'],
           why: 'Race and religion shape the customs families follow for weddings and funerals.' }
       ],
       also: [
@@ -487,7 +581,7 @@ const CASES = [
     },
     question: 'Explain how interactions in common spaces can help to build harmony in a diverse society.' },
 
-  { id: 'k-culture', title: 'Global trends shape how teens spend their time', focus: [3, 2], kind: 'practice',
+  { id: 'k-culture', title: 'Global trends shape how teens spend their time', focus: [3, 2], kind: 'practice', place: 'Singapore',
     search: 'Singapore youth K-pop global culture mother tongue',
     body: [[
       'Short-video apps have made Korean dramas, American slang and Japanese anime a daily part of many teenagers\' lives.',
@@ -500,11 +594,11 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'globalisation', ev: [0, 1, 2, 4], pts: ['gl-drivers', 'gl-culture', 'gl-culture-resp'],
+        { c: 'globalisation', ev: [0, 1, 2, 4], pts: ['3-digital', '3-spread', '3-dilution', '3-accept'],
           why: 'Digital technology is a driving force that spreads foreign culture. Some people worry about dilution of local culture, and people respond with different degrees of acceptance and rejection, such as heritage projects.' },
-        { c: 'identity', ev: [2, 5], pts: ['cz-identity', 'id-nationality'],
+        { c: 'identity', ev: [2, 5], pts: ['2-nationality'],
           why: 'Teenagers\' sense of identity is shaped by both global trends and their nationality as Singaporeans.' },
-        { c: 'interconnectedness', ev: [0, 3], pts: ['ic-links'],
+        { c: 'interconnectedness', ev: [0, 3], pts: ['3-digital', '3-spread'],
           why: 'Culture flows both ways. Foreign trends come in, and local creators share Singapore culture with the world.' }
       ],
       also: [
@@ -514,7 +608,7 @@ const CASES = [
     },
     question: '"The spread of global culture weakens the identity of young Singaporeans." Do you agree? Explain your answer.' },
 
-  { id: 'scams', title: 'New powers to stop scam victims losing savings', focus: [1, 3], kind: 'practice',
+  { id: 'scams', title: 'New powers to stop scam victims losing savings', focus: [1, 3], kind: 'practice', place: 'Singapore',
     search: 'Singapore Protection from Scams Act money mules',
     body: [[
       'Scams cost people in Singapore hundreds of millions of dollars each year, and many are run by syndicates operating from overseas.',
@@ -527,11 +621,11 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'governance', ev: [2], pts: ['gv-laws', 'gv-order', 'gv-wellbeing'],
+        { c: 'governance', ev: [2], pts: ['1-makes', '1-implements', '1-order', '1-wellbeing'],
           why: 'Parliament makes and passes laws, and the police enforce them to maintain law and order and protect citizens\' well-being.' },
-        { c: 'tradeoffs', ev: [2, 3], pts: ['to-priorities', 'to-manage'],
+        { c: 'tradeoffs', ev: [2, 3], pts: ['1-priorities', '1-tradeoffs'],
           why: 'Protecting victims means some people lose control over their own money for a time. The law gives up some personal freedom for greater protection.' },
-        { c: 'citizenship', ev: [1, 4, 5], pts: ['cz-legal', 'cz-civic', 'gv-together'],
+        { c: 'citizenship', ev: [1, 4, 5], pts: ['1-legal', '1-civic', '1-needs-soc'],
           why: 'Citizens have obligations to obey the law, which money mules break. Volunteers take part in public affairs to protect others, working with the government.' }
       ],
       also: [
@@ -541,7 +635,7 @@ const CASES = [
     },
     question: '"Protecting citizens is more important than protecting individual freedom." How far do you agree, using the example of scams?' },
 
-  { id: 'support', title: 'Helping low-income families get ahead', focus: [2, 1], kind: 'practice',
+  { id: 'support', title: 'Helping low-income families get ahead', focus: [2, 1], kind: 'practice', place: 'Singapore',
     search: 'Singapore ComLink+ low-income families support',
     body: [[
       'Social workers say children from low-income families often face more obstacles in school, from crowded homes to less money for enrichment.',
@@ -554,12 +648,14 @@ const CASES = [
     ]],
     model: {
       core: [
-        { c: 'diversity', ev: [0, 1, 3], pts: ['dv-ses', 'id-ses'],
+        { c: 'diversity', ev: [0, 1, 3], pts: ['2-ses', '2-shared', '2-se-citizens'],
           why: 'Society is diverse in socio-economic status. Government support with conditions, together with help from community groups and companies, is a shared responsibility approach.' },
-        { c: 'governance', ev: [1, 5], pts: ['gv-wellbeing', 'gv-principles'],
+        { c: 'governance', ev: [1, 5], pts: ['1-wellbeing', '1-stake'],
           why: 'The government ensures the social well-being of citizens and gives everyone a stake and opportunities.' },
-        { c: 'tradeoffs', ev: [2, 4], pts: ['to-priorities', 'to-costs'],
+        { c: 'tradeoffs', ev: [2, 4], pts: ['1-priorities', '1-costs'],
           why: 'People disagree about conditions on aid, and taxpayers bear the cost. This is unequal sharing of costs.' }
+
+
       ],
       also: [
         { c: 'identity', why: 'Socio-economic status is one factor that shapes people\'s identities (sentence 1).' },
@@ -569,6 +665,8 @@ const CASES = [
     },
     question: 'Which approach is more effective in responding to socio-economic diversity: a government-financed approach or a shared responsibility approach? Explain your answer.' }
 ];
+const REGIONS = ['Southeast Asia', 'East Asia', 'South Asia', 'Central Asia', 'the Middle East', 'Africa', 'Europe',
+  'North America', 'Latin America and the Caribbean', 'Oceania and the Pacific', 'Singapore'];
 
 /* ---------- Helpers ---------- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -580,22 +678,25 @@ const store = {
 };
 const cvar = issue => `--c:var(${ISSUES[issue].c});--t:var(${ISSUES[issue].t})`;
 const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
+const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
+let genCases = store.get('cl:gen', []);
 let localCases = store.get('cl:local', []);
 let sharedCases = [];
-let currentId = store.get('cl:current', CASES[0].id);
+let currentId = store.get('cl:current', null);
 let ans = null;
 let modelFocus = null;
 const openPts = new Set();
 let db = null, canShare = false, sampleFn = null;
+let samplePromise = Promise.resolve(null);
 
-const allCases = () => [...sharedCases, ...CASES, ...localCases];
-const getCase = id => allCases().find(c => c.id === id) || CASES[0];
-const hasModel = c => !!(c.model && c.model.core && c.model.core.length);
+const allCases = () => [...sharedCases, ...genCases, ...localCases];
+const getCase = id => allCases().find(c => c.id === id) || null;
+const hasModel = c => !!(c && c.model && c.model.core && c.model.core.length);
 
 function sentences(c) {
   const out = []; let i = 0;
-  (c.body || []).forEach((para, p) => para.forEach(t => out.push({ i: i++, text: t, p })));
+  (c?.body || []).forEach((para, p) => para.forEach(t => out.push({ i: i++, text: t, p })));
   return out;
 }
 function splitText(text) {
@@ -603,33 +704,52 @@ function splitText(text) {
     .map(p => (p.match(/[^.!?]+(?:[.!?]+["'”’)]*|$)/g) || [p]).map(s => s.trim()).filter(Boolean));
 }
 function loadAns(id) {
-  const a = store.get('cl:ans:' + id, null);
+  const a = id ? store.get('cl:ans:' + id, null) : null;
   return a && Array.isArray(a.picks) ? a : { picks: [], active: null, checked: false };
 }
-function saveAns() { store.set('cl:ans:' + currentId, ans); }
+function saveAns() { if (currentId) store.set('cl:ans:' + currentId, ans); }
 const pickOf = cid => ans.picks.find(p => p.c === cid);
+function saveGen() { genCases = genCases.slice(0, 25); store.set('cl:gen', genCases); }
 
 /* ---------- Rendering ---------- */
-function renderPicker() {
-  const cases = allCases();
-  $('#picker').innerHTML = cases.map(c => {
-    const kind = c.kind === 'teacher' ? 'From your teacher' : c.kind === 'local' ? 'Your article' : 'Practice brief';
-    const dots = (c.focus || []).map(n => `<span class="dot" style="${cvar(n)}" title="Issue ${n}"></span>`).join('');
-    return `<button class="pick" type="button" data-id="${esc(c.id)}" aria-current="${c.id === currentId}">
-      <span class="meta">${dots}${kind}</span><b>${esc(c.title)}</b></button>`;
-  }).join('') + `<button class="pick add" type="button" id="addBtn">+ Add a news article</button>`;
+function renderControls() {
+  const iSel = $('#g-issue'), rSel = $('#g-region');
+  if (!iSel.options.length) {
+    iSel.innerHTML = `<option value="any">Any Issue (random)</option>` + [1, 2, 3].map(n => `<option value="${n}">${esc(issueName(n))}</option>`).join('');
+    rSel.innerHTML = `<option value="any">Anywhere in the world (random)</option>` + REGIONS.map(r => `<option value="${esc(r)}">${esc(r[0].toUpperCase() + r.slice(1))}</option>`).join('');
+    iSel.value = store.get('cl:gIssue', 'any'); rSel.value = store.get('cl:gRegion', 'any');
+    if (!iSel.value) iSel.value = 'any';
+    if (!rSel.value) rSel.value = 'any';
+  }
+  const groups = [
+    ['From your teacher', sharedCases],
+    ['Generated for you', genCases],
+    ['Added by you', localCases]
+  ].filter(([, list]) => list.length);
+  $('#g-saved').innerHTML = groups.length
+    ? (currentId ? '' : `<option value="">Choose an article</option>`) + groups.map(([label, list]) => `<optgroup label="${label}">${list.map(c =>
+        `<option value="${esc(c.id)}" ${c.id === currentId ? 'selected' : ''}>${esc(c.title)}${c.place ? ' · ' + esc(c.place) : ''}</option>`).join('')}</optgroup>`).join('')
+    : `<option value="">No articles yet</option>`;
+  $('#g-saved').disabled = !groups.length;
 }
 
 function renderArticle() {
   const c = getCase(currentId);
+  if (!c) {
+    $('#news').innerHTML = `<div class="emptyart">
+      <div class="lbl">No article yet</div>
+      <h2>Generate a news article to begin</h2>
+      <p>Each article is a news report from somewhere in the world, linked to one of the three Issues in the syllabus. Choose an Issue and a region above, or leave both on random.</p>
+      <button class="btn" type="button" data-gen>Generate a news article</button></div>`;
+    return;
+  }
   const active = pickOf(ans.active);
   const activeIssue = active ? CMAP[active.c].issue : 1;
-  const mEntry = modelFocus && c.model ? [...(c.model.core || [])].find(m => m.c === modelFocus) : null;
+  const mEntry = modelFocus && c.model ? (c.model.core || []).find(m => m.c === modelFocus) : null;
   const mEv = mEntry ? mEntry.ev || [] : [];
   const mIssue = modelFocus ? CMAP[modelFocus].issue : 1;
-  const sents = sentences(c);
   const paras = [];
-  sents.forEach(s => {
+  sentences(c).forEach(s => {
     const owners = ans.picks.filter(p => p.ev.includes(s.i));
     const on = active && active.ev.includes(s.i);
     const cls = ['sent', owners.length ? 'marked' : '', on ? 'on' : '', mEv.includes(s.i) ? 'model' : ''].join(' ');
@@ -639,38 +759,56 @@ function renderArticle() {
     (paras[s.p] = paras[s.p] || []).push(
       `<span class="${cls}" style="${style}" data-i="${s.i}" role="button" tabindex="0" aria-pressed="${!!on}" aria-label="Sentence ${s.i + 1}${label}"><sup>${s.i + 1}</sup>${esc(s.text)}</span>${dots}`);
   });
-  const focusBadges = (c.focus || []).map(n => `<span class="badge" style="${cvar(n)}">Issue ${n} · ${ISSUES[n].short}</span>`).join('');
-  const kindNote = c.kind === 'practice'
-    ? 'Practice brief written for class from recent news themes. Details are simplified.'
-    : c.kind === 'teacher' ? 'Added by your teacher.' : 'Added by you. Saved in this browser only.';
+  const focusBadges = (c.focus || []).map(n => `<span class="badge" style="${cvar(n)}">${esc(issueName(n))}</span>`).join('');
+  const kindNote = {
+    generated: 'News report written by Claude from a real-world issue. It may contain mistakes, so check it against real coverage.',
+    practice: 'Practice brief from the built-in set, written for class from recent news themes. Details are simplified.',
+    teacher: 'Added by your teacher.',
+    local: 'Added by you. Saved in this browser only.'
+  }[c.kind] || '';
   const url = safeUrl(c.url);
   const src = [c.source ? esc(c.source) : '', url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Read the original</a>` : '',
-    c.search ? `<a href="https://news.google.com/search?q=${encodeURIComponent(c.search)}" target="_blank" rel="noopener">Find current reports</a>` : ''].filter(Boolean).join(' · ');
-  const canDelete = c.kind === 'local' || (c.kind === 'teacher' && canShare);
+    c.search ? `<a href="https://news.google.com/search?q=${encodeURIComponent(c.search)}" target="_blank" rel="noopener">Find real coverage</a>` : ''].filter(Boolean).join(' · ');
+  const canDelete = c.kind !== 'teacher' || canShare;
   const hintText = active
     ? `Tap sentences that show <b style="color:var(${ISSUES[activeIssue].c})">${esc(CMAP[active.c].name)}</b>. Tap again to remove.`
     : (ans.picks.length ? 'Choose a concept card on the right, then tap sentences to add evidence.' : 'Start by choosing a concept on the right.');
+  const dateline = [c.place, c.period].filter(Boolean).map(esc).join(' · ');
   $('#news').innerHTML = `
     <div class="news-meta">${focusBadges}</div>
     <h2>${esc(c.title)}</h2>
+    ${dateline ? `<div class="dateline">${dateline}</div>` : ''}
     <p class="dek">${kindNote}</p>
     <p class="hint" id="hint">${hintText}</p>
     <div class="body" id="body">${paras.map(p => `<p>${p.join(' ')}</p>`).join('')}</div>
-    <div class="srcnote">${src ? `<span>${src}</span>` : ''}${canDelete ? `<button class="linkbtn" id="delCase" type="button" style="margin-left:auto">Delete this article</button>` : ''}</div>`;
+    <div class="srcnote">${src ? `<span>${src}</span>` : ''}${canDelete ? `<button class="linkbtn" id="delCase" type="button" style="margin-left:auto">Remove this article</button>` : ''}</div>`;
 }
 
 function renderBoard() {
+  const none = !getCase(currentId);
   $('#board').innerHTML = [1, 2, 3].map(n => `
     <div class="grp" style="${cvar(n)}">
-      <div class="lbl">Issue ${n} · ${ISSUES[n].short}</div>
+      <div><span class="badge">${esc(issueName(n))}</span></div>
+      <p class="inq">Inquiry Focus: ${esc(ISSUES[n].inq)}</p>
       <div class="chips">${CONCEPTS.filter(c => c.issue === n).map(c =>
-        `<button class="concept" type="button" data-c="${c.id}" aria-pressed="${!!pickOf(c.id)}"><b>${c.name}</b><small>${c.def}</small></button>`).join('')}</div>
+        `<button class="concept" type="button" data-c="${c.id}" aria-pressed="${!!pickOf(c.id)}" ${none ? 'disabled' : ''}><b>${c.name}</b><small>${c.def}</small></button>`).join('')}</div>
     </div>`).join('');
+}
+
+function treeHtml(issue, boxes) {
+  const ul = nodes => `<ul>${nodes.map(nd => {
+    if (nd.id && boxes) {
+      const { cid, chosen } = boxes;
+      return `<li><label class="pt"><input type="checkbox" id="pt-${cid}-${nd.id}" data-pt="${nd.id}" ${chosen.includes(nd.id) ? 'checked' : ''}> <span>${esc(nd.t)}</span></label>${nd.kids ? ul(nd.kids) : ''}</li>`;
+    }
+    return `<li>${nd.id ? esc(nd.t) : `<span>${esc(nd.t)}</span>`}${nd.kids ? ul(nd.kids) : ''}</li>`;
+  }).join('')}</ul>`;
+  return `<div class="tree">${CONTENT[issue].map((g, gi) => `<div class="gq"><div class="gqq">Guiding Question ${gi + 1}: ${esc(g.gq)}</div>${ul(g.items)}</div>`).join('')}</div>`;
 }
 
 function renderCards(result) {
   if (!ans.picks.length) {
-    $('#cards').innerHTML = `<div class="empty">No concepts chosen yet. Choose a concept above and a card for it appears here.</div>`;
+    $('#cards').innerHTML = `<div class="empty">${getCase(currentId) ? 'No concepts chosen yet. Choose a concept above and a card for it appears here.' : 'Generate an article first, then choose the concepts you find in it.'}</div>`;
     return;
   }
   const verdicts = result ? Object.fromEntries(result.rows.filter(r => r.mine).map(r => [r.c, r])) : {};
@@ -681,11 +819,10 @@ function renderCards(result) {
     const evs = p.ev.slice().sort((a, b) => a - b).map(i =>
       `<button class="ev" type="button" data-rm="${i}" aria-label="Remove sentence ${i + 1}">S${i + 1}</button>`).join('')
       || `<span class="muted">No evidence yet.</span>`;
-    const pts = k.pts.map(([id, label]) => `<label class="pt"><input type="checkbox" id="pt-${p.c}-${id}" data-pt="${id}" ${p.pts.includes(id) ? 'checked' : ''}> <span>${esc(label)}</span></label>`).join('');
     return `<article class="card ${active ? 'active' : ''}" data-c="${p.c}" style="${cvar(k.issue)}">
-      <header><span class="badge" style="${cvar(k.issue)}">Issue ${k.issue}</span><h3>${k.name}</h3>${vb}<button class="linkbtn rm" type="button">Remove</button></header>
+      <header><span class="badge">${esc(issueName(k.issue))}</span><h3>${k.name}</h3>${vb}<button class="linkbtn rm" type="button">Remove</button></header>
       <div class="evrow"><span class="lbl">Evidence</span>${evs}<button class="evbtn" type="button">${active ? 'Done selecting' : 'Select evidence'}</button></div>
-      <details class="pts" data-open="${p.c}" ${p.pts.length || openPts.has(p.c) ? 'open' : ''}><summary>Link to syllabus content (${p.pts.length} chosen)</summary><div class="ptlist">${pts}</div></details>
+      <details class="pts" data-open="${p.c}" ${p.pts.length || openPts.has(p.c) ? 'open' : ''}><summary>Link to syllabus content under Issue ${k.issue}'s guiding questions (${p.pts.length} chosen)</summary>${treeHtml(k.issue, { cid: p.c, chosen: p.pts })}</details>
       <label class="q" for="why-${p.c}">How does ${k.name.toLowerCase()} show up in this issue?</label>
       <textarea id="why-${p.c}" data-why="${p.c}" placeholder="Use the evidence. Say who is involved, what is happening and how it links to the concept.">${esc(p.why)}</textarea>
     </article>`;
@@ -693,10 +830,12 @@ function renderCards(result) {
 }
 
 function render() {
-  renderPicker(); renderArticle(); renderBoard();
-  const res = ans.checked ? evaluate(getCase(currentId)) : null;
+  renderControls(); renderArticle(); renderBoard();
+  const c = getCase(currentId);
+  const res = c && ans.checked ? evaluate(c) : null;
   renderCards(res);
   renderFeedback(res);
+  $('#checkBtn').disabled = !c; $('#copyBtn').disabled = !c;
 }
 
 /* ---------- Checking ---------- */
@@ -705,6 +844,7 @@ function completeness() {
   ans.picks.forEach(p => {
     const n = CMAP[p.c].name;
     if (!p.ev.length) notes.push(`${n}: add at least one sentence as evidence.`);
+    if (!p.pts.length) notes.push(`${n}: link it to at least one content point under the guiding questions.`);
     if ((p.why || '').trim().split(/\s+/).filter(Boolean).length < 12) notes.push(`${n}: write a fuller explanation (at least a couple of sentences).`);
   });
   return notes;
@@ -739,10 +879,22 @@ function evaluate(c) {
 
 function evidenceLine(r) {
   const model = r.m.ev.map(i => i + 1);
-  if (!r.p.ev.length) return `You have not added evidence yet. The model answer uses sentence${model.length > 1 ? 's' : ''} ${model.join(', ')}.`;
-  if (r.overlap.length) return `Your evidence matches the model on sentence${r.overlap.length > 1 ? 's' : ''} ${r.overlap.map(i => i + 1).join(', ')}.` +
-    (r.overlap.length < model.length ? ` Also look at ${model.filter(i => !r.overlap.includes(i - 1)).join(', ')}.` : '');
-  return `Your evidence differs from the model answer, which uses sentence${model.length > 1 ? 's' : ''} ${model.join(', ')}. Check whether your sentences really show this concept.`;
+  if (!model.length) return r.p.ev.length ? '' : 'You have not added evidence yet.';
+  const pl = model.length > 1 ? 's' : '';
+  if (!r.p.ev.length) return `You have not added evidence yet. The model answer uses sentence${pl} ${model.join(', ')}.`;
+  if (r.overlap.length) {
+    const rest = model.filter(i => !r.overlap.includes(i - 1));
+    return `Your evidence matches the model on sentence${r.overlap.length > 1 ? 's' : ''} ${r.overlap.map(i => i + 1).join(', ')}.` +
+      (rest.length ? ` Also look at ${rest.join(', ')}.` : '');
+  }
+  return `Your evidence differs from the model answer, which uses sentence${pl} ${model.join(', ')}. Check whether your sentences really show this concept.`;
+}
+function pointsLine(r) {
+  if (!r.m.pts || !r.m.pts.length) return '';
+  const mine = r.p ? r.p.pts : [];
+  const matched = r.m.pts.filter(id => mine.includes(id));
+  const head = r.p ? (matched.length ? `You linked ${matched.length} of the ${r.m.pts.length} content points in the model. ` : 'None of your content links match the model. ') : '';
+  return `<p class="syl">${head}Model links: ${r.m.pts.map(id => esc(ptLabel(id))).join(' · ')}</p>`;
 }
 
 function renderFeedback(res) {
@@ -761,14 +913,13 @@ function renderFeedback(res) {
       <div class="meter" aria-hidden="true">${Array.from({ length: res.total }, (_, i) => `<i class="${i < res.hits ? 'hit' : ''}"></i>`).join('')}</div></div>`;
     rows = res.rows.map(r => {
       const k = CMAP[r.c];
-      const show = r.m ? `<button class="linkbtn showbtn" type="button" data-show="${r.c}">${modelFocus === r.c ? 'Hide model evidence' : 'Show model evidence'}</button>` : '';
+      const show = r.m && r.m.ev.length ? `<button class="linkbtn showbtn" type="button" data-show="${r.c}">${modelFocus === r.c ? 'Hide model evidence' : 'Show model evidence'}</button>` : '';
       let body = '';
-      if (r.m && r.mine) body = `<p>${esc(evidenceLine(r))}</p><p><b>Model explanation:</b> ${esc(r.m.why)}</p>`;
+      if (r.m && r.mine) { const ev = evidenceLine(r); body = `${ev ? `<p>${esc(ev)}</p>` : ''}<p><b>Model explanation:</b> ${esc(r.m.why)}</p>`; }
       else if (r.m) body = `<p><b>What you missed:</b> ${esc(r.m.why)}</p>`;
       else if (r.a) body = `<p>A good extra find. ${esc(r.a.why)}</p>`;
       else body = `<p>This concept is not in the model answer. It can still be valid if your explanation shows clearly how the evidence links to it. Discuss it with your teacher.</p>`;
-      const syl = r.m && r.m.pts && r.m.pts.length ? `<p class="syl">Syllabus links: ${r.m.pts.map(id => esc(PMAP[id])).join(' · ')}</p>` : '';
-      return `<div class="row" style="${cvar(k.issue)}"><header><h3><span class="dot"></span>${k.name}</h3><span class="verdict ${r.cls}">${r.tag}</span>${show}</header>${body}${syl}</div>`;
+      return `<div class="row" style="${cvar(k.issue)}"><header><h3><span class="dot"></span>${k.name}</h3><span class="badge">${esc(issueName(k.issue))}</span><span class="verdict ${r.cls}">${r.tag}</span>${show}</header>${body}${r.m ? pointsLine(r) : ''}</div>`;
     }).join('');
   }
   const further = c.question ? `<div class="further"><div class="lbl">Take it further · exam-style question</div><p>${esc(c.question)}</p></div>` : '';
@@ -781,20 +932,20 @@ function renderFeedback(res) {
 
 /* ---------- Events ---------- */
 function selectCase(id) {
-  currentId = id; store.set('cl:current', id);
-  ans = loadAns(id); modelFocus = null;
+  currentId = id || null; store.set('cl:current', currentId);
+  ans = loadAns(currentId); modelFocus = null;
   $('#addForm').hidden = true;
   render();
 }
 
-$('#picker').addEventListener('click', e => {
-  if (e.target.closest('#addBtn')) { openForm(); return; }
-  const b = e.target.closest('.pick[data-id]');
-  if (b) selectCase(b.dataset.id);
-});
+$('#g-saved').addEventListener('change', e => { if (e.target.value) selectCase(e.target.value); });
+$('#g-issue').addEventListener('change', e => store.set('cl:gIssue', e.target.value));
+$('#g-region').addEventListener('change', e => store.set('cl:gRegion', e.target.value));
+$('#addBtn').addEventListener('click', openForm);
+$('#genBtn').addEventListener('click', generate);
 
 $('#board').addEventListener('click', e => {
-  const b = e.target.closest('.concept'); if (!b) return;
+  const b = e.target.closest('.concept'); if (!b || b.disabled) return;
   const cid = b.dataset.c;
   if (!pickOf(cid)) ans.picks.push({ c: cid, ev: [], pts: [], why: '' });
   ans.active = cid; saveAns(); render();
@@ -814,6 +965,7 @@ function toggleSentence(i) {
   const s = document.querySelector(`.sent[data-i="${i}"]`); if (s) s.focus();
 }
 $('#news').addEventListener('click', e => {
+  if (e.target.closest('[data-gen]')) { generate(); return; }
   const s = e.target.closest('.sent'); if (s) { toggleSentence(+s.dataset.i); return; }
   const d = e.target.closest('#delCase'); if (d) deleteCase(d);
 });
@@ -837,9 +989,9 @@ $('#cards').addEventListener('click', e => {
 });
 $('#cards').addEventListener('change', e => {
   const cb = e.target.closest('[data-pt]'); if (!cb) return;
-  const p = pickOf(cb.closest('.card').dataset.c);
+  const cid = cb.closest('.card').dataset.c; const p = pickOf(cid);
   p.pts = cb.checked ? [...new Set([...p.pts, cb.dataset.pt])] : p.pts.filter(x => x !== cb.dataset.pt);
-  cb.closest('details').querySelector('summary').textContent = `Link to syllabus content (${p.pts.length} chosen)`;
+  cb.closest('details').querySelector('summary').textContent = `Link to syllabus content under Issue ${CMAP[cid].issue}'s guiding questions (${p.pts.length} chosen)`;
   saveAns();
 });
 $('#cards').addEventListener('toggle', e => {
@@ -880,39 +1032,154 @@ $('#feedback').addEventListener('click', e => {
 
 function analysisText() {
   const c = getCase(currentId); const sents = sentences(c);
-  const lines = [`Concept Lens analysis: ${c.title}`, ''];
+  const lines = [`Concept Lens analysis: ${c.title}${c.place ? ' (' + c.place + ')' : ''}`, ''];
   ans.picks.forEach(p => {
     const k = CMAP[p.c];
-    lines.push(`${k.name} (Issue ${k.issue}: ${ISSUES[k.issue].name})`);
+    lines.push(`${k.name} (${issueName(k.issue)})`);
     p.ev.slice().sort((a, b) => a - b).forEach(i => lines.push(`  Evidence S${i + 1}: "${sents[i]?.text || ''}"`));
-    if (p.pts.length) lines.push(`  Syllabus: ${p.pts.map(id => PMAP[id]).join('; ')}`);
+    if (p.pts.length) lines.push(`  Syllabus content: ${p.pts.map(ptLabel).join('; ')}`);
     lines.push(`  Explanation: ${(p.why || '').trim() || '(none yet)'}`, '');
   });
   return lines.join('\n');
 }
 $('#copyBtn').addEventListener('click', async () => {
+  if (!getCase(currentId)) return;
   const text = analysisText(); const fbk = $('#copyFallback');
   try { await navigator.clipboard.writeText(text); fbk.hidden = true; $('#status').textContent = 'Copied. Paste it into your class assignment.'; }
   catch { fbk.hidden = false; fbk.value = text; fbk.style.marginTop = '10px'; fbk.select(); $('#status').textContent = 'Select the text below and copy it.'; }
 });
 
-/* ---------- Ask Claude (sample capability) ---------- */
+/* ---------- Generate a news article (sample capability) ---------- */
+let genCtl = null;
+function setGenStatus(html, isErr) {
+  const el = $('#genStatus'); el.innerHTML = html; el.classList.toggle('err', !!isErr);
+}
+function pointCatalogue() {
+  return [1, 2, 3].map(n => `${issueName(n)}\n` + CONTENT[n].map((g, gi) =>
+    `  Guiding Question ${gi + 1}: ${g.gq}\n` + Object.entries(PMAP).filter(([, v]) => v.issue === n && v.gq === gi + 1)
+      .map(([id, v]) => `    ${id} = ${v.label}`).join('\n')).join('\n')).join('\n');
+}
+function genPrompt(issue, gqIndex, region, avoid) {
+  const g = CONTENT[issue][gqIndex];
+  const where = region === 'Singapore' ? 'Singapore' : `a country in ${region}`;
+  return `You write short news reports for Singapore secondary school Social Studies students (G3, SEAB syllabus K336).
+
+TASK: Write ONE news report about a real, well-documented issue or development from ${where}.${avoid.length ? ` Do not use these places, which the student has already seen: ${avoid.join('; ')}.` : ''}
+It must clearly connect to this part of the syllabus:
+${issueName(issue)}
+Inquiry Focus: ${ISSUES[issue].inq}
+Guiding Question ${gqIndex + 1}: ${g.gq}
+
+RULES FOR THE REPORT
+- Base it on real events or trends from 2015 onwards that you know well. Do not invent statistics, names or quotes. Attribute views to groups ("officials", "some residents", "critics"), not to named private individuals.
+- If you are unsure of exact figures or dates, describe them in general terms.
+- Neutral, factual news tone in British English. Simple English for 14-year-olds. 7 to 9 sentences in total, in 2 or 3 paragraphs. Each sentence under 30 words.
+- Show at least two different perspectives or groups with differing views.
+- No graphic violence.
+
+MODEL ANSWER
+Identify which Social Studies concepts are present. Concept ids (use these exactly):
+citizenship, governance, tradeoffs (${issueName(1)})
+identity, diversity, harmony (${issueName(2)})
+globalisation, interconnectedness, interdependence (${issueName(3)})
+
+Content point ids, grouped by Issue and guiding question. For each concept, only use point ids from that concept's own Issue:
+${pointCatalogue()}
+
+Reply with only JSON in exactly this shape:
+{"title": "headline", "place": "City, Country", "period": "year or years, e.g. 2023", "paragraphs": [["sentence", "sentence"], ["sentence"]], "search": "a web search query that finds real coverage of this issue", "focus": [${issue}], "model": {"core": [{"concept": "concept id", "sentences": [1, 3], "points": ["point id"], "why": "2 or 3 sentences explaining how the concept appears in the report, using the syllabus wording"}], "also": [{"concept": "concept id", "why": "one sentence that cites sentence numbers"}]}, "question": "one exam-style question in the SEAB style that links this issue to Singapore, e.g. '...' Do you agree? Explain your answer."}
+Sentence numbers count from 1 across the whole report. "focus" lists the Issue numbers the report mainly connects to, starting with ${issue}. Give 2 to 4 core concepts and 1 to 3 also-relevant concepts.`;
+}
+function fromGenerated(j, issue) {
+  if (!j || typeof j !== 'object') throw new Error('shape');
+  const paras = (Array.isArray(j.paragraphs) ? j.paragraphs : [])
+    .map(p => (Array.isArray(p) ? p : [p]).map(s => String(s).trim()).filter(Boolean)).filter(p => p.length);
+  const n = paras.flat().length;
+  if (n < 4 || n > 16 || !j.title) throw new Error('shape');
+  const idx = arr => [...new Set((Array.isArray(arr) ? arr : []).map(Number).filter(x => Number.isInteger(x) && x >= 1 && x <= n).map(x => x - 1))].sort((a, b) => a - b);
+  const seen = new Set();
+  const core = (j.model?.core || []).filter(m => CMAP[m?.concept] && !seen.has(m.concept) && seen.add(m.concept)).map(m => ({
+    c: m.concept, ev: idx(m.sentences),
+    pts: [...new Set((Array.isArray(m.points) ? m.points : []).filter(p => PMAP[p] && PMAP[p].issue === CMAP[m.concept].issue))],
+    why: String(m.why || '').trim()
+  }));
+  const also = (j.model?.also || []).filter(a => CMAP[a?.concept] && !seen.has(a.concept) && seen.add(a.concept))
+    .map(a => ({ c: a.concept, why: String(a.why || '').trim() }));
+  if (core.length < 2) throw new Error('shape');
+  const focus = [...new Set([issue, ...(Array.isArray(j.focus) ? j.focus.map(Number) : [])])].filter(x => ISSUES[x]).slice(0, 3);
+  return {
+    id: 'gen-' + Date.now().toString(36), kind: 'generated', title: String(j.title).trim(),
+    place: String(j.place || '').trim(), period: String(j.period || '').trim(),
+    search: String(j.search || j.title).trim(), focus, body: paras, model: { core, also },
+    question: String(j.question || '').trim(), created: new Date().toISOString()
+  };
+}
+function practiceFallback(issue, why) {
+  const seen = new Set(genCases.map(c => c.id));
+  const pool = CASES.filter(c => c.focus[0] === issue);
+  const fresh = pool.filter(c => !seen.has(c.id));
+  const pickFrom = fresh.length ? fresh : (pool.length ? pool : CASES);
+  const pick = rand(pickFrom);
+  if (!seen.has(pick.id)) { genCases.unshift({ ...pick, created: new Date().toISOString() }); saveGen(); }
+  selectCase(pick.id);
+  setGenStatus(esc(why) + ' Here is a practice brief from the built-in set instead.');
+}
+async function generate() {
+  if (genCtl) return;
+  const iv = $('#g-issue').value, rv = $('#g-region').value;
+  const issue = iv === 'any' ? 1 + Math.floor(Math.random() * 3) : +iv;
+  const gqIndex = Math.floor(Math.random() * CONTENT[issue].length);
+  const region = rv === 'any' ? rand(REGIONS) : rv;
+  const btn = $('#genBtn');
+  btn.disabled = true;
+  setGenStatus(`<span class="spin" aria-hidden="true"></span> Finding a news issue from ${esc(region === 'Singapore' ? 'Singapore' : region)} on ${esc(issueName(issue))}…`);
+  const fn = sampleFn || await samplePromise;
+  if (!fn) {
+    btn.disabled = false;
+    practiceFallback(issue, 'Claude is not available on this page, so a new article cannot be generated.');
+    return;
+  }
+  genCtl = new AbortController();
+  setGenStatus(`<span class="spin" aria-hidden="true"></span> Claude is writing a news report from ${esc(region === 'Singapore' ? 'Singapore' : region)} on ${esc(issueName(issue))}. This can take up to a minute. <button class="linkbtn" id="genStop" type="button">Stop</button>`);
+  $('#genStop').onclick = () => genCtl?.abort();
+  const avoid = genCases.filter(c => c.place).slice(0, 6).map(c => c.place);
+  try {
+    const j = await fn.json(genPrompt(issue, gqIndex, region, avoid), { signal: genCtl.signal, cache: false });
+    const c = fromGenerated(j, issue);
+    genCases.unshift(c); saveGen();
+    selectCase(c.id);
+    setGenStatus(`New article from ${esc(c.place || region)}. Read it, then choose the concepts you see.`);
+  } catch (e) {
+    const code = e?.code;
+    if (code === 'cancelled') setGenStatus('Stopped.');
+    else if (code === 'not_granted') { sampleFn = null; samplePromise = Promise.resolve(null); practiceFallback(issue, 'Claude was not allowed on this page.'); }
+    else if (code === 'rate_limited') setGenStatus('Too many requests right now. Wait a minute, then try again.', true);
+    else if (code === 'session_expired') setGenStatus('Your Claude session has expired. Sign in again and reload the page.', true);
+    else if (code === 'invalid_json' || e?.message === 'shape') setGenStatus('The article came back incomplete. Try generating again.', true);
+    else setGenStatus('Claude could not write an article this time. Try again in a moment.', true);
+  } finally {
+    genCtl = null; btn.disabled = false;
+  }
+}
+
+/* ---------- Ask Claude for feedback ---------- */
 let aiCtl = null;
 function buildPrompt() {
   const c = getCase(currentId); const sents = sentences(c);
-  const concepts = CONCEPTS.map(k => `- ${k.name} (Issue ${k.issue}: ${ISSUES[k.issue].name}): ${k.pts.map(p => p[1]).join('; ')}`).join('\n');
+  const concepts = [1, 2, 3].map(n => `${issueName(n)}: concepts ${CONCEPTS.filter(k => k.issue === n).map(k => k.name).join(', ')}.\n` +
+    CONTENT[n].map((g, gi) => `  Guiding Question ${gi + 1}: ${g.gq}`).join('\n')).join('\n');
   const model = hasModel(c)
     ? 'MODEL ANSWER (for your reference only; give hints, do not copy it out):\n' +
-      c.model.core.map(m => `- Key: ${CMAP[m.c].name}, sentences ${m.ev.map(i => i + 1).join(', ')}: ${m.why}`).join('\n') +
+      c.model.core.map(m => `- Key: ${CMAP[m.c].name}, sentences ${m.ev.map(i => i + 1).join(', ') || 'n/a'}: ${m.why}`).join('\n') +
       ((c.model.also || []).length ? '\n' + c.model.also.map(a => `- Also relevant: ${CMAP[a.c].name}: ${a.why}`).join('\n') : '')
     : 'There is no model answer for this article. Judge the analysis against the syllabus yourself.';
-  const mine = ans.picks.map(p => `- ${CMAP[p.c].name}\n  Evidence sentences: ${p.ev.map(i => i + 1).join(', ') || 'none'}\n  Syllabus points: ${p.pts.map(id => PMAP[id]).join('; ') || 'none'}\n  Explanation: ${(p.why || '').trim() || '(blank)'}`).join('\n');
-  return `You are a Singapore secondary school Social Studies teacher giving feedback to a G3 student (SEAB syllabus K336). The student read a news issue and identified Social Studies concepts in it, with evidence and explanations.
+  const mine = ans.picks.map(p => `- ${CMAP[p.c].name}\n  Evidence sentences: ${p.ev.map(i => i + 1).join(', ') || 'none'}\n  Syllabus content: ${p.pts.map(ptLabel).join('; ') || 'none'}\n  Explanation: ${(p.why || '').trim() || '(blank)'}`).join('\n');
+  return `You are a Singapore secondary school Social Studies teacher giving feedback to a G3 student (SEAB syllabus K336). The student read a news report and identified Social Studies concepts in it, with evidence and explanations.
 
-SYLLABUS CONCEPTS AND CONTENT:
+SYLLABUS ISSUES, CONCEPTS AND GUIDING QUESTIONS:
 ${concepts}
 
-NEWS ISSUE: ${c.title}
+NEWS REPORT: ${c.title}${c.place ? ' (' + c.place + ')' : ''}
 ${sents.map(s => `${s.i + 1}. ${s.text}`).join('\n')}
 
 ${model}
@@ -920,7 +1187,7 @@ ${model}
 STUDENT'S ANALYSIS:
 ${mine}
 
-Write feedback in plain text with no markdown symbols (no #, *, or bullet characters). For each concept the student chose, start a new paragraph with the concept name and a colon, then write 1 to 3 sentences: is it relevant, is the evidence well chosen, and how could the explanation be sharper (for example, explain how the evidence shows the concept, or use the syllabus terms). Then, in one short paragraph, hint at up to two important concepts they missed without giving the full answer. End with one sentence of encouragement. Keep it under 250 words and use simple English suitable for a 14-year-old.`;
+Write feedback in plain text with no markdown symbols (no #, *, or bullet characters). Use the syllabus wording for Issues, concepts and content. For each concept the student chose, start a new paragraph with the concept name and a colon, then write 1 to 3 sentences: is it relevant, is the evidence well chosen, and how could the explanation be sharper (for example, explain how the evidence shows the concept, or use the syllabus terms). Then, in one short paragraph, hint at up to two important concepts they missed without giving the full answer. End with one sentence of encouragement. Keep it under 250 words and use simple English suitable for a 14-year-old.`;
 }
 async function askClaude() {
   if (!sampleFn) return;
@@ -948,14 +1215,14 @@ function openForm() {
   const f = $('#addForm');
   const opts = `<option value="">Not relevant</option><option value="core">Key concept</option><option value="also">Also relevant</option>`;
   f.innerHTML = `
-    <div><div class="lbl">New news issue</div><h2 id="addTitle">Add a news article</h2>
+    <div><div class="lbl">Your own article</div><h2 id="addTitle">Add a news article</h2>
     <p class="muted" style="margin:6px 0 0;max-width:70ch">Paste the article text (or a summary). The page splits it into numbered sentences. Filling in the model answer is optional. Without it, the Check button gives a completeness check only.</p></div>
     <div class="fgrid">
       <div class="field"><label for="f-title">Headline</label><input type="text" id="f-title" maxlength="140" required></div>
       <div class="field"><label for="f-source">Source and date</label><input type="text" id="f-source" maxlength="120" placeholder="e.g. The Straits Times, 12 Sep 2026"></div>
       <div class="field"><label for="f-url">Link to the article (optional)</label><input type="url" id="f-url" placeholder="https://"></div>
-      <fieldset class="field"><legend>Main Issue(s)</legend><div class="checks">
-        ${[1, 2, 3].map(n => `<label><input type="checkbox" id="f-focus-${n}" value="${n}"> Issue ${n} · ${ISSUES[n].short}</label>`).join('')}</div></fieldset>
+      <fieldset class="field"><legend>Main Issue(s)</legend><div class="checks" style="display:grid;gap:4px">
+        ${[1, 2, 3].map(n => `<label><input type="checkbox" id="f-focus-${n}" value="${n}"> ${esc(issueName(n))}</label>`).join('')}</div></fieldset>
     </div>
     <div class="field"><label for="f-text">Article text</label><textarea id="f-text" style="min-height:160px" placeholder="Leave a blank line between paragraphs."></textarea></div>
     <fieldset class="field"><legend>Model answer (optional)</legend>
@@ -1003,43 +1270,47 @@ $('#addForm').addEventListener('click', async e => {
       localCases.push(c); store.set('cl:local', localCases); selectCase(c.id);
     }
   } catch (x) {
-    err.textContent = x?.code === 'quota_exceeded' ? 'The shared article list is full. Delete an old article, then try again.'
+    err.textContent = x?.code === 'quota_exceeded' ? 'The shared article list is full. Remove an old article, then try again.'
       : 'The article could not be shared. Check your connection and try again, or untick sharing to keep it on this device.';
   } finally { btn.disabled = false; }
 });
 
 let delArmed = false;
 async function deleteCase(btn) {
-  if (!delArmed) { delArmed = true; btn.textContent = 'Click again to delete'; setTimeout(() => { delArmed = false; if (btn.isConnected) btn.textContent = 'Delete this article'; }, 3000); return; }
+  if (!delArmed) { delArmed = true; btn.textContent = 'Click again to remove'; setTimeout(() => { delArmed = false; if (btn.isConnected) btn.textContent = 'Remove this article'; }, 3000); return; }
   delArmed = false;
-  const c = getCase(currentId);
+  const c = getCase(currentId); if (!c) return;
   if (c.kind === 'local') { localCases = localCases.filter(x => x.id !== c.id); store.set('cl:local', localCases); }
-  else if (c.kind === 'teacher' && db) {
+  else if (c.kind === 'teacher') {
+    if (!db) return;
     try { await db.doc('issues/' + c.dbId).delete(); sharedCases = sharedCases.filter(x => x.id !== c.id); }
-    catch { btn.textContent = 'Could not delete. Try again.'; return; }
-  }
+    catch { btn.textContent = 'Could not remove. Try again.'; return; }
+  } else { genCases = genCases.filter(x => x.id !== c.id); saveGen(); }
   store.del('cl:ans:' + c.id);
-  selectCase(CASES[0].id);
+  selectCase(allCases()[0]?.id || null);
 }
 
 /* ---------- Syllabus reference ---------- */
 $('#ref').innerHTML = [1, 2, 3].map(n => `
-  <details style="${cvar(n)}" ${n === 1 ? '' : ''}>
-    <summary>Issue ${n}: ${ISSUES[n].name}</summary>
-    <p class="inq">${ISSUES[n].inq}</p>
-    <div class="lbl">Key understandings</div>
-    <ul>${ISSUES[n].ku.map(k => `<li>${k}</li>`).join('')}</ul>
-    <div class="cgrid">${CONCEPTS.filter(k => k.issue === n).map(k => `<div><h3>${k.name}</h3><p>${k.def}</p><ul>${k.pts.map(p => `<li>${p[1]}</li>`).join('')}</ul></div>`).join('')}</div>
+  <details style="${cvar(n)}">
+    <summary>${esc(issueName(n))}</summary>
+    <p class="inq">Inquiry Focus: ${esc(ISSUES[n].inq)}</p>
+    <div class="cols">
+      <div><div class="lbl">Key Understandings</div><ul>${ISSUES[n].ku.map(k => `<li>${esc(k)}</li>`).join('')}</ul>
+        <div class="lbl" style="margin-top:10px">Concepts</div><ul>${CONCEPTS.filter(k => k.issue === n).map(k => `<li>${k.name}</li>`).join('')}</ul></div>
+      <div><div class="lbl">Guiding Questions and Content</div>${treeHtml(n, null)}</div>
+    </div>
   </details>`).join('');
 
 /* ---------- Boot ---------- */
-if (!allCases().some(c => c.id === currentId)) currentId = CASES[0].id;
+if (currentId && !allCases().some(c => c.id === currentId) && !currentId.startsWith('db-')) currentId = null;
 ans = loadAns(currentId);
 render();
 
 (async () => {
   const use = window.claude && typeof window.claude.use === 'function' ? n => window.claude.use(n).catch(() => null) : async () => null;
-  const [dbNs, userNs, sampleNs] = await Promise.all([use('db'), use('user'), use('sample')]);
+  samplePromise = use('sample');
+  const [dbNs, userNs, sampleNs] = await Promise.all([use('db'), use('user'), samplePromise]);
   if (sampleNs) { sampleFn = sampleNs; const box = $('#aiBox'); if (box) box.hidden = false; }
   if (dbNs) {
     db = dbNs;
@@ -1050,12 +1321,11 @@ render();
         return { ...x, id: 'db-' + d.id, dbId: d.id, kind: 'teacher',
           title: String(x.title || 'Untitled'), body: Array.isArray(x.body) ? x.body.map(p => (Array.isArray(p) ? p : []).map(String)) : [],
           focus: Array.isArray(x.focus) ? x.focus.filter(n => ISSUES[n]) : [1],
-          model: x.model && Array.isArray(x.model.core) ? { core: x.model.core.filter(m => CMAP[m.c]).map(m => ({ ...m, ev: Array.isArray(m.ev) ? m.ev : [], pts: Array.isArray(m.pts) ? m.pts : [] })), also: (x.model.also || []).filter(a => CMAP[a.c]) } : null };
+          model: x.model && Array.isArray(x.model.core) ? { core: x.model.core.filter(m => CMAP[m.c]).map(m => ({ ...m, ev: Array.isArray(m.ev) ? m.ev : [], pts: Array.isArray(m.pts) ? m.pts.filter(p => PMAP[p]) : [] })), also: (x.model.also || []).filter(a => CMAP[a.c]) } : null };
       }).sort((a, b) => String(b.created || '').localeCompare(String(a.created || '')));
-      if (currentId.startsWith('db-') && !sharedCases.some(c => c.id === currentId)) { selectCase(CASES[0].id); return; }
-      renderPicker();
-      if (currentId.startsWith('db-')) renderArticle();
+      if (currentId && currentId.startsWith('db-') && !sharedCases.some(c => c.id === currentId)) { selectCase(null); return; }
+      if (currentId && currentId.startsWith('db-') && !$('#news .body')) render(); else renderControls();
     }, () => {});
-  }
+  } else if (currentId && currentId.startsWith('db-')) { selectCase(null); }
 })();
 </script>
