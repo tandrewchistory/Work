@@ -78,16 +78,18 @@
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); display: inline-block; flex: none; }
 
   /* Generator */
-  .gen { margin-bottom: 20px; display: grid; gap: 12px; }
+  .gen { margin-bottom: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .gen select { width: 100%; min-width: 0; max-width: 100%; }
   .gen-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
   .gen-row .field { flex: 1 1 240px; }
   .gen-row .btn { flex: 0 0 auto; padding: 11px 20px; }
+  .gen-alt { margin-top: -4px; }
   .gen-status { margin: 0; font-size: 14px; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-height: 1.4em; }
   .gen-status.err { color: var(--miss); }
   .spin { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .gen-row2 { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
-  .gen-row2 select { flex: 1 1 260px; max-width: 520px; border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); }
+  .gen-row2 select { flex: 1 1 260px; width: auto; max-width: 520px; border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 8px; background: var(--bg); }
 
   /* Workspace */
   .work { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -222,9 +224,9 @@
   <header class="mast">
     <div class="lbl">G3 Humanities · Social Studies · Syllabus K336 (2027)</div>
     <h1>Concept Lens <span>for issues in the news</span></h1>
-    <p>Generate a news article from somewhere in the world. Find the Social Studies concepts inside it, back each one with evidence from the text, then check your analysis.</p>
+    <p>Get a random news article from somewhere in the world. Find the Social Studies concepts inside it, back each one with evidence from the text, then check your analysis.</p>
     <ol class="steps">
-      <li>Generate a news article</li>
+      <li>Get a random news article</li>
       <li>Choose the concepts you see</li>
       <li>Tap sentences as evidence</li>
       <li>Link to the syllabus and explain</li>
@@ -232,12 +234,13 @@
     </ol>
   </header>
 
-  <section class="panel gen" aria-label="Generate a news article">
+  <section class="panel gen" aria-label="Get a news article">
     <div class="gen-row">
       <div class="field"><label for="g-issue">Issue</label><select id="g-issue"></select></div>
       <div class="field"><label for="g-region">Where in the world</label><select id="g-region"></select></div>
-      <button class="btn" id="genBtn" type="button">Generate a news article</button>
+      <button class="btn" id="genBtn" type="button">Get a news article</button>
     </div>
+    <div class="gen-alt"><button class="linkbtn" id="writeBtn" type="button" hidden>Or ask Claude to write a new article on this Issue (uses your Claude account)</button></div>
     <p class="gen-status" id="genStatus" role="status"></p>
     <div class="gen-row2">
       <label for="g-saved">Your articles</label>
@@ -279,7 +282,7 @@
   </section>
 
   <footer>
-    Issue titles, inquiry focuses, key understandings, concepts, guiding questions and content follow the SEAB G3 Humanities (Social Studies) syllabus K336 for 2027. The one-line concept descriptions are simplified for students. Generated articles are written by Claude from real-world issues it knows about. They can contain mistakes, so check them against the linked search for real coverage. Your work on this page is saved in this browser only.
+    Issue titles, inquiry focuses, key understandings, concepts, guiding questions and content follow the SEAB G3 Humanities (Social Studies) syllabus K336 for 2027. The one-line concept descriptions are simplified for students. Each article is a short summary of a real news report, written in simple English for this exercise, with a link to the full report. Articles written by Claude on request can contain mistakes, so check them against real coverage. Your work on this page is saved in this browser only.
   </footer>
 </div>
 
@@ -436,235 +439,575 @@ const CONCEPTS = [
 const CMAP = Object.fromEntries(CONCEPTS.map(c => [c.id, c]));
 
 
-/* ---------- Built-in practice briefs (used when Claude cannot generate an article) ---------- */
-const CASES = [
-  { id: 'tariffs', title: 'Tariff hikes put jobs and growth at risk', focus: [3, 1], kind: 'practice', place: 'Singapore',
-    search: 'Singapore tariffs economy jobs taskforce',
+/* ---------- Real news pool ----------
+   Each entry summarises a real news report in simple English for this exercise and links to the report.
+   Sentence numbers in "ev" start from 0. */
+const NEWS = [
+  /* Issue 1: Exploring Citizenship and Governance */
+  { id: 'au-social-ban', title: 'Australia bans social media for under-16s', place: 'Australia', region: 'Oceania and the Pacific', period: 'December 2025',
+    source: 'Associated Press (via KUOW), 10 Dec 2025', url: 'https://www.kuow.org/stories/social-media-ban-for-children-under-16-starts-in-australia', focus: [1, 3],
     body: [[
-      'A major trading partner has announced higher tariffs on a wide range of imported goods, and economists warn that Singapore\'s growth could slow this year.',
-      'Singapore\'s total trade is several times the size of its whole economy, so decisions made in other countries quickly affect firms here.',
-      'Several manufacturers, including foreign multinational corporations with factories in Singapore, say they are reviewing plans to expand.'
+      'Australia\'s ban on social media accounts for children under 16 took effect on 10 December 2025, the first law of its kind in the world.',
+      'Platforms such as TikTok, Instagram, Snapchat, YouTube and X must take reasonable steps to remove the accounts of Australian children under 16.',
+      'Companies that fail to do so face fines of up to 49.5 million Australian dollars.'
     ], [
-      'Some workers in electronics and logistics worry that their jobs could be cut.',
-      'The government has set up a taskforce with unions and businesses to help firms manage rising costs and to help workers keep their jobs or find new ones.',
-      'Workers are being encouraged to use their training credits to learn new skills such as data analytics.',
-      'Some business owners say support schemes use public money that could be spent elsewhere, while unions argue that protecting livelihoods must come first.'
+      'Prime Minister Anthony Albanese welcomed the ban as a way for families to take back power from tech companies, but warned that it would be difficult to carry out.',
+      'Some parents said the ban could not come soon enough because of online bullying and harmful content.',
+      'Other parents worried that their children would be left out when friends kept chatting and planning activities online.',
+      'Some teenagers said they had fooled the age-checking technology, and several other countries have said they are considering similar rules.'
     ]],
     model: {
       core: [
-        { c: 'globalisation', ev: [0, 2, 3], pts: ['3-growth', '3-jobs', '3-mnc', '3-skills'],
-          why: 'The tariffs show an economic impact of globalisation. Singapore faces economic vulnerability (slower growth), MNCs may not expand here, and workers face job challenges. Training in new skills is an individual response.' },
-        { c: 'interdependence', ev: [0, 1], pts: ['3-growth'],
-          why: 'Singapore relies on trading partners to buy its exports. Because trade is so large compared to its economy, another country\'s tariff decision affects Singapore\'s growth and jobs.' },
-        { c: 'governance', ev: [4], pts: ['1-wellbeing', '1-needs-soc'],
-          why: 'The government acts on its role to ensure the economic well-being of citizens. It gives support and works with unions and businesses to protect jobs.' },
-        { c: 'tradeoffs', ev: [6], pts: ['1-priorities', '1-costs', '1-tradeoffs'],
-          why: 'Groups have differing priorities. Spending public money on support means less money for other needs, while unions put jobs first. Deciding how much to spend is a trade-off.' }
+        { c: 'governance', ev: [0, 1, 2, 3], pts: ['1-makes', '1-implements', '1-wellbeing'],
+          why: 'The government made a law and enforces it with large fines. It aims to ensure the social well-being of children by protecting them from harm online.' },
+        { c: 'tradeoffs', ev: [4, 5], pts: ['1-needs', '1-priorities', '1-tradeoffs'],
+          why: 'Protecting children\'s safety means giving up some freedom and social connection. Parents and teenagers have differing needs and priorities, so the ban is a trade-off.' },
+        { c: 'globalisation', ev: [1, 6], pts: ['3-digital', '3-mnc'],
+          why: 'The platforms are multinational corporations whose digital technology reaches children across the world. Other countries are watching how Australia responds.' }
       ],
       also: [
-        { c: 'interconnectedness', why: 'Global supply chains link firms in many countries, so a tariff in one place spreads to factories and workers here (sentences 2 and 3).' },
-        { c: 'citizenship', why: 'Workers who retrain are taking responsibility for their own future, part of citizens and government working together (sentence 6).' }
+        { c: 'citizenship', why: 'Parents and teenagers share their views on a public issue, which is part of civic participation (sentences 5 and 6).' },
+        { c: 'interconnectedness', why: 'Other countries considering similar rules shows how one country\'s decision can influence others (sentence 7).' }
       ]
     },
-    question: '"Government support is the most important way to respond to the economic impacts of globalisation." Do you agree? Explain your answer.' },
+    question: '"Governments should protect young people from harm online, even if it limits their freedom." Do you agree? Explain your answer.' },
 
-  { id: 'harmony-law', title: 'New law to protect racial harmony', focus: [2, 1], kind: 'practice', place: 'Singapore',
-    search: 'Maintenance of Racial Harmony Act Singapore',
+  { id: 'ke-finance-bill', title: 'Kenya\'s president drops tax bill after youth-led protests', place: 'Nairobi, Kenya', region: 'Africa', period: 'June 2024',
+    source: 'Al Jazeera, 26 Jun 2024', url: 'https://www.aljazeera.com/news/2024/6/26/activists-call-for-new-protests-in-kenya-following-deadly-police-crackdown', focus: [1],
     body: [[
-      'Parliament has passed a new law that brings together Singapore\'s rules for protecting racial harmony into a single Act.',
-      'The law allows the government to issue orders to stop people from spreading content that could stir up hostility between racial groups.',
-      'It also limits foreign influence over race-based organisations in Singapore.'
+      'In June 2024, Kenya\'s parliament passed a finance bill that included new tax increases.',
+      'Young Kenyans, many of them from Generation Z, led protests against the bill across the country.',
+      'The protests began peacefully but turned violent when police fired live bullets at crowds outside parliament, and part of the parliament building was ransacked and set on fire.',
+      'More than 20 people were killed in the clashes.'
     ], [
-      'Supporters say the law is needed because content online spreads quickly and can harden stereotypes before anyone corrects them.',
-      'Some community groups asked for clear guidelines so that honest conversations about race are not discouraged.',
-      'The law also offers a restorative option, where a person who has caused offence can make amends through dialogue and learning about another community.',
-      'Community leaders say laws alone cannot create harmony, and that everyday friendships across races matter just as much.'
+      'President William Ruto then announced that he would not sign the bill and that it would be withdrawn.',
+      '"I concede," he told a press briefing.',
+      'Even after the bill was withdrawn, many protesters kept marching, now demanding greater political accountability and transparency.'
     ]],
     model: {
       core: [
-        { c: 'harmony', ev: [0, 5, 6], pts: ['2-integ', '2-sc-citizens'],
-          why: 'The law is a government response to diversity that aims to keep harmony. The restorative option and everyday friendships show that citizens also help build harmony by respecting differences.' },
-        { c: 'diversity', ev: [1, 3], pts: ['2-stereo'],
-          why: 'Living in a diverse society can lead to stereotypes, prejudice and hostility between groups, especially when content spreads quickly online.' },
-        { c: 'governance', ev: [0, 1], pts: ['1-makes', '1-implements', '1-order'],
-          why: 'Parliament makes and passes laws, and the government enforces them to maintain law and order.' },
-        { c: 'identity', ev: [1, 2], pts: ['2-race'],
-          why: 'Race and ethnicity are factors that shape people\'s identities, and the law protects racial groups and race-based organisations.' }
+        { c: 'citizenship', ev: [1, 6], pts: ['1-civic', '1-influence'],
+          why: 'Young citizens took part in public affairs by protesting and demanding accountability. Their actions influenced the president\'s decision.' },
+        { c: 'governance', ev: [0, 2, 4], pts: ['1-makes', '1-order', '1-leadership'],
+          why: 'Parliament makes and passes laws, and the president decides whether to sign them. The government must maintain law and order, and how it responds to citizens tests its leadership.' },
+        { c: 'tradeoffs', ev: [0, 1, 4], pts: ['1-costs', '1-priorities', '1-tradeoffs'],
+          why: 'The government wanted more tax revenue, but many citizens felt the costs fell unfairly on them. Withdrawing the bill meant giving up that revenue to respond to their concerns.' }
+      ],
+      also: []
+    },
+    question: 'Explain why citizens\' participation is important in helping a government decide what is good for society.' },
+
+  { id: 'id-free-meals', title: 'Indonesia launches free meals for millions of children', place: 'Indonesia', region: 'Southeast Asia', period: 'January 2025',
+    source: 'NPR, 6 Jan 2025', url: 'https://www.npr.org/2025/01/06/g-s1-41145/indonesia-free-meals-stunting', focus: [1, 2],
+    body: [[
+      'In January 2025, Indonesia began a free meals programme that aims to eventually feed nearly 90 million schoolchildren and pregnant women.',
+      'The programme was a campaign promise of President Prabowo Subianto.',
+      'Its main goal is to fight malnutrition and stunting, a condition in which children do not grow properly because of poor nutrition.'
+    ], [
+      'Supporters say healthier children will learn better and grow into a more productive workforce.',
+      'Critics question whether the country can afford such a large programme.',
+      'Some economists warn that paying for it could mean more government borrowing or less money for other needs.'
+    ]],
+    model: {
+      core: [
+        { c: 'governance', ev: [0, 1, 2], pts: ['1-wellbeing', '1-change'],
+          why: 'The government is ensuring the social well-being of citizens by providing nutritious meals. Investing in children\'s health also shows it anticipating the country\'s future needs.' },
+        { c: 'tradeoffs', ev: [4, 5], pts: ['1-priorities', '1-costs', '1-tradeoffs'],
+          why: 'Money spent on free meals cannot be used for other needs, and borrowing creates future costs. Leaders must weigh these differing priorities.' },
+        { c: 'diversity', ev: [2, 3], pts: ['2-ses', '2-govfin'],
+          why: 'Children from poorer families are more likely to suffer from poor nutrition. A free programme paid for by the state is a government-financed approach to socio-economic diversity.' }
       ],
       also: [
-        { c: 'tradeoffs', why: 'Protecting harmony may limit some speech. Community groups want honest discussion to continue (sentence 5).' },
-        { c: 'citizenship', why: 'Community groups gave feedback on the law, which is civic participation (sentence 5).' },
-        { c: 'globalisation', why: 'Foreign influence and fast-spreading online content come from a connected world (sentences 3 and 4).' }
+        { c: 'citizenship', why: 'The programme fulfils a campaign promise, showing how citizens\' votes shape what governments do (sentence 2).' }
+      ]
+    },
+    question: 'Explain why governments may find it difficult to decide what is good for society. Use examples to support your answer.' },
+
+  { id: 'us-congestion', title: 'New York starts charging drivers to enter central Manhattan', place: 'New York City, United States', region: 'North America', period: 'January 2025',
+    source: 'ABC7 New York, 5 Jan 2025', url: 'https://abc7ny.com/15757042', focus: [1],
+    body: [[
+      'On 5 January 2025, New York City became the first city in the United States to charge drivers a congestion toll.',
+      'Most drivers now pay US$9 to enter Manhattan south of 60th Street during peak hours.',
+      'The aim is to reduce traffic jams and raise money to improve the city\'s public transport.'
+    ], [
+      'Emergency vehicles and school buses are exempt, and low-income drivers can get a 50% discount after their tenth toll each month.',
+      'Some activists in the Bronx worry that drivers avoiding the toll will bring more traffic and pollution to their neighbourhood.',
+      'Transport officials promised money for air filters and an asthma clinic, but some residents fear this will not be enough.',
+      'Donald Trump, who was about to become president, had said he wanted to end the scheme.'
+    ]],
+    model: {
+      core: [
+        { c: 'tradeoffs', ev: [1, 2, 4, 5], pts: ['1-needs', '1-costs', '1-tradeoffs'],
+          why: 'Drivers pay more so that the city gets less traffic and better public transport. Some groups, such as Bronx residents, may bear more of the costs, which is unequal sharing of costs.' },
+        { c: 'governance', ev: [0, 2, 3], pts: ['1-implements', '1-wellbeing', '1-stake'],
+          why: 'The government implements the toll to improve citizens\' well-being. Exemptions and discounts for low-income drivers try to give everyone a stake.' },
+        { c: 'citizenship', ev: [4, 5], pts: ['1-civic', '1-influence'],
+          why: 'Bronx activists speak up about how the scheme affects their community. This civic participation can influence decisions.' }
+      ],
+      also: [
+        { c: 'diversity', why: 'The discount for low-income drivers shows a policy responding to socio-economic differences (sentence 4).' }
+      ]
+    },
+    question: 'Explain the challenges a government faces in deciding what is good for society. Use examples to support your answer.' },
+
+  { id: 'sg-ge2025', title: 'Singapore votes in its first election under Prime Minister Lawrence Wong', place: 'Singapore', region: 'Singapore', period: 'May 2025',
+    source: 'Al Jazeera, 3 May 2025', url: 'https://www.aljazeera.com/news/2025/5/3/governing-party-set-for-solid-win-in-singapore-vote-opposition-holds-firm', focus: [1],
+    body: [[
+      'Singaporeans voted in a general election on 3 May 2025, the first led by Prime Minister Lawrence Wong.',
+      'Surveys before the election found that the cost of living, jobs and housing were among voters\' top concerns.',
+      'Parties held rallies and shared their plans, and candidates met residents in their neighbourhoods.'
+    ], [
+      'The People\'s Action Party won 87 of the 97 seats in Parliament, with about 65.6% of the valid votes.',
+      'The Workers\' Party kept its 10 seats and remained the main opposition party.',
+      'The ruling party had asked voters for a clear mandate to steer Singapore through global economic uncertainty.'
+    ]],
+    model: {
+      core: [
+        { c: 'citizenship', ev: [0, 1, 2], pts: ['1-legal', '1-civic'],
+          why: 'Voting is a right and an obligation of Singapore citizens. By voting on the issues they care about, citizens take part in public affairs.' },
+        { c: 'governance', ev: [3, 5], pts: ['1-leadership', '1-change'],
+          why: 'Elections decide who governs. Voters look for good leadership that can anticipate change and keep the country stable.' }
+      ],
+      also: [
+        { c: 'tradeoffs', why: 'Voters had differing priorities, such as the cost of living, jobs and housing (sentence 2).' },
+        { c: 'interdependence', why: 'Global economic uncertainty matters to Singapore because it depends on other countries for trade (sentence 6).' }
+      ]
+    },
+    question: 'Explain why it is important for citizens to participate in public affairs. Use examples from Singapore.' },
+
+  { id: 'mx-judges', title: 'Mexicans elect their judges for the first time', place: 'Mexico', region: 'Latin America and the Caribbean', period: 'June 2025',
+    source: 'Americas Society/Council of the Americas, 2025', url: 'https://as-coa.org/articles/six-facts-understand-mexicos-2025-judicial-elections', focus: [1],
+    body: [[
+      'On 1 June 2025, Mexico held its first-ever election for judges, including all nine Supreme Court justices.',
+      'It was the first time any country had elected all its national judges by popular vote.',
+      'The government said that letting citizens choose judges would make the courts more democratic.',
+      'Critics warned that elected judges might be less independent from politicians.'
+    ], [
+      'Only about 13% of eligible voters took part, one of the lowest turnouts recorded for an election in Latin America.',
+      'About 12% of the ballots cast were blank or invalid.',
+      'Observers blamed confusion over how to vote and a lack of information about the many candidates.'
+    ]],
+    model: {
+      core: [
+        { c: 'citizenship', ev: [4, 5, 6], pts: ['1-legal', '1-civic'],
+          why: 'Voting is a right of citizens, but very few took part. Low civic participation raises questions about whether the results reflect what citizens want.' },
+        { c: 'governance', ev: [0, 1, 2, 3], pts: ['1-interprets', '1-leadership'],
+          why: 'Judges interpret and apply laws. The change affects how this part of government works and whether it will be led by capable, independent people.' },
+        { c: 'tradeoffs', ev: [2, 3], pts: ['1-priorities', '1-tradeoffs'],
+          why: 'Making judges answer to voters may reduce their independence. Mexico had to weigh these differing priorities.' }
+      ],
+      also: []
+    },
+    question: '"The low turnout shows that citizens do not care about how their country is governed." Do you agree? Explain your answer.' },
+
+  /* Issue 2: Living in a Diverse Society */
+  { id: 'fr-abaya', title: 'French schools send girls home under abaya ban', place: 'France', region: 'Europe', period: 'September 2023',
+    source: 'AFP (via The Guardian Nigeria), 5 Sep 2023', url: 'https://guardian.ng/news/french-schools-refuse-dozens-of-girls-wearing-muslim-dress/', focus: [2],
+    body: [[
+      'In August 2023, France\'s education minister announced that pupils could no longer wear the abaya, a long, loose robe worn by some Muslim women and girls, in state schools.',
+      'The government said the ban upholds secularism, the principle that state schools should be free of religious symbols.',
+      'France had already banned Muslim headscarves in schools for the same reason.',
+      'On the first day of the school year, nearly 300 girls arrived wearing abayas, and 67 who refused to change were sent home.'
+    ], [
+      'Politicians on the right and a head teachers\' union welcomed the clear rules.',
+      'Critics, including left-wing politicians and rights groups, called the ban discriminatory against Muslim girls.',
+      'The minister said schools would hold a dialogue with the families of girls who kept wearing the robe.'
+    ]],
+    model: {
+      core: [
+        { c: 'harmony', ev: [0, 1, 6], pts: ['2-assim'],
+          why: 'France expects everyone to follow the same secular rules at school. This is an assimilationist policy, and the girls who refused show its tensions.' },
+        { c: 'identity', ev: [0, 3], pts: ['2-religion'],
+          why: 'The abaya is linked to some pupils\' religion, which is a factor that shapes their identity.' },
+        { c: 'diversity', ev: [3, 5], pts: ['2-interact', '2-stereo'],
+          why: 'Schools are a common space where people of different backgrounds interact. Critics feel the ban treats Muslim girls unfairly, which raises concerns about discrimination.' }
+      ],
+      also: [
+        { c: 'governance', why: 'The government makes and enforces rules for state schools (sentences 1 and 2).' },
+        { c: 'tradeoffs', why: 'Upholding secularism may limit some pupils\' freedom to express their religion (sentences 2 and 6).' }
+      ]
+    },
+    question: 'Which approach is more effective in achieving harmony in a diverse society: an assimilationist policy or an integration policy? Explain your answer.' },
+
+  { id: 'nz-treaty', title: 'Tens of thousands march against a bill on Māori treaty rights', place: 'Wellington, New Zealand', region: 'Oceania and the Pacific', period: 'November 2024 to 2025',
+    source: 'AFP (via Yahoo News), 2025', url: 'https://www.yahoo.com/news/zealand-parliament-votes-down-bill-150352232.html', focus: [2, 1],
+    body: [[
+      'The Treaty of Waitangi, signed in 1840 between the British Crown and Māori chiefs, is New Zealand\'s founding document.',
+      'In 2024, a small party in the government introduced a bill to redefine the treaty\'s principles, which guide how the government works with Māori.',
+      'Supporters said the bill would give everyone the same rights, but opponents said it would weaken Māori rights.'
+    ], [
+      'In November 2024, around 42,000 people marched to Parliament in Wellington in one of the country\'s largest protests, known as a hīkoi.',
+      'Inside Parliament, a Māori MP led a haka and tore up a copy of the bill.',
+      'In 2025, Parliament voted down the bill by a large majority, with only the party that proposed it voting in favour.'
+    ]],
+    model: {
+      core: [
+        { c: 'identity', ev: [0, 2, 3], pts: ['2-race'],
+          why: 'Māori identity is shaped by race and ethnicity and by their history with the treaty. Many people saw the bill as a threat to that identity.' },
+        { c: 'harmony', ev: [2, 3, 5], pts: ['2-sc-citizens', '2-integ'],
+          why: 'Citizens responded as individuals and community groups through a peaceful march. Rejecting the bill kept an approach that recognises Māori as a distinct group, which is closer to integration than assimilation.' },
+        { c: 'citizenship', ev: [3, 4], pts: ['1-civic', '1-influence'],
+          why: 'People took part in public affairs by marching and by speaking up in Parliament, which helped influence the decision.' }
+      ],
+      also: [
+        { c: 'diversity', why: 'Different groups hold different views about rights in a diverse society (sentence 3).' },
+        { c: 'governance', why: 'Parliament makes and passes, or rejects, laws (sentence 6).' }
+      ]
+    },
+    question: 'Explain how citizens can respond to diversity to achieve harmony in society.' },
+
+  { id: 'jp-foreign-workers', title: 'Japan\'s foreign workforce reaches a record high', place: 'Japan', region: 'East Asia', period: 'October 2025 figures',
+    source: 'Nippon.com, January 2026', url: 'https://www.nippon.com/en/japan-data/h02693/', focus: [2, 3],
+    body: [[
+      'Japan had about 2.6 million foreign workers in October 2025, a record high for the 13th year in a row.',
+      'The number rose by 11.7% compared with a year earlier.',
+      'Japan\'s population is ageing quickly, and many businesses cannot find enough local workers.'
+    ], [
+      'Workers from Vietnam formed the largest group, followed by those from China, the Philippines, Nepal and Indonesia.',
+      'The fastest growth was in hotels and restaurants and in medical and welfare services, such as caring for the elderly.',
+      'Foreign workers help to keep factories, shops and care homes running.',
+      'Japan is still working out how to help newcomers settle in, from learning the language to understanding local customs.'
+    ]],
+    model: {
+      core: [
+        { c: 'diversity', ev: [0, 3, 6], pts: ['2-interact', '2-knowledge'],
+          why: 'More workers from different countries make Japanese society more diverse. They bring knowledge and skills and interact with locals at work and in the community.' },
+        { c: 'interdependence', ev: [2, 3, 5], pts: ['3-jobs'],
+          why: 'Japan relies on workers from other countries to fill jobs, while the workers rely on Japan for employment opportunities.' },
+        { c: 'identity', ev: [3], pts: ['2-nationality'],
+          why: 'Nationality is a factor that shapes the identities of these workers and adds to diversity in Japan.' }
+      ],
+      also: [
+        { c: 'globalisation', why: 'The easier movement of people across borders for work is part of globalisation (sentence 4).' },
+        { c: 'harmony', why: 'Helping newcomers settle in supports harmony between locals and foreign workers (sentence 7).' },
+        { c: 'governance', why: 'An ageing society is a change that the government must anticipate (sentence 3).' }
+      ]
+    },
+    question: '"Foreign workers bring more benefits than challenges to a society." Do you agree? Explain your answer.' },
+
+  { id: 'in-caste-census', title: 'India will count caste in its next census', place: 'India', region: 'South Asia', period: 'April 2025',
+    source: 'The News Minute, 30 Apr 2025', url: 'https://www.thenewsminute.com/news/union-cabinet-approves-caste-enumeration-in-upcoming-census', focus: [2, 1],
+    body: [[
+      'On 30 April 2025, India\'s government announced that the next national census will record people\'s caste.',
+      'Caste is an old system of social groups that people are born into, and it can still affect their chances in education and jobs.',
+      'It will be the first time in decades that India counts caste in a nationwide census.',
+      'Opposition parties had long demanded a caste census, and it was a key issue in the 2024 national election.'
+    ], [
+      'The government said the count would help to empower economically and socially disadvantaged groups.',
+      'Supporters say accurate data will help target support, such as reserved places in universities and government jobs.',
+      'Some commentators worry that focusing on caste could deepen divisions between groups.'
+    ]],
+    model: {
+      core: [
+        { c: 'identity', ev: [1, 2], pts: ['2-ses'],
+          why: 'Caste is a group people are born into. It shapes their identity and is often linked to their socio-economic status.' },
+        { c: 'diversity', ev: [1, 4, 5], pts: ['2-stereo', '2-govfin'],
+          why: 'Differences in caste can lead to unequal treatment. Using census data to target government support is a response to socio-economic diversity.' },
+        { c: 'governance', ev: [0, 4], pts: ['1-wellbeing', '1-stake'],
+          why: 'The government decides what information to collect so that it can plan policies. It says the aim is to give disadvantaged groups a stake and opportunities.' }
+      ],
+      also: [
+        { c: 'harmony', why: 'Some worry that focusing on caste could deepen divisions, which could affect harmony (sentence 7).' },
+        { c: 'citizenship', why: 'Voters and opposition parties raised the issue during the election (sentence 4).' }
+      ]
+    },
+    question: 'Explain how differences in socio-economic status can affect people living in a diverse society.' },
+
+  { id: 'za-srd-grant', title: 'South Africa extends a grant for unemployed adults', place: 'South Africa', region: 'Africa', period: 'February 2026',
+    source: 'Business Day, 17 Feb 2026', url: 'https://www.businessday.co.za/news/2026-02-17-srd-grant-extended-for-another-year-with-no-increase-in-value/', focus: [2, 1],
+    body: [[
+      'South Africa has extended its Social Relief of Distress grant, a monthly payment of R370 to unemployed adults, until March 2027.',
+      'More than eight million people depend on the grant.',
+      'It will continue for another year with no increase in value.'
+    ], [
+      'The finance minister said the government is discussing linking support for working-age adults to skills training and job programmes.',
+      'Civil society groups warned that such conditions could exclude many people and deepen poverty.',
+      'The trade union federation Cosatu has called for the grant to be increased and adjusted for inflation.',
+      'The Treasury has said there is no fixed timeline for deciding what will replace the grant.'
+    ]],
+    model: {
+      core: [
+        { c: 'diversity', ev: [0, 1, 3, 4], pts: ['2-ses', '2-govfin', '2-shared'],
+          why: 'The grant helps people with low socio-economic status. It is a government-financed approach, and linking it to training would move towards a shared responsibility approach in which individuals also play a part.' },
+        { c: 'tradeoffs', ev: [2, 4, 5], pts: ['1-costs', '1-priorities', '1-tradeoffs'],
+          why: 'The government must balance the cost of the grant against other needs, while unions and civil society want more support. Each choice has costs for someone.' },
+        { c: 'governance', ev: [0, 3, 6], pts: ['1-wellbeing'],
+          why: 'The government ensures the social well-being of citizens by supporting people without jobs.' }
+      ],
+      also: [
+        { c: 'citizenship', why: 'Unions and civil society groups take part in public affairs by speaking up (sentences 5 and 6).' }
+      ]
+    },
+    question: 'Which approach is more effective in responding to socio-economic diversity: a government-financed approach or a shared responsibility approach? Explain your answer.' },
+
+  { id: 'sg-racial-harmony', title: 'Singapore passes a new law to protect racial harmony', place: 'Singapore', region: 'Singapore', period: 'February 2025',
+    source: 'Rajah & Tann Asia legal update, 2025', url: 'https://www.rajahtannasia.com/viewpoints/new-bill-introduced-in-parliament-to-maintain-racial-harmony-in-singapore/', focus: [2, 1],
+    body: [[
+      'In February 2025, Singapore\'s Parliament passed the Maintenance of Racial Harmony Act.',
+      'The law makes it an offence to stir up hatred or violence against a racial group, or to insult or abuse a person because of their race.',
+      'The Minister for Home Affairs can issue Restraining Orders to stop people from spreading content that threatens racial harmony.',
+      'The law also has safeguards to stop race-based organisations from being used for foreign influence.'
+    ], [
+      'It also offers a community-based approach, in which a person who has caused offence can make amends instead of being prosecuted.',
+      'Supporters say harmony in a multiracial society must be actively protected, not taken for granted.'
+    ]],
+    model: {
+      core: [
+        { c: 'harmony', ev: [0, 4, 5], pts: ['2-integ', '2-sc-citizens'],
+          why: 'The law is a government response to diversity that aims to protect harmony. The community-based approach encourages people to understand and respect other races.' },
+        { c: 'governance', ev: [0, 1, 2, 3], pts: ['1-makes', '1-order', '1-national'],
+          why: 'Parliament makes and passes laws, and the government enforces them to maintain law and order and protect national interests, for example against foreign influence.' },
+        { c: 'identity', ev: [1, 3], pts: ['2-race'],
+          why: 'Race and ethnicity shape people\'s identities in Singapore, and the law protects racial groups.' }
+      ],
+      also: [
+        { c: 'diversity', why: 'Insults based on race are a form of prejudice and discrimination that can arise in a diverse society (sentence 2).' },
+        { c: 'globalisation', why: 'Foreign influence on local groups is a concern in a connected world (sentence 4).' }
       ]
     },
     question: 'Explain why laws alone may not be enough to achieve harmony in a diverse society such as Singapore.' },
 
-  { id: 'cyber', title: 'Hackers target systems that run essential services', focus: [3, 1], kind: 'practice', place: 'Singapore',
-    search: 'Singapore cyber attack critical infrastructure',
+  /* Issue 3: Being Part of a Globalised World */
+  { id: 'red-sea-shipping', title: 'Red Sea attacks force ships on long detours', place: 'Red Sea', region: 'the Middle East', period: 'October 2024',
+    source: 'Al Jazeera, 5 Oct 2024', url: 'https://www.aljazeera.com/economy/2024/10/5/a-year-after-october-7-houthi-red-sea-attacks-still-torment-global-trade', focus: [3],
     body: [[
-      'Authorities revealed that a highly skilled group of hackers has been attacking computer systems that run essential services such as power and water.',
-      'Officials said the attackers were likely based overseas and had carried out similar attacks in other countries.',
-      'Singapore\'s cyber security agency worked with military cyber experts and private companies to contain the threat.'
+      'Since October 2023, Houthi rebels in Yemen have attacked ships in the Red Sea, a key route between Asia and Europe through the Suez Canal.',
+      'In more than 70 attacks, they sank two ships, seized another with its crew and killed at least three sailors.',
+      'Many shipping companies now sail around the Cape of Good Hope at the southern tip of Africa instead.'
     ], [
-      'The government said it would share information with partner countries to track the group.',
-      'Members of the public were reminded to update their devices and report suspicious messages, because one weak password can open a door into a larger network.',
-      'Experts noted that as more services are connected online, a single breach can affect many people at once.'
+      'The detour adds about 10 to 14 days to journeys and around US$1 million in extra fuel costs per trip.',
+      'Freight rates rose as much as threefold at some points, and insurance became more expensive.',
+      'Economists warned that higher shipping costs could push up prices for consumers around the world.',
+      'The longer routes have also produced millions of tonnes of extra carbon dioxide emissions.'
     ]],
     model: {
       core: [
-        { c: 'globalisation', ev: [0, 1, 5], pts: ['3-digital', '3-cyber'],
-          why: 'Cyber threats are a security impact of globalisation. Developments in digital technology let attackers overseas reach systems in Singapore.' },
-        { c: 'interconnectedness', ev: [1, 5], pts: ['3-digital', '3-cyber'],
-          why: 'Systems and countries are linked online, so an attack in one place can spread and affect many people at once.' },
-        { c: 'governance', ev: [2, 3], pts: ['1-order', '1-national'],
-          why: 'The government maintains law and order and protects national interests. It takes security measures and cooperates with other countries.' },
-        { c: 'citizenship', ev: [4], pts: ['1-civic'],
-          why: 'Individuals play their part by staying vigilant, updating devices and reporting suspicious messages.' }
+        { c: 'interdependence', ev: [0, 2, 5], pts: ['3-growth'],
+          why: 'Countries rely on one another for goods carried by sea. When a key route is disrupted, prices rise for consumers far away, which shows economic vulnerability.' },
+        { c: 'globalisation', ev: [0, 1, 4], pts: ['3-transport', '3-growth'],
+          why: 'Global trade depends on shipping routes and developments in transportation. Disruption to these routes creates economic vulnerability for many countries.' },
+        { c: 'interconnectedness', ev: [2, 3, 4, 5], pts: ['3-transport'],
+          why: 'Shipping links countries together, so an event in one region affects trade, costs and prices across the world.' }
       ],
       also: [
-        { c: 'interdependence', why: 'Countries rely on one another to share information and track attackers who work across borders (sentence 4).' }
+        { c: 'governance', why: 'Governments must protect their national interests, including safe trade routes (sentence 2).' }
+      ]
+    },
+    question: 'Explain why countries such as Singapore can be affected by conflicts far away. Use examples to support your answer.' },
+
+  { id: 'crowdstrike-outage', title: 'A faulty software update causes a worldwide tech outage', place: 'Worldwide', region: 'Worldwide', period: 'July 2024',
+    source: 'Associated Press (via KSAT), 19 Jul 2024', url: 'https://www.ksat.com/business/2024/07/19/a-massive-tech-outage-is-causing-worldwide-disruptions-heres-what-we-know/', focus: [3],
+    body: [[
+      'On 19 July 2024, a faulty software update from the cyber security company CrowdStrike crashed computers running Microsoft Windows around the world.',
+      'Thousands of flights were cancelled and tens of thousands delayed, with long queues at airports in the US, Europe and Asia.',
+      'Banks in South Africa and New Zealand reported problems with payments, and some television stations in Australia could not broadcast for hours.'
+    ], [
+      'Hospitals, small businesses and government offices were also disrupted.',
+      'CrowdStrike said the problem was not a cyberattack but a defect in a single update.',
+      'The outage showed how many organisations around the world depend on the same few technology companies.'
+    ]],
+    model: {
+      core: [
+        { c: 'interconnectedness', ev: [0, 1, 2, 3], pts: ['3-digital'],
+          why: 'Computers around the world are linked through the same software, so one faulty update affected people in many countries at once.' },
+        { c: 'globalisation', ev: [0, 5], pts: ['3-digital', '3-mnc'],
+          why: 'Developments in digital technology and a few multinational corporations connect businesses worldwide. This brings convenience but also vulnerability.' },
+        { c: 'interdependence', ev: [5], pts: ['3-growth'],
+          why: 'Airlines, banks and hospitals in many countries rely on the same companies, so a problem at one company affects everyone who depends on it.' }
+      ],
+      also: [
+        { c: 'governance', why: 'Governments need to protect essential services such as hospitals and transport (sentence 4).' }
+      ]
+    },
+    question: '"Countries gain more than they lose by depending on global technology companies." Do you agree? Explain your answer.' },
+
+  { id: 'bd-garment-tariffs', title: 'US tariffs shake Bangladesh\'s garment industry', place: 'Bangladesh', region: 'South Asia', period: 'April to August 2025',
+    source: 'Profit (Pakistan Today), 2 Aug 2025', url: 'https://profit.pakistantoday.com.pk/2025/08/02/bangladesh-secures-20-us-tariff-bringing-relief-to-exporters-in-worlds-second-largest-garment-supplier', focus: [3],
+    body: [[
+      'Bangladesh is the world\'s second-largest garment exporter, and clothing makes up more than 80% of its export earnings.',
+      'The industry employs about four million workers, most of them women.',
+      'In April 2025, the United States announced a 37% tariff on goods from Bangladesh.'
+    ], [
+      'Workers feared losing their jobs as some US buyers paused or delayed their orders.',
+      'After negotiations, the US tariff on Bangladesh was lowered to 20%, below the 25% rate set for India.',
+      'Some factories then reported a surge in orders from US buyers and planned to expand.'
+    ]],
+    model: {
+      core: [
+        { c: 'globalisation', ev: [0, 1, 3, 5], pts: ['3-growth', '3-jobs'],
+          why: 'Selling clothes to the world has brought growth and jobs, but it also makes Bangladesh economically vulnerable, and workers face job insecurity when orders fall.' },
+        { c: 'interdependence', ev: [0, 2, 4], pts: ['3-growth'],
+          why: 'Bangladesh depends on buyers in the US, and US shoppers rely on imported clothing, so decisions in one country quickly affect the other.' },
+        { c: 'governance', ev: [4], pts: ['1-national', '1-wellbeing'],
+          why: 'Bangladesh\'s government negotiated to protect national interests and the economic well-being of its workers.' }
+      ],
+      also: [
+        { c: 'interconnectedness', why: 'Tariff rates on other countries, such as India, changed where buyers placed their orders (sentence 5).' }
+      ]
+    },
+    question: '"Government support is the most important way to respond to the economic impacts of globalisation." Do you agree? Explain your answer.' },
+
+  { id: 'id-tiktok-shop', title: 'Indonesia bans shopping on social media apps', place: 'Indonesia', region: 'Southeast Asia', period: 'September to October 2023',
+    source: 'The Jakarta Post, 4 Oct 2023', url: 'https://www.thejakartapost.com/business/2023/10/04/tiktok-to-stop-sales-in-indonesia-after-social-commerce-ban', focus: [3, 1],
+    body: [[
+      'In September 2023, Indonesia banned the buying and selling of goods directly on social media platforms.',
+      'The rule hit TikTok, which had 125 million monthly users in Indonesia and had made the country one of its biggest markets for TikTok Shop.',
+      'Offline sellers had complained that cheaper products sold through the app were threatening their livelihoods.'
+    ], [
+      'The trade minister said social media companies could still advertise products but could not handle payments for them.',
+      'The government said the ban would protect millions of small and medium-sized businesses.',
+      'TikTok said it regretted the decision and stopped sales on its app in Indonesia from 4 October 2023.'
+    ]],
+    model: {
+      core: [
+        { c: 'globalisation', ev: [1, 2], pts: ['3-mnc', '3-digital', '3-jobs', '3-govsupport'],
+          why: 'A multinational corporation used digital technology to sell cheap goods, which created challenges for local sellers. The ban is a form of government support for them.' },
+        { c: 'governance', ev: [0, 3, 4], pts: ['1-makes', '1-implements', '1-national'],
+          why: 'The government made and enforced a rule to protect local businesses and the country\'s economic interests.' },
+        { c: 'tradeoffs', ev: [1, 2, 4, 5], pts: ['1-needs', '1-tradeoffs'],
+          why: 'Shoppers liked cheaper goods and a new way to shop, while small traders needed protection. Banning sales helps traders but gives up some benefits for consumers.' }
+      ],
+      also: [
+        { c: 'interdependence', why: 'Indonesia\'s market mattered to TikTok, and many Indonesian sellers depended on the app (sentence 2).' }
+      ]
+    },
+    question: 'Explain how governments can respond to the economic impacts of globalisation.' },
+
+  { id: 'ng-afrobeats', title: 'Afrobeats takes Nigerian music to the world', place: 'Nigeria', region: 'Africa', period: '2020 to 2022',
+    source: 'The Conversation, 2022', url: 'https://theconversation.com/from-nigeria-to-the-world-afrobeats-is-having-a-global-moment-179910', focus: [3, 2],
+    body: [[
+      'Afrobeats, a style of pop music from West Africa led by Nigerian artists, has become popular around the world.',
+      'Nigerian stars such as Wizkid, Davido and Burna Boy have each sold out major arenas in London or Paris.',
+      'Burna Boy\'s album Twice as Tall won the Grammy for Best Global Music Album in 2021.'
+    ], [
+      'Dance challenges on apps such as TikTok have helped the music spread, showing that language is not a barrier.',
+      'Nigerians living abroad, who can more easily afford music streaming, have also helped to spread the music.',
+      'Global music, led by Afrobeats and K-pop, is one of the fastest-growing kinds of music for listeners in the US and worldwide.'
+    ]],
+    model: {
+      core: [
+        { c: 'globalisation', ev: [0, 3, 5], pts: ['3-spread', '3-digital', '3-accept'],
+          why: 'Digital technology helps Nigerian culture spread worldwide, and audiences in other countries accept and enjoy it.' },
+        { c: 'interconnectedness', ev: [1, 3, 4], pts: ['3-digital', '3-spread'],
+          why: 'Artists, fans and Nigerians living overseas are linked across countries, so music made in Nigeria reaches London and Paris.' },
+        { c: 'identity', ev: [0, 4], pts: ['2-nationality'],
+          why: 'Afrobeats is part of Nigerian identity, and Nigerians abroad share it with others.' }
+      ],
+      also: [
+        { c: 'diversity', why: 'People around the world enjoy music from another culture, which is cultural exchange and appreciation (sentence 4).' }
+      ]
+    },
+    question: '"The spread of global culture weakens local cultures." Do you agree? Explain your answer.' },
+
+  { id: 'mx-auto-tariffs', title: 'US tariffs hit Mexico\'s car parts makers', place: 'Mexico', region: 'Latin America and the Caribbean', period: '2025',
+    source: 'Mexico Business News, 2025', url: 'https://mexicobusiness.news/automotive/news/mexicos-auto-parts-hit-tariffs-output-down-86-ytd', focus: [3],
+    body: [[
+      'Mexico is the biggest supplier of car parts to the United States, providing about 46% of US car parts imports in 2025.',
+      'About 87% of Mexico\'s car parts exports go to the United States.',
+      'In 2025, the US raised tariffs on steel, aluminium and copper, which pushed up costs for Mexican parts makers.',
+      'Mexico\'s car parts production fell by 8.6% from January to May 2025 compared with the year before.'
+    ], [
+      'After a call between President Claudia Sheinbaum and President Donald Trump, planned 25% tariffs on most Mexican car parts were not applied.',
+      'Parts that meet the rules of the trade agreement between the US, Mexico and Canada were exempted.'
+    ]],
+    model: {
+      core: [
+        { c: 'interdependence', ev: [0, 1, 4], pts: ['3-growth'],
+          why: 'Mexico depends on US buyers, and US car makers depend on Mexican parts. Each country\'s decisions affect the other.' },
+        { c: 'globalisation', ev: [2, 3], pts: ['3-growth', '3-jobs', '3-govsupport'],
+          why: 'Global trade has helped Mexico\'s industry grow, but the tariffs show its economic vulnerability. Talks between leaders are a government response.' },
+        { c: 'governance', ev: [4, 5], pts: ['1-national', '1-leadership'],
+          why: 'Mexico\'s president acted to protect the country\'s national interests through talks with the US.' }
+      ],
+      also: [
+        { c: 'interconnectedness', why: 'Supply chains link factories in Mexico and the US (sentence 2).' }
+      ]
+    },
+    question: 'Explain why countries that depend heavily on one trading partner can be economically vulnerable.' },
+
+  { id: 'sg-cyberattack', title: 'Singapore reveals a serious cyberattack on critical infrastructure', place: 'Singapore', region: 'Singapore', period: 'July 2025',
+    source: 'AFP (via Eyewitness News), 19 Jul 2025', url: 'https://www.ewn.co.za/2025/07/19/singapore-facing-serious-cyberattack-says-minister', focus: [3, 1],
+    body: [[
+      'In July 2025, Singapore\'s Coordinating Minister for National Security, K Shanmugam, said the country was facing a serious cyberattack on its critical infrastructure.',
+      'He named the attacker as UNC3886, a highly sophisticated group that cyber security experts have linked to China.',
+      'Critical infrastructure delivers essential services such as power, water, telecommunications and banking.'
+    ], [
+      'The minister said that if such an attack succeeded, it could be used for spying and could cause major disruption to Singapore and Singaporeans.',
+      'Investigators later found that the group had targeted all four of Singapore\'s major telecommunications companies.',
+      'Government agencies worked with the affected companies to investigate and contain the attacks.'
+    ]],
+    model: {
+      core: [
+        { c: 'globalisation', ev: [0, 1, 3], pts: ['3-cyber', '3-measures'],
+          why: 'Cyber threats are a security impact of globalisation. Attackers outside the country can reach Singapore\'s systems through digital networks, and the government responds with security measures.' },
+        { c: 'governance', ev: [0, 5], pts: ['1-national', '1-order'],
+          why: 'The government protects national interests and maintains order by defending essential services.' },
+        { c: 'interconnectedness', ev: [2, 4], pts: ['3-digital'],
+          why: 'Essential services are linked through telecommunications networks, so an attack on one part can affect many people.' }
+      ],
+      also: [
+        { c: 'citizenship', why: 'Citizens also have a part to play by staying vigilant online, although this report focuses on the government.' }
       ]
     },
     question: '"Individuals play a more important role than governments in responding to cyber threats." Do you agree? Explain your answer.' },
 
-  { id: 'eldercare', title: 'Eldercare centre plan divides neighbours', focus: [1], kind: 'practice', place: 'Singapore',
-    search: 'Singapore residents eldercare centre objection',
+  { id: 'jp-fuji-barrier', title: 'Japanese town blocks a viral view of Mount Fuji', place: 'Fujikawaguchiko, Japan', region: 'East Asia', period: 'May 2024',
+    source: 'NBC News, May 2024', url: 'https://www.nbcnews.com/news/amp/rcna153213', focus: [3, 1],
     body: [[
-      'A town council has shared plans to build an eldercare centre on a field next to several blocks of flats.',
-      'Some residents objected, saying the field is one of the few open spaces where children play football and families gather in the evenings.',
-      'Others welcomed the plan, pointing out that the estate has many elderly residents who now travel far for day care.'
+      'In May 2024, the town of Fujikawaguchiko in Japan put up a large screen, 20 metres long and 2.5 metres high, to block a popular photo spot.',
+      'The spot had gone viral on social media because Mount Fuji appears to sit on top of a convenience store.',
+      'Residents complained that crowds of tourists left litter, parked illegally and caused traffic dangers.'
     ], [
-      'Residents attended a dialogue session with their Member of Parliament and planners, and over 200 people submitted feedback online.',
-      'After the consultation, planners reduced the size of the building and added a small playground on its rooftop garden.',
-      'One resident said, "Nobody gets everything they want, but at least we were heard."'
+      'Japan had record numbers of foreign visitors in March and April 2024, helped by a weak yen that made trips cheaper.',
+      'The convenience store chain apologised to residents and said it would put up signs in several languages asking visitors to follow the rules.',
+      'Tourism brings income to towns like Fujikawaguchiko, but residents and officials are trying to limit its problems.'
     ]],
     model: {
       core: [
-        { c: 'tradeoffs', ev: [1, 2, 4, 5], pts: ['1-needs', '1-priorities', '1-tradeoffs'],
-          why: 'Residents have differing needs and interests: open space for families versus care for the elderly. The final plan gives up some field space to meet both needs, which is a trade-off.' },
-        { c: 'governance', ev: [0, 4], pts: ['1-wellbeing', '1-change', '1-stake'],
-          why: 'The plan ensures the social well-being of an ageing population, which shows the government anticipating change. Adjusting the plan gives everyone a stake.' },
-        { c: 'citizenship', ev: [3, 5], pts: ['1-civic', '1-influence'],
-          why: 'Residents took part in public affairs through dialogue and feedback, and influenced the decision.' }
+        { c: 'globalisation', ev: [1, 3, 5], pts: ['3-digital', '3-transport', '3-growth'],
+          why: 'Social media and cheaper travel bring huge numbers of visitors, which creates economic growth but also problems for residents.' },
+        { c: 'tradeoffs', ev: [0, 2, 5], pts: ['1-needs', '1-tradeoffs'],
+          why: 'The town gave up a popular tourist attraction to protect residents\' daily lives, balancing the differing needs of residents and tourists.' },
+        { c: 'diversity', ev: [2, 4], pts: ['2-interact'],
+          why: 'Visitors from many countries share public spaces with residents, and different expectations about behaviour can cause friction.' }
       ],
       also: [
-        { c: 'diversity', why: 'Different age groups compete for a shared resource in a common space (sentences 2 and 3).' },
-        { c: 'harmony', why: 'Residents accept a compromise and stay good neighbours (sentence 6).' }
+        { c: 'governance', why: 'The town authorities acted to protect residents\' well-being (sentence 1).' },
+        { c: 'interconnectedness', why: 'A photo shared online brought visitors from around the world to one small town (sentence 2).' }
       ]
     },
-    question: 'Explain how citizens can influence decision making in public affairs. Use examples from Singapore.' },
+    question: '"The benefits of globalisation outweigh its costs for local communities." Do you agree? Explain your answer.' },
 
-  { id: 'void-deck', title: 'Void deck celebrations spark noise complaints', focus: [2], kind: 'practice', place: 'Singapore',
-    search: 'Singapore void deck wedding funeral noise neighbours',
+  { id: 'es-barcelona-tourism', title: 'Barcelona residents protest against mass tourism', place: 'Barcelona, Spain', region: 'Europe', period: 'July 2024',
+    source: 'Associated Press (via Fortune), 9 Jul 2024', url: 'https://fortune.com/2024/07/09/barcelona-residents-fed-up-with-tourism-squirting-visitors-with-water-guns', focus: [3, 1],
     body: [[
-      'Community mediators say disputes between neighbours over noise are among the most common cases they handle.',
-      'In one estate, a family held a weekend Malay wedding at the void deck, and a few weeks later another family held a Chinese funeral wake in the same space.',
-      'Several residents posted complaints online about the noise and the tents.'
+      'In July 2024, thousands of people marched through Barcelona to protest against mass tourism, chanting "tourists go home".',
+      'A small group sprayed visitors at restaurants with water pistols.',
+      'Protesters said tourism has pushed up the cost of living and that its benefits are not shared fairly across the city.',
+      'According to the city\'s mayor, rents in Barcelona have risen by 68% over the past decade.'
     ], [
-      'Other residents replied that sharing common spaces for major life events is part of living in a multiracial neighbourhood.',
-      'The residents\' committee organised a gathering where neighbours of different races and religions explained the meaning behind their customs.',
-      'Some residents who had complained said they now greet the families they had posted about.'
+      'Tourism brings jobs and income to the city, and hotel groups said it was unacceptable to spray tourists with water.',
+      'The city government has announced that it will end licences for about 10,000 apartments rented to tourists by 2028.',
+      'The mayor said the move would help to make housing affordable for residents again.'
     ]],
     model: {
       core: [
-        { c: 'diversity', ev: [1, 2], pts: ['2-interact', '2-stereo'],
-          why: 'People of different races and religions interact in a common space. Different customs can cause friction and negative views when people do not understand each other.' },
-        { c: 'harmony', ev: [3, 4, 5], pts: ['2-sc-citizens', '2-cultural'],
-          why: 'Residents and a community group responded by explaining their customs, which is cultural exchange and appreciation. Respecting differences helped rebuild harmony.' },
-        { c: 'identity', ev: [1, 4], pts: ['2-race', '2-religion'],
-          why: 'Race and religion shape the customs families follow for weddings and funerals.' }
+        { c: 'globalisation', ev: [0, 2, 4], pts: ['3-transport', '3-growth', '3-accept'],
+          why: 'Cheaper travel brings large numbers of tourists, which creates economic growth but also problems for residents. The protests show some rejection of the effects of globalisation.' },
+        { c: 'tradeoffs', ev: [2, 3, 4, 5], pts: ['1-needs', '1-costs', '1-tradeoffs'],
+          why: 'Residents, businesses and tourists have differing needs. Limiting tourist apartments helps residents with housing but gives up some tourism income.' },
+        { c: 'governance', ev: [5, 6], pts: ['1-wellbeing', '1-implements'],
+          why: 'The city government uses its powers to protect residents\' social well-being by making housing more affordable.' }
       ],
       also: [
-        { c: 'citizenship', why: 'The residents\' committee is a community group taking part in public affairs (sentence 5).' },
-        { c: 'tradeoffs', why: 'Residents have differing needs for quiet and for holding life events in a shared space (sentences 2 and 3).' }
+        { c: 'citizenship', why: 'Residents took part in public affairs by joining an organised protest (sentence 1).' },
+        { c: 'diversity', why: 'Tourists and residents compete for housing, which is a form of competition for resources (sentences 3 and 4).' }
       ]
     },
-    question: 'Explain how interactions in common spaces can help to build harmony in a diverse society.' },
-
-  { id: 'k-culture', title: 'Global trends shape how teens spend their time', focus: [3, 2], kind: 'practice', place: 'Singapore',
-    search: 'Singapore youth K-pop global culture mother tongue',
-    body: [[
-      'Short-video apps have made Korean dramas, American slang and Japanese anime a daily part of many teenagers\' lives.',
-      'Cafés now sell Korean-style snacks, and dance studios run K-pop classes that are often fully booked.',
-      'Some parents worry that younger Singaporeans are losing interest in their mother tongue languages and local traditions.'
-    ], [
-      'At the same time, local creators use the same apps to share hawker food, Singlish comedy and Hari Raya recipes with viewers overseas.',
-      'Schools and community groups have started heritage projects where students interview their grandparents in dialects and mother tongues.',
-      'Many teenagers say they enjoy global trends but still see themselves as Singaporean.'
-    ]],
-    model: {
-      core: [
-        { c: 'globalisation', ev: [0, 1, 2, 4], pts: ['3-digital', '3-spread', '3-dilution', '3-accept'],
-          why: 'Digital technology is a driving force that spreads foreign culture. Some people worry about dilution of local culture, and people respond with different degrees of acceptance and rejection, such as heritage projects.' },
-        { c: 'identity', ev: [2, 5], pts: ['2-nationality'],
-          why: 'Teenagers\' sense of identity is shaped by both global trends and their nationality as Singaporeans.' },
-        { c: 'interconnectedness', ev: [0, 3], pts: ['3-digital', '3-spread'],
-          why: 'Culture flows both ways. Foreign trends come in, and local creators share Singapore culture with the world.' }
-      ],
-      also: [
-        { c: 'citizenship', why: 'A shared sense of identity is one attribute of citizenship (sentence 6).' },
-        { c: 'diversity', why: 'Cultural exchange and appreciation happen as people enjoy other cultures (sentences 2 and 4).' }
-      ]
-    },
-    question: '"The spread of global culture weakens the identity of young Singaporeans." Do you agree? Explain your answer.' },
-
-  { id: 'scams', title: 'New powers to stop scam victims losing savings', focus: [1, 3], kind: 'practice', place: 'Singapore',
-    search: 'Singapore Protection from Scams Act money mules',
-    body: [[
-      'Scams cost people in Singapore hundreds of millions of dollars each year, and many are run by syndicates operating from overseas.',
-      'Some young people have been arrested for letting criminals use their bank accounts to move stolen money, often in return for a small payment.',
-      'Parliament has passed a law that lets the police direct banks to temporarily restrict the accounts of people who are likely being scammed, even if those people do not agree.'
-    ], [
-      'Supporters say this protects victims, while critics feel it limits people\'s control over their own money.',
-      'Banks have introduced features that let customers lock away part of their savings, and volunteers visit elderly residents to teach them how to spot scams.',
-      'The police said everyone has a part to play, because scammers look for the weakest link.'
-    ]],
-    model: {
-      core: [
-        { c: 'governance', ev: [2], pts: ['1-makes', '1-implements', '1-order', '1-wellbeing'],
-          why: 'Parliament makes and passes laws, and the police enforce them to maintain law and order and protect citizens\' well-being.' },
-        { c: 'tradeoffs', ev: [2, 3], pts: ['1-priorities', '1-tradeoffs'],
-          why: 'Protecting victims means some people lose control over their own money for a time. The law gives up some personal freedom for greater protection.' },
-        { c: 'citizenship', ev: [1, 4, 5], pts: ['1-legal', '1-civic', '1-needs-soc'],
-          why: 'Citizens have obligations to obey the law, which money mules break. Volunteers take part in public affairs to protect others, working with the government.' }
-      ],
-      also: [
-        { c: 'globalisation', why: 'Digital technology lets syndicates overseas target people here. This is close to the cyber threats in the syllabus (sentence 1).' },
-        { c: 'interconnectedness', why: 'Crime crosses borders, so actions overseas harm people in Singapore (sentence 1).' }
-      ]
-    },
-    question: '"Protecting citizens is more important than protecting individual freedom." How far do you agree, using the example of scams?' },
-
-  { id: 'support', title: 'Helping low-income families get ahead', focus: [2, 1], kind: 'practice', place: 'Singapore',
-    search: 'Singapore ComLink+ low-income families support',
-    body: [[
-      'Social workers say children from low-income families often face more obstacles in school, from crowded homes to less money for enrichment.',
-      'A national scheme gives these families extra support, such as savings top-ups and a family coach, when they meet goals like sending their children to preschool regularly.',
-      'Some people argue that aid should be given without conditions, while others say conditions help families become self-reliant.'
-    ], [
-      'Community groups and companies also run free tuition, food programmes and mentoring.',
-      'Taxpayers fund much of the support, and some ask whether the costs are being shared fairly.',
-      'A parent in the scheme said the coach helped the family plan for the children\'s future, not just pay this month\'s bills.'
-    ]],
-    model: {
-      core: [
-        { c: 'diversity', ev: [0, 1, 3], pts: ['2-ses', '2-shared', '2-se-citizens'],
-          why: 'Society is diverse in socio-economic status. Government support with conditions, together with help from community groups and companies, is a shared responsibility approach.' },
-        { c: 'governance', ev: [1, 5], pts: ['1-wellbeing', '1-stake'],
-          why: 'The government ensures the social well-being of citizens and gives everyone a stake and opportunities.' },
-        { c: 'tradeoffs', ev: [2, 4], pts: ['1-priorities', '1-costs'],
-          why: 'People disagree about conditions on aid, and taxpayers bear the cost. This is unequal sharing of costs.' }
-
-
-      ],
-      also: [
-        { c: 'identity', why: 'Socio-economic status is one factor that shapes people\'s identities (sentence 1).' },
-        { c: 'citizenship', why: 'Community groups and companies take part in public affairs to help others (sentence 4).' },
-        { c: 'harmony', why: 'Helping families across income groups can reduce resentment and build a more cohesive society (sentence 4).' }
-      ]
-    },
-    question: 'Which approach is more effective in responding to socio-economic diversity: a government-financed approach or a shared responsibility approach? Explain your answer.' }
+    question: 'Explain how governments and citizens can respond to the economic impacts of globalisation.' }
 ];
+
+const NEWS_REGIONS = [...new Set(NEWS.map(n => n.region))].sort((a, b) => a.replace(/^the /, '').localeCompare(b.replace(/^the /, '')));
 const REGIONS = ['Southeast Asia', 'East Asia', 'South Asia', 'Central Asia', 'the Middle East', 'Africa', 'Europe',
   'North America', 'Latin America and the Caribbean', 'Oceania and the Pacific', 'Singapore'];
 
@@ -716,14 +1059,14 @@ function renderControls() {
   const iSel = $('#g-issue'), rSel = $('#g-region');
   if (!iSel.options.length) {
     iSel.innerHTML = `<option value="any">Any Issue (random)</option>` + [1, 2, 3].map(n => `<option value="${n}">${esc(issueName(n))}</option>`).join('');
-    rSel.innerHTML = `<option value="any">Anywhere in the world (random)</option>` + REGIONS.map(r => `<option value="${esc(r)}">${esc(r[0].toUpperCase() + r.slice(1))}</option>`).join('');
+    rSel.innerHTML = `<option value="any">Anywhere in the world (random)</option>` + NEWS_REGIONS.map(r => `<option value="${esc(r)}">${esc(r[0].toUpperCase() + r.slice(1))}</option>`).join('');
     iSel.value = store.get('cl:gIssue', 'any'); rSel.value = store.get('cl:gRegion', 'any');
     if (!iSel.value) iSel.value = 'any';
     if (!rSel.value) rSel.value = 'any';
   }
   const groups = [
     ['From your teacher', sharedCases],
-    ['Generated for you', genCases],
+    ['Your news articles', genCases],
     ['Added by you', localCases]
   ].filter(([, list]) => list.length);
   $('#g-saved').innerHTML = groups.length
@@ -738,9 +1081,9 @@ function renderArticle() {
   if (!c) {
     $('#news').innerHTML = `<div class="emptyart">
       <div class="lbl">No article yet</div>
-      <h2>Generate a news article to begin</h2>
-      <p>Each article is a news report from somewhere in the world, linked to one of the three Issues in the syllabus. Choose an Issue and a region above, or leave both on random.</p>
-      <button class="btn" type="button" data-gen>Generate a news article</button></div>`;
+      <h2>Get a news article to begin</h2>
+      <p>Each article is a real news story from somewhere in the world, linked to the three Issues in the syllabus. Choose an Issue and a region above, or leave both on random.</p>
+      <button class="btn" type="button" data-gen>Get a news article</button></div>`;
     return;
   }
   const active = pickOf(ans.active);
@@ -761,13 +1104,14 @@ function renderArticle() {
   });
   const focusBadges = (c.focus || []).map(n => `<span class="badge" style="${cvar(n)}">${esc(issueName(n))}</span>`).join('');
   const kindNote = {
+    news: `Summary of a real news report, written in simple English for this exercise. Source: ${c.source}.`,
     generated: 'News report written by Claude from a real-world issue. It may contain mistakes, so check it against real coverage.',
     practice: 'Practice brief from the built-in set, written for class from recent news themes. Details are simplified.',
     teacher: 'Added by your teacher.',
     local: 'Added by you. Saved in this browser only.'
   }[c.kind] || '';
   const url = safeUrl(c.url);
-  const src = [c.source ? esc(c.source) : '', url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Read the original</a>` : '',
+  const src = [c.source && c.kind !== 'news' ? esc(c.source) : '', url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${c.kind === 'news' ? 'Read the full report' : 'Read the original'}</a>` : '',
     c.search ? `<a href="https://news.google.com/search?q=${encodeURIComponent(c.search)}" target="_blank" rel="noopener">Find real coverage</a>` : ''].filter(Boolean).join(' · ');
   const canDelete = c.kind !== 'teacher' || canShare;
   const hintText = active
@@ -943,6 +1287,7 @@ $('#g-issue').addEventListener('change', e => store.set('cl:gIssue', e.target.va
 $('#g-region').addEventListener('change', e => store.set('cl:gRegion', e.target.value));
 $('#addBtn').addEventListener('click', openForm);
 $('#genBtn').addEventListener('click', generate);
+$('#writeBtn').addEventListener('click', writeWithClaude);
 
 $('#board').addEventListener('click', e => {
   const b = e.target.closest('.concept'); if (!b || b.disabled) return;
@@ -1114,51 +1459,52 @@ function fromGenerated(j, issue) {
     question: String(j.question || '').trim(), created: new Date().toISOString()
   };
 }
-function practiceFallback(issue, why) {
-  const seen = new Set(genCases.map(c => c.id));
-  const pool = CASES.filter(c => c.focus[0] === issue);
-  const fresh = pool.filter(c => !seen.has(c.id));
-  const pickFrom = fresh.length ? fresh : (pool.length ? pool : CASES);
-  const pick = rand(pickFrom);
-  if (!seen.has(pick.id)) { genCases.unshift({ ...pick, created: new Date().toISOString() }); saveGen(); }
+function drawNews() {
+  const iv = $('#g-issue').value, rv = $('#g-region').value;
+  const issue = iv === 'any' ? null : +iv;
+  const fits = n => (!issue || n.focus.includes(issue)) && (rv === 'any' || n.region === rv);
+  const done = new Set(genCases.map(c => c.id));
+  let pool = NEWS.filter(fits), note = '';
+  if (!pool.length) { pool = NEWS.filter(n => !issue || n.focus.includes(issue)); note = `No articles from ${rv} match that Issue yet, so here is one from elsewhere. `; }
+  const fresh = pool.filter(n => !done.has(n.id) && n.id !== currentId);
+  const freshMain = fresh.filter(n => !issue || n.focus[0] === issue);
+  const others = pool.filter(n => n.id !== currentId);
+  const pick = rand(freshMain.length ? freshMain : fresh.length ? fresh : others.length ? others : pool);
+  if (!fresh.length) note += 'You have already worked on every article for this choice, so this one is a repeat. ';
+  genCases = [{ ...pick, kind: 'news', created: new Date().toISOString() }, ...genCases.filter(c => c.id !== pick.id)];
+  saveGen();
   selectCase(pick.id);
-  setGenStatus(esc(why) + ' Here is a practice brief from the built-in set instead.');
+  setGenStatus(esc(note) + `Article from ${esc(pick.place)} · ${pick.focus.map(n => esc(issueName(n))).join(' · ')}. Read it, then choose the concepts you see.`);
 }
-async function generate() {
-  if (genCtl) return;
+function generate() { drawNews(); }
+
+async function writeWithClaude() {
+  if (genCtl || !sampleFn) return;
   const iv = $('#g-issue').value, rv = $('#g-region').value;
   const issue = iv === 'any' ? 1 + Math.floor(Math.random() * 3) : +iv;
   const gqIndex = Math.floor(Math.random() * CONTENT[issue].length);
-  const region = rv === 'any' ? rand(REGIONS) : rv;
-  const btn = $('#genBtn');
-  btn.disabled = true;
-  setGenStatus(`<span class="spin" aria-hidden="true"></span> Finding a news issue from ${esc(region === 'Singapore' ? 'Singapore' : region)} on ${esc(issueName(issue))}…`);
-  const fn = sampleFn || await samplePromise;
-  if (!fn) {
-    btn.disabled = false;
-    practiceFallback(issue, 'Claude is not available on this page, so a new article cannot be generated.');
-    return;
-  }
+  const region = rv === 'any' || rv === 'Worldwide' ? rand(REGIONS) : rv;
+  const btn = $('#writeBtn'); btn.disabled = true; $('#genBtn').disabled = true;
   genCtl = new AbortController();
-  setGenStatus(`<span class="spin" aria-hidden="true"></span> Claude is writing a news report from ${esc(region === 'Singapore' ? 'Singapore' : region)} on ${esc(issueName(issue))}. This can take up to a minute. <button class="linkbtn" id="genStop" type="button">Stop</button>`);
+  setGenStatus(`<span class="spin" aria-hidden="true"></span> Claude is writing a news report from ${esc(region)} on ${esc(issueName(issue))}. This can take up to a minute. <button class="linkbtn" id="genStop" type="button">Stop</button>`);
   $('#genStop').onclick = () => genCtl?.abort();
   const avoid = genCases.filter(c => c.place).slice(0, 6).map(c => c.place);
   try {
-    const j = await fn.json(genPrompt(issue, gqIndex, region, avoid), { signal: genCtl.signal, cache: false });
+    const j = await sampleFn.json(genPrompt(issue, gqIndex, region, avoid), { signal: genCtl.signal, cache: false });
     const c = fromGenerated(j, issue);
     genCases.unshift(c); saveGen();
     selectCase(c.id);
-    setGenStatus(`New article from ${esc(c.place || region)}. Read it, then choose the concepts you see.`);
+    setGenStatus(`New report from ${esc(c.place || region)}, written by Claude. Check it against the real coverage link.`);
   } catch (e) {
     const code = e?.code;
     if (code === 'cancelled') setGenStatus('Stopped.');
-    else if (code === 'not_granted') { sampleFn = null; samplePromise = Promise.resolve(null); practiceFallback(issue, 'Claude was not allowed on this page.'); }
+    else if (code === 'not_granted') { sampleFn = null; $('#writeBtn').hidden = true; setGenStatus('Claude was not allowed on this page. Use "Get a news article" instead.', true); }
     else if (code === 'rate_limited') setGenStatus('Too many requests right now. Wait a minute, then try again.', true);
     else if (code === 'session_expired') setGenStatus('Your Claude session has expired. Sign in again and reload the page.', true);
-    else if (code === 'invalid_json' || e?.message === 'shape') setGenStatus('The article came back incomplete. Try generating again.', true);
+    else if (code === 'invalid_json' || e?.message === 'shape') setGenStatus('The article came back incomplete. Try again.', true);
     else setGenStatus('Claude could not write an article this time. Try again in a moment.', true);
   } finally {
-    genCtl = null; btn.disabled = false;
+    genCtl = null; btn.disabled = false; $('#genBtn').disabled = false;
   }
 }
 
@@ -1311,7 +1657,7 @@ render();
   const use = window.claude && typeof window.claude.use === 'function' ? n => window.claude.use(n).catch(() => null) : async () => null;
   samplePromise = use('sample');
   const [dbNs, userNs, sampleNs] = await Promise.all([use('db'), use('user'), samplePromise]);
-  if (sampleNs) { sampleFn = sampleNs; const box = $('#aiBox'); if (box) box.hidden = false; }
+  if (sampleNs) { sampleFn = sampleNs; const box = $('#aiBox'); if (box) box.hidden = false; $('#writeBtn').hidden = false; }
   if (dbNs) {
     db = dbNs;
     canShare = userNs ? await userNs.canEdit().catch(() => false) : false;
