@@ -597,12 +597,6 @@ footer{
   opacity:0.7;
   cursor:not-allowed;
 }
-.wager-locked-note{
-  font-size:11px;
-  font-weight:700;
-  color:var(--ink-soft);
-  margin-left:4px;
-}
 #clue-image{
   display:none;
   max-width:100%;
@@ -1332,11 +1326,6 @@ footer{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
-}
-#storage-note{
-  margin:0;
-  font-size:11.5px;
-  color:var(--ink-soft);
 }
 
 /* ---------------------------------- buzzer setup ---------------------------------- */
@@ -2241,6 +2230,7 @@ footer{
           if (typeof clue.note !== "string") clue.note = "";
           if (typeof clue.image !== "string") clue.image = "";
           if (typeof clue.timerSeconds !== "number" || !isFinite(clue.timerSeconds) || clue.timerSeconds < 0) clue.timerSeconds = 0;
+          if (clue.timerSeconds > 3600) clue.timerSeconds = 3600;
         });
       });
       parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
@@ -3538,10 +3528,13 @@ footer{
     launchConfetti();
   }
 
-  /* Shared by both Reset Board and Reset Game: clears played tiles, undo
-     history, and the persisted snapshot, and zeroes every team's score.
-     The two differ only in whether the team list itself (names, rosters —
-     the "groupings") survives. */
+  /* Clears played tiles, undo history, and the persisted snapshot, and
+     zeroes every team's score — without touching the team list itself
+     (names, rosters, the "groupings"). Used directly by Reset Board,
+     "Play Again" on the victory screen, and every editor save/restore
+     (nobody expects fixing a clue typo or restoring defaults to also wipe
+     their teams); resetGame() below layers on replacing the team list too,
+     for the one button where that's actually wanted. */
   function resetBoardState(){
     state.used = {};
     state.teams.forEach(function(t){ t.score = 0; });
@@ -4088,7 +4081,7 @@ footer{
   rulesCloseBtn.addEventListener("click", closeRules);
 
   document.getElementById("victory-play-again").addEventListener("click", function(){
-    resetGame();
+    resetBoardState();
   });
   document.getElementById("victory-close").addEventListener("click", closeVictory);
 
@@ -4594,13 +4587,13 @@ footer{
         var timerInput = document.createElement("input");
         timerInput.type = "number";
         timerInput.min = "0";
-        timerInput.max = "600";
+        timerInput.max = "3600";
         timerInput.step = "5";
         timerInput.placeholder = "e.g. 30 — blank for no countdown";
         timerInput.value = clue.timerSeconds ? String(clue.timerSeconds) : "";
         timerInput.addEventListener("input", function(){
           var n = parseInt(timerInput.value, 10);
-          clue.timerSeconds = (isFinite(n) && n > 0) ? n : 0;
+          clue.timerSeconds = (isFinite(n) && n > 0) ? Math.min(3600, n) : 0;
         });
         timerField.appendChild(timerLabelSpan);
         timerField.appendChild(timerInput);
@@ -4664,7 +4657,7 @@ footer{
     content = next;
     persistContent(content);
     renderHeader();
-    resetGame();
+    resetBoardState();
   }
 
   function saveEditor(){
@@ -4679,7 +4672,7 @@ footer{
         clue.answer = clue.answer.trim() || "Write the answer here";
         clue.explainer = (clue.explainer || "").trim();
         clue.note = (clue.note || "").trim();
-        clue.timerSeconds = (typeof clue.timerSeconds === "number" && clue.timerSeconds > 0) ? clue.timerSeconds : 0;
+        clue.timerSeconds = (typeof clue.timerSeconds === "number" && clue.timerSeconds > 0) ? Math.min(3600, clue.timerSeconds) : 0;
       });
     });
     draft.dailyDouble = { cat: parseInt(ddCatSelect.value, 10), idx: parseInt(ddValueSelect.value, 10) };
