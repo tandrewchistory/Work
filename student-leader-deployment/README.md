@@ -1,5 +1,49 @@
 # Student Leader Deployment Dashboard
 
+Two versions of the same tracker, for a shared drive:
+
+- **HTML app** (`student-leader-deployment.html`): one self-contained file
+  that opens in any browser and needs no internet connection. The data is
+  stored inside the file itself; see [HTML version](#html-version) below.
+- **Excel workbook** (`student-leader-deployment.xlsx`): see
+  [Excel version](#excel-version).
+
+## HTML version
+
+| File | What it is |
+|---|---|
+| `student-leader-deployment.html` | App with sample data (28 leaders, 12 activities, 72 deployments) |
+| `student-leader-deployment-template.html` | Empty copy: the one to put on the drive |
+| `build_html.py` | Puts the sample data into the HTML and writes the empty template (`python build_html.py`) |
+
+- **Dashboard**: headline figures, a date-range and form-class filter,
+  leader-load and category charts, activity staffing by date, a
+  form-class breakdown, the most-deployed leaders, and a list of leaders
+  not yet deployed.
+- **Activities**: open an activity to see who is assigned, change roles,
+  statuses and hours, and **assign leaders**. Candidates are listed
+  fewest-deployments-first, with warnings for high load and same-day
+  clashes.
+- **Students / Deployments**: searchable and filterable lists, student
+  profiles with deployment history, and CSV export.
+- **Settings & Help**: title, high-load threshold, "upcoming" window and
+  dropdown lists. Also paste-import of students from Excel/Sheets,
+  backup and restore (.json), clearing data for a new year, and
+  instructions for colleagues.
+
+**How saving works.** Clicking **Save** writes a copy of the page,
+with the updated data inside it, back to the file. In Chrome or Edge on a
+computer, the first save asks you to pick the file on the shared drive;
+after that it saves straight to the file. Before overwriting, it warns if
+someone else saved after you opened the file. Other browsers download
+the updated file, which you then use to replace the copy on the drive.
+Unsaved edits are kept as a draft in the browser in case the tab closes.
+Each save records the editor's name and the time. The file has to be
+opened from a synced folder or mapped drive: the Google Drive or
+SharePoint website shows HTML files as code instead of running them.
+
+## Excel version
+
 An Excel workbook for tracking which student leaders are deployed to which
 school activities. Put one copy on the shared drive (OneDrive/SharePoint, or
 Google Drive via **File › Save as Google Sheets**) and have everyone edit

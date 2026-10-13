@@ -1,0 +1,1235 @@
+<!doctype html>
+<html lang="en" data-keep>
+<head data-keep>
+<meta charset="utf-8" data-keep>
+<meta name="viewport" content="width=device-width, initial-scale=1" data-keep>
+<title data-keep>Student Leader Deployment</title>
+<style data-keep>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --border: #e2e1dc;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #74736e;
+  --accent: #2a78d6;
+  --accent-ink: #1c5cab;
+  --accent-soft: #e3eefb;
+  --series: #2a78d6;
+  --track: #ebeae6;
+  --good: #0ca30c;
+  --warn: #fab219;
+  --serious: #ec835a;
+  --crit: #d03b3b;
+  --danger-ink: #b02a2a;
+  --shadow: 0 1px 2px rgba(0,0,0,.05);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --surface-2: #242422; --border: #34342f;
+    --text: #f0efec; --text-2: #c3c2b7; --muted: #94938b;
+    --accent: #3987e5; --accent-ink: #86b6ef; --accent-soft: #1d2a3b;
+    --series: #3987e5; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211; --surface: #1a1a19; --surface-2: #242422; --border: #34342f;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #94938b;
+  --accent: #3987e5; --accent-ink: #86b6ef; --accent-soft: #1d2a3b;
+  --series: #3987e5; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; }
+a { color: var(--accent-ink); }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* ---------- header & nav ---------- */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+.topbar-inner { max-width: 1180px; margin: 0 auto; padding: 12px 16px 0; }
+.title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.title-row h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
+.save-state { font-size: 12.5px; color: var(--muted); }
+.save-state.dirty { color: var(--text); font-weight: 600; }
+.save-state.dirty::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); margin-right: 6px; vertical-align: 1px; }
+.title-actions { margin-left: auto; display: flex; gap: 8px; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 8px; }
+nav.tabs button { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 12px 10px; cursor: pointer; color: var(--text-2); white-space: nowrap; font-weight: 500; }
+nav.tabs button:hover { color: var(--text); }
+nav.tabs button.active { color: var(--accent-ink); border-bottom-color: var(--accent); }
+main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 48px; }
+
+/* ---------- controls ---------- */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 500; font-size: 13.5px; white-space: nowrap; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--danger-ink); }
+.btn.small { padding: 4px 9px; font-size: 12.5px; }
+.btn.link { border: none; background: none; padding: 0; color: var(--accent-ink); }
+.btn.link:hover { text-decoration: underline; background: none; }
+input[type=text], input[type=search], input[type=date], input[type=time], input[type=number], select, textarea {
+  padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); min-width: 0;
+}
+textarea { width: 100%; min-height: 110px; resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-2); font-weight: 500; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px; }
+.toolbar .grow { flex: 1 1 200px; }
+.toolbar .grow input { width: 100%; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.form-grid .wide { grid-column: 1 / -1; }
+.form-grid input, .form-grid select { width: 100%; }
+.form-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+/* ---------- panels ---------- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--shadow); min-width: 0; }
+.panel h2 { font-size: 15px; margin: 0 0 2px; }
+.panel .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 12px; }
+.panel-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.panel-head h2 { margin: 0; }
+.panel-head .right { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.grid-2 > .panel { margin-bottom: 0; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.banner { border: 1px solid var(--border); border-left: 4px solid var(--warn); background: var(--surface); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.banner .right { margin-left: auto; display: flex; gap: 8px; }
+.empty { color: var(--muted); padding: 18px 4px; text-align: center; }
+.muted { color: var(--muted); }
+.crumbs { margin-bottom: 12px; font-size: 13px; }
+
+/* ---------- KPI tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); }
+.tile .k { font-size: 11.5px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .04em; }
+.tile .v { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.tile .s { font-size: 12px; color: var(--muted); }
+.tile.alert .v::after { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--crit); margin-left: 8px; vertical-align: 6px; }
+
+/* ---------- tables ---------- */
+.table-wrap { overflow-x: auto; margin: 0 -4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { font-size: 11.5px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; background: var(--surface); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+tr.past td { color: var(--muted); }
+td .stack-name { display: flex; flex-direction: column; }
+td .stack-name small { color: var(--muted); font-size: 12px; }
+td select, td input[type=text], td input[type=number] { padding: 4px 6px; font-size: 13px; }
+td input[type=number] { width: 70px; }
+.nowrap { white-space: nowrap; }
+
+/* ---------- chips (status = icon + label, never colour alone) ---------- */
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.chip .ic { font-size: 11px; line-height: 1; }
+.chip.good .ic { color: var(--good); }
+.chip.warn .ic { color: var(--warn); }
+.chip.serious .ic { color: var(--serious); }
+.chip.crit .ic { color: var(--crit); }
+.chip.info .ic { color: var(--accent); }
+.chip.dim { color: var(--muted); font-weight: 500; }
+.chip.dim .ic { color: var(--muted); }
+.chip.withdrawn { color: var(--muted); text-decoration: line-through; font-weight: 500; }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); font-size: 12px; }
+.name-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.name-chips button { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 11px; cursor: pointer; font-size: 13px; }
+.name-chips button:hover { border-color: var(--accent); }
+.name-chips button small { color: var(--muted); margin-left: 4px; }
+
+/* ---------- charts ---------- */
+.hbar { display: grid; grid-template-columns: minmax(90px, max-content) 1fr auto; column-gap: 10px; row-gap: 8px; align-items: center; }
+.hbar .lbl { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
+.hbar .track { height: 14px; position: relative; border-radius: 0 4px 4px 0; cursor: default; }
+.hbar .track::before { content: ""; position: absolute; inset: 6px 0; background: var(--track); border-radius: 2px; }
+.hbar .bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--series); border-radius: 0 4px 4px 0; min-width: 2px; }
+.hbar .track:hover .bar { filter: brightness(1.12); }
+.hbar .val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
+.fill { display: flex; align-items: center; gap: 8px; min-width: 110px; }
+.fill .t { flex: 1; height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.fill .t span { display: block; height: 100%; background: var(--series); border-radius: 0 4px 4px 0; }
+.fill .p { font-size: 12px; color: var(--text-2); width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.tooltip { position: fixed; z-index: 50; pointer-events: none; background: var(--text); color: var(--surface); padding: 6px 9px; border-radius: 6px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.18); max-width: 260px; }
+.tooltip b { display: block; }
+
+/* ---------- assign picker ---------- */
+.pick-list { max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.pick-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.pick-row:last-child { border-bottom: none; }
+.pick-row:hover { background: var(--surface-2); }
+.pick-row .who small { display: block; color: var(--muted); font-size: 12px; }
+.pick-row .meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.count-pill { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-2); background: var(--surface-2); border-radius: 999px; padding: 1px 8px; }
+
+.detail-meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: var(--text-2); margin: 6px 0 2px; }
+.detail-meta b { color: var(--text); font-weight: 600; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 9px 16px; border-radius: 8px; font-size: 13.5px; z-index: 60; box-shadow: 0 6px 20px rgba(0,0,0,.2); max-width: calc(100% - 32px); }
+.help p, .help li { color: var(--text-2); }
+.help h3 { font-size: 14px; margin: 16px 0 4px; }
+.help ol, .help ul { padding-left: 20px; margin: 4px 0; }
+
+@media (max-width: 640px) {
+  .title-actions { margin-left: 0; width: 100%; }
+  .hbar .lbl { max-width: 120px; }
+  .tile .v { font-size: 24px; }
+}
+@media print {
+  .topbar nav, .title-actions, .toolbar, .no-print, .banner { display: none !important; }
+  .topbar { position: static; border: none; }
+  body { background: #fff; }
+  .panel, .tile { box-shadow: none; break-inside: avoid; }
+}
+</style>
+</head>
+<body data-keep>
+<div id="app" data-keep></div>
+<noscript data-keep><p style="padding:20px">This dashboard needs JavaScript. Open the file in Chrome, Edge, Firefox or Safari.</p></noscript>
+<script type="application/json" id="sld-data" data-keep>{"version":1,"revision":0,"savedAt":null,"savedBy":null,"settings":{"title":"Student Leader Deployment","highLoad":4,"upcomingDays":14},"lists":{"categories":["Ceremony","School Event","Assembly","Sports","Community Service","Open House","Camp","External"],"roles":["Emcee","Usher","Marshal","Registration","Logistics","Facilitator","Group Leader","Photographer","Tech Crew"],"groups":["Prefect","Student Council","Class Chairperson","CCA Leader","Peer Support Leader","Sports Leader"],"formClasses":["2 Ehsan","2 Fikrah","3 Amanah","3 Bestari","3 Cemerlang","4 Dedikasi","4 Gemilang"]},"students":[{"id":"s1","fullName":"Tan Wei Ling","name":"Wei Ling","formClass":"3 Amanah","group":"Prefect","notes":""},{"id":"s2","fullName":"Muhammad Irfan bin Rahman","name":"Irfan","formClass":"3 Amanah","group":"Student Council","notes":""},{"id":"s3","fullName":"Priya d/o Subramaniam","name":"Priya","formClass":"3 Bestari","group":"Peer Support Leader","notes":""},{"id":"s4","fullName":"Lim Jun Hao","name":"Jun Hao","formClass":"4 Dedikasi","group":"Prefect","notes":""},{"id":"s5","fullName":"Nur Aisyah binte Hamzah","name":"Aisyah","formClass":"4 Dedikasi","group":"Student Council","notes":""},{"id":"s6","fullName":"Chen Yu Xuan","name":"Yu Xuan","formClass":"3 Cemerlang","group":"CCA Leader","notes":""},{"id":"s7","fullName":"Arjun Nair","name":"Arjun","formClass":"4 Gemilang","group":"Sports Leader","notes":""},{"id":"s8","fullName":"Goh Hui Min","name":"Hui Min","formClass":"2 Ehsan","group":"Class Chairperson","notes":""},{"id":"s9","fullName":"Siti Nurhaliza binte Osman","name":"Siti","formClass":"3 Bestari","group":"Prefect","notes":""},{"id":"s10","fullName":"Ong Kai Xiang","name":"Kai Xiang","formClass":"4 Gemilang","group":"Student Council","notes":""},{"id":"s11","fullName":"Rachel Lee Shu Fen","name":"Rachel","formClass":"3 Amanah","group":"CCA Leader","notes":""},{"id":"s12","fullName":"Daniel Wong Zhi Hao","name":"Daniel","formClass":"2 Fikrah","group":"Class Chairperson","notes":""},{"id":"s13","fullName":"Kavitha d/o Ramasamy","name":"Kavitha","formClass":"4 Dedikasi","group":"Peer Support Leader","notes":""},{"id":"s14","fullName":"Ahmad Danish bin Ismail","name":"Danish","formClass":"3 Cemerlang","group":"Sports Leader","notes":""},{"id":"s15","fullName":"Koh Jia Yi","name":"Jia Yi","formClass":"2 Ehsan","group":"Peer Support Leader","notes":""},{"id":"s16","fullName":"Ethan Teo Jun Wei","name":"Ethan","formClass":"4 Gemilang","group":"Prefect","notes":""},{"id":"s17","fullName":"Low Xin Yi","name":"Xin Yi","formClass":"3 Bestari","group":"Student Council","notes":""},{"id":"s18","fullName":"Hafiz bin Abdullah","name":"Hafiz","formClass":"2 Fikrah","group":"Sports Leader","notes":""},{"id":"s19","fullName":"Chua Min Jie","name":"Min Jie","formClass":"3 Cemerlang","group":"Prefect","notes":""},{"id":"s20","fullName":"Sarah Ng Hui Wen","name":"Sarah","formClass":"4 Dedikasi","group":"CCA Leader","notes":""},{"id":"s21","fullName":"Vikram s/o Pillai","name":"Vikram","formClass":"3 Amanah","group":"Peer Support Leader","notes":""},{"id":"s22","fullName":"Yeo Shi Ting","name":"Shi Ting","formClass":"2 Ehsan","group":"Student Council","notes":""},{"id":"s23","fullName":"Nurul Huda binte Salleh","name":"Huda","formClass":"4 Gemilang","group":"Class Chairperson","notes":""},{"id":"s24","fullName":"Ryan Lau Wen Jie","name":"Ryan","formClass":"2 Fikrah","group":"CCA Leader","notes":""},{"id":"s25","fullName":"Tay Pei Shan","name":"Pei Shan","formClass":"3 Bestari","group":"Class Chairperson","notes":""},{"id":"s26","fullName":"Joshua Seah","name":"Joshua","formClass":"3 Cemerlang","group":"Student Council","notes":""},{"id":"s27","fullName":"Aaliyah Rahim","name":"Aaliyah","formClass":"2 Ehsan","group":"Prefect","notes":""},{"id":"s28","fullName":"Ho Zi Xuan","name":"Zi Xuan","formClass":"4 Dedikasi","group":"Sports Leader","notes":""}],"activities":[{"id":"a1","name":"Teachers' Day Celebration","category":"Ceremony","date":"2026-09-03","start":"07:30","end":"10:30","venue":"School Hall","teacher":"Mr Lim K. H.","needed":8,"notes":""},{"id":"a2","name":"Mid-Autumn Lantern Walk","category":"School Event","date":"2026-09-24","start":"17:00","end":"20:00","venue":"Parade Square","teacher":"Ms Wong S. M.","needed":10,"notes":""},{"id":"a3","name":"Children's Day Primary School Visit","category":"Community Service","date":"2026-10-09","start":"08:00","end":"12:00","venue":"Sunrise Primary","teacher":"Mdm Noraini","needed":6,"notes":""},{"id":"a4","name":"Speech Day & Prize Giving","category":"Ceremony","date":"2026-10-16","start":"08:00","end":"11:30","venue":"School Hall","teacher":"Mr Lim K. H.","needed":12,"notes":""},{"id":"a5","name":"Sec 4 Graduation Assembly","category":"Assembly","date":"2026-10-21","start":"09:00","end":"11:00","venue":"School Hall","teacher":"Ms Kaur P.","needed":6,"notes":""},{"id":"a6","name":"Inter-House Games Day","category":"Sports","date":"2026-10-23","start":"07:30","end":"13:00","venue":"School Field","teacher":"Mr Rizal","needed":14,"notes":""},{"id":"a7","name":"Zonal Debate Championship (Host)","category":"External","date":"2026-10-27","start":"14:00","end":"18:00","venue":"LT 1","teacher":"Ms Chan Y. L.","needed":4,"notes":""},{"id":"a8","name":"Parent Engagement Night","category":"School Event","date":"2026-10-28","start":"18:30","end":"21:00","venue":"Canteen","teacher":"Ms Wong S. M.","needed":6,"notes":""},{"id":"a9","name":"Senior Citizens' Home Visit","category":"Community Service","date":"2026-10-30","start":"09:00","end":"12:00","venue":"Kampung Care Home","teacher":"Mdm Noraini","needed":5,"notes":""},{"id":"a10","name":"Recycling Drive","category":"Community Service","date":"2026-11-02","start":"08:00","end":"11:00","venue":"Void Deck Blk 512","teacher":"Mr Tan B. C.","needed":6,"notes":""},{"id":"a11","name":"Open House 2026","category":"Open House","date":"2026-11-07","start":"08:30","end":"13:00","venue":"Whole School","teacher":"Ms Kaur P.","needed":16,"notes":""},{"id":"a12","name":"Leadership Training Camp","category":"Camp","date":"2026-11-12","start":"08:00","end":"17:00","venue":"Outdoor Centre","teacher":"Mr Rizal","needed":8,"notes":""}],"deployments":[{"id":"d1","activityId":"a1","studentId":"s4","role":"Emcee","status":"Completed","hours":4,"remarks":"Stayed back for teardown"},{"id":"d2","activityId":"a1","studentId":"s2","role":"Usher","status":"Completed","hours":null,"remarks":""},{"id":"d3","activityId":"a1","studentId":"s13","role":"Usher","status":"Completed","hours":null,"remarks":""},{"id":"d4","activityId":"a1","studentId":"s1","role":"Marshal","status":"Completed","hours":null,"remarks":""},{"id":"d5","activityId":"a1","studentId":"s10","role":"Tech Crew","status":"Completed","hours":null,"remarks":""},{"id":"d6","activityId":"a1","studentId":"s9","role":"Registration","status":"Completed","hours":null,"remarks":""},{"id":"d7","activityId":"a1","studentId":"s6","role":"Emcee","status":"Completed","hours":null,"remarks":""},{"id":"d8","activityId":"a1","studentId":"s19","role":"Usher","status":"Withdrawn","hours":null,"remarks":"MC'd — excused"},{"id":"d9","activityId":"a2","studentId":"s20","role":"Marshal","status":"Completed","hours":null,"remarks":""},{"id":"d10","activityId":"a2","studentId":"s4","role":"Logistics","status":"Completed","hours":null,"remarks":""},{"id":"d11","activityId":"a2","studentId":"s2","role":"Usher","status":"Completed","hours":null,"remarks":""},{"id":"d12","activityId":"a2","studentId":"s19","role":"Photographer","status":"Completed","hours":null,"remarks":""},{"id":"d13","activityId":"a2","studentId":"s11","role":"Marshal","status":"Completed","hours":null,"remarks":""},{"id":"d14","activityId":"a2","studentId":"s13","role":"Logistics","status":"Completed","hours":null,"remarks":""},{"id":"d15","activityId":"a2","studentId":"s10","role":"Usher","status":"Completed","hours":null,"remarks":""},{"id":"d16","activityId":"a2","studentId":"s1","role":"Photographer","status":"Completed","hours":null,"remarks":""},{"id":"d17","activityId":"a2","studentId":"s3","role":"Marshal","status":"Completed","hours":null,"remarks":""},{"id":"d18","activityId":"a3","studentId":"s11","role":"Group Leader","status":"Completed","hours":null,"remarks":""},{"id":"d19","activityId":"a3","studentId":"s9","role":"Facilitator","status":"Completed","hours":null,"remarks":""},{"id":"d20","activityId":"a3","studentId":"s21","role":"Logistics","status":"Completed","hours":null,"remarks":""},{"id":"d21","activityId":"a3","studentId":"s16","role":"Group Leader","status":"Completed","hours":null,"remarks":""},{"id":"d22","activityId":"a3","studentId":"s4","role":"Facilitator","status":"Completed","hours":null,"remarks":""},{"id":"d23","activityId":"a3","studentId":"s24","role":"Logistics","status":"Withdrawn","hours":null,"remarks":"MC'd — excused"},{"id":"d24","activityId":"a4","studentId":"s14","role":"Emcee","status":"Confirmed","hours":null,"remarks":""},{"id":"d25","activityId":"a4","studentId":"s17","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d26","activityId":"a4","studentId":"s11","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d27","activityId":"a4","studentId":"s21","role":"Marshal","status":"Tentative","hours":null,"remarks":""},{"id":"d28","activityId":"a4","studentId":"s4","role":"Tech Crew","status":"Confirmed","hours":null,"remarks":""},{"id":"d29","activityId":"a4","studentId":"s15","role":"Registration","status":"Confirmed","hours":null,"remarks":""},{"id":"d30","activityId":"a4","studentId":"s12","role":"Emcee","status":"Confirmed","hours":null,"remarks":""},{"id":"d31","activityId":"a4","studentId":"s7","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d32","activityId":"a4","studentId":"s19","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d33","activityId":"a5","studentId":"s5","role":"Emcee","status":"Tentative","hours":null,"remarks":""},{"id":"d34","activityId":"a5","studentId":"s14","role":"Usher","status":"Tentative","hours":null,"remarks":""},{"id":"d35","activityId":"a5","studentId":"s1","role":"Tech Crew","status":"Confirmed","hours":null,"remarks":""},{"id":"d36","activityId":"a5","studentId":"s7","role":"Emcee","status":"Confirmed","hours":null,"remarks":""},{"id":"d37","activityId":"a5","studentId":"s2","role":"Usher","status":"Tentative","hours":null,"remarks":""},{"id":"d38","activityId":"a5","studentId":"s17","role":"Tech Crew","status":"Confirmed","hours":null,"remarks":""},{"id":"d39","activityId":"a6","studentId":"s10","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d40","activityId":"a6","studentId":"s21","role":"Logistics","status":"Confirmed","hours":null,"remarks":""},{"id":"d41","activityId":"a6","studentId":"s19","role":"Group Leader","status":"Tentative","hours":null,"remarks":""},{"id":"d42","activityId":"a6","studentId":"s20","role":"Registration","status":"Confirmed","hours":null,"remarks":""},{"id":"d43","activityId":"a6","studentId":"s3","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d44","activityId":"a6","studentId":"s6","role":"Logistics","status":"Confirmed","hours":null,"remarks":""},{"id":"d45","activityId":"a6","studentId":"s4","role":"Group Leader","status":"Confirmed","hours":null,"remarks":""},{"id":"d46","activityId":"a6","studentId":"s23","role":"Registration","status":"Confirmed","hours":null,"remarks":""},{"id":"d47","activityId":"a6","studentId":"s2","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d48","activityId":"a6","studentId":"s8","role":"Logistics","status":"Confirmed","hours":null,"remarks":""},{"id":"d49","activityId":"a7","studentId":"s14","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d50","activityId":"a7","studentId":"s1","role":"Registration","status":"Confirmed","hours":null,"remarks":""},{"id":"d51","activityId":"a8","studentId":"s20","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d52","activityId":"a8","studentId":"s18","role":"Logistics","status":"Tentative","hours":null,"remarks":""},{"id":"d53","activityId":"a8","studentId":"s5","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d54","activityId":"a9","studentId":"s1","role":"Group Leader","status":"Confirmed","hours":null,"remarks":""},{"id":"d55","activityId":"a9","studentId":"s3","role":"Facilitator","status":"Tentative","hours":null,"remarks":""},{"id":"d56","activityId":"a9","studentId":"s2","role":"Logistics","status":"Confirmed","hours":null,"remarks":""},{"id":"d57","activityId":"a9","studentId":"s4","role":"Group Leader","status":"Confirmed","hours":null,"remarks":""},{"id":"d58","activityId":"a9","studentId":"s20","role":"Facilitator","status":"Confirmed","hours":null,"remarks":""},{"id":"d59","activityId":"a11","studentId":"s2","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d60","activityId":"a11","studentId":"s20","role":"Registration","status":"Tentative","hours":null,"remarks":""},{"id":"d61","activityId":"a11","studentId":"s24","role":"Facilitator","status":"Confirmed","hours":null,"remarks":""},{"id":"d62","activityId":"a11","studentId":"s7","role":"Photographer","status":"Tentative","hours":null,"remarks":""},{"id":"d63","activityId":"a11","studentId":"s8","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d64","activityId":"a11","studentId":"s1","role":"Usher","status":"Confirmed","hours":null,"remarks":""},{"id":"d65","activityId":"a11","studentId":"s4","role":"Registration","status":"Confirmed","hours":null,"remarks":""},{"id":"d66","activityId":"a11","studentId":"s3","role":"Facilitator","status":"Confirmed","hours":null,"remarks":""},{"id":"d67","activityId":"a11","studentId":"s19","role":"Photographer","status":"Confirmed","hours":null,"remarks":""},{"id":"d68","activityId":"a11","studentId":"s23","role":"Marshal","status":"Confirmed","hours":null,"remarks":""},{"id":"d69","activityId":"a12","studentId":"s2","role":"Facilitator","status":"Tentative","hours":null,"remarks":""},{"id":"d70","activityId":"a12","studentId":"s17","role":"Group Leader","status":"Confirmed","hours":null,"remarks":""},{"id":"d71","activityId":"a12","studentId":"s10","role":"Facilitator","status":"Confirmed","hours":null,"remarks":""},{"id":"d72","activityId":"a12","studentId":"s4","role":"Group Leader","status":"Confirmed","hours":null,"remarks":""}]}</script>
+<script data-keep>
+'use strict';
+/* =====================================================================
+   Student Leader Deployment — a self-contained dashboard.
+   All data lives in the JSON block above (#sld-data). "Save" writes a
+   copy of this whole page with the updated JSON back to the file.
+   ===================================================================== */
+
+const STATUSES = ['Confirmed', 'Tentative', 'Completed', 'Withdrawn'];
+const DEFAULT_LISTS = {
+  categories: ['Ceremony', 'School Event', 'Assembly', 'Sports', 'Community Service', 'Open House', 'Camp', 'External'],
+  roles: ['Emcee', 'Usher', 'Marshal', 'Registration', 'Logistics', 'Facilitator', 'Group Leader', 'Photographer', 'Tech Crew'],
+  groups: ['Prefect', 'Student Council', 'Class Chairperson', 'CCA Leader', 'Peer Support Leader', 'Sports Leader'],
+  formClasses: [],
+};
+const DEFAULT_SETTINGS = { title: 'Student Leader Deployment', highLoad: 4, upcomingDays: 14 };
+const DRAFT_KEY = 'sld-draft:' + location.pathname;
+const NAME_KEY = 'sld-user-name';
+
+function normalize(raw) {
+  const d = raw && typeof raw === 'object' ? raw : {};
+  return {
+    version: 1,
+    revision: Number(d.revision) || 0,
+    savedAt: d.savedAt || null,
+    savedBy: d.savedBy || null,
+    settings: { ...DEFAULT_SETTINGS, ...(d.settings || {}) },
+    lists: Object.fromEntries(Object.keys(DEFAULT_LISTS).map(k => [k, Array.isArray(d.lists?.[k]) ? d.lists[k] : DEFAULT_LISTS[k].slice()])),
+    students: Array.isArray(d.students) ? d.students : [],
+    activities: Array.isArray(d.activities) ? d.activities : [],
+    deployments: Array.isArray(d.deployments) ? d.deployments : [],
+  };
+}
+
+let data = normalize(JSON.parse(document.getElementById('sld-data').textContent || '{}'));
+let baseRevision = data.revision;
+let dirty = false;
+let fileHandle = null;
+let pendingDraft = null;
+
+const state = {
+  tab: 'dashboard',
+  activityId: null,
+  studentId: null,
+  editing: false,
+  adding: false,
+  dash: { from: '', to: '', form: '', hidePast: false },
+  actFilter: { q: '', cat: '', timing: '' },
+  stuFilter: { q: '', form: '', group: '', load: '' },
+  depFilter: { q: '', status: '', form: '', cat: '' },
+  pick: { q: '', form: '', group: '', role: '', status: 'Confirmed', selected: new Set() },
+};
+
+/* ---------------------------------------------------------------- utils */
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else if (k === 'value') node.value = v;
+    else if (k === 'checked') node.checked = !!v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of [].concat(children ?? [])) {
+    if (c === null || c === undefined || c === false) continue;
+    node.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return node;
+}
+function appendAll(node, ...kids) { node.append(...kids.filter(k => k !== null && k !== undefined && k !== false)); }
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+const pad = n => String(n).padStart(2, '0');
+function todayStr() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function addDays(iso, n) { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function fmtDate(iso, withYear = true) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-').map(Number);
+  const dow = DAYS[new Date(y, m - 1, d).getDay()];
+  return `${dow} ${d} ${MONTHS[m - 1]}${withYear ? ' ' + y : ''}`;
+}
+function fmtTime(t) { if (!t) return ''; const [h, m] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}:${pad(m)}${h < 12 ? 'am' : 'pm'}`; }
+function fmtStamp(iso) { const d = new Date(iso); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${fmtTime(pad(d.getHours()) + ':' + pad(d.getMinutes()))}`; }
+const fmtHours = h => (Math.round(h * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
+function hoursOf(a) {
+  if (!a || !a.start || !a.end) return 0;
+  const [h1, m1] = a.start.split(':').map(Number), [h2, m2] = a.end.split(':').map(Number);
+  let mins = h2 * 60 + m2 - (h1 * 60 + m1);
+  if (mins < 0) mins += 24 * 60;
+  return mins / 60;
+}
+function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort(byName); }
+
+/* ---------------------------------------------------------------- derived data */
+function computeStats(opts = {}) {
+  const { from = '', to = '', form = '' } = opts;
+  const today = todayStr(), soon = addDays(today, Number(data.settings.upcomingDays) || 14);
+  const inRange = a => (!from || (a.date && a.date >= from)) && (!to || (a.date && a.date <= to));
+  const acts = data.activities.filter(inRange);
+  const actIds = new Set(acts.map(a => a.id));
+  const stuById = new Map(data.students.map(s => [s.id, s]));
+  const actById = new Map(data.activities.map(a => [a.id, a]));
+  const deps = data.deployments.filter(d => actIds.has(d.activityId) && stuById.has(d.studentId));
+  const active = deps.filter(d => d.status !== 'Withdrawn');
+  const high = Number(data.settings.highLoad) || 4;
+
+  const act = new Map();
+  for (const a of acts) {
+    act.set(a.id, { assigned: 0, hours: hoursOf(a) });
+  }
+  for (const d of active) act.get(d.activityId).assigned++;
+  for (const a of acts) {
+    const s = act.get(a.id), need = Number(a.needed) || 0;
+    s.needed = need;
+    s.open = Math.max(0, need - s.assigned);
+    s.fill = need ? s.assigned / need : null;
+    s.staffing = !need ? 'No target' : s.assigned > need ? 'Over-staffed' : s.assigned === need ? 'Fully staffed' : s.assigned === 0 ? 'Unstaffed' : 'Short';
+    s.timing = !a.date ? 'No date' : a.date < today ? 'Past' : a.date <= soon ? 'Upcoming' : 'Later';
+  }
+
+  const students = data.students.filter(s => !form || s.formClass === form);
+  const stu = new Map(students.map(s => [s.id, { count: 0, hours: 0, latest: '' }]));
+  for (const d of active) {
+    const s = stu.get(d.studentId);
+    if (!s) continue;
+    const a = actById.get(d.activityId);
+    s.count++;
+    s.hours += d.hours !== null && d.hours !== undefined && d.hours !== '' ? Number(d.hours) || 0 : act.get(a.id).hours;
+    if (a.date && a.date > s.latest) s.latest = a.date;
+  }
+  for (const s of stu.values()) s.load = s.count === 0 ? 'Not deployed' : s.count >= high ? 'High load' : 'Deployed';
+  return { acts, act, deps, active, students, stu, stuById, actById, high, today };
+}
+
+/* All-time stats (for the editing views). */
+const allStats = () => computeStats();
+
+function depHours(d, stats) {
+  if (d.status === 'Withdrawn') return 0;
+  if (d.hours !== null && d.hours !== undefined && d.hours !== '') return Number(d.hours) || 0;
+  return hoursOf(stats.actById.get(d.activityId));
+}
+
+/* ---------------------------------------------------------------- chips */
+const STAFF_CHIP = {
+  'Fully staffed': ['good', '✓'], 'Short': ['warn', '◐'], 'Unstaffed': ['crit', '✕'],
+  'Over-staffed': ['info', '+'], 'No target': ['dim', '–'],
+};
+const LOAD_CHIP = { 'Not deployed': ['serious', '○'], 'Deployed': ['good', '✓'], 'High load': ['warn', '▲'] };
+const DEP_CHIP = { Completed: ['good', '✓'], Confirmed: ['info', '●'], Tentative: ['dim', '◌'], Withdrawn: ['withdrawn', '✕'] };
+function chip(map, label) {
+  const [cls, icon] = map[label] || ['dim', '•'];
+  return el('span', { class: 'chip ' + cls }, [el('span', { class: 'ic', 'aria-hidden': 'true', text: icon }), label]);
+}
+function timingTag(t) { return t === 'Upcoming' ? el('span', { class: 'chip info' }, [el('span', { class: 'ic', text: '◷' }), 'Upcoming']) : el('span', { class: 'muted', text: t }); }
+
+/* ---------------------------------------------------------------- tooltip & toast */
+let tipEl = null;
+function showTip(e, html) {
+  if (!tipEl) { tipEl = el('div', { class: 'tooltip', role: 'tooltip' }); document.body.append(tipEl); }
+  tipEl.replaceChildren(...html);
+  tipEl.style.display = 'block';
+  const x = Math.min(e.clientX + 14, window.innerWidth - tipEl.offsetWidth - 8);
+  const y = Math.max(8, e.clientY - tipEl.offsetHeight - 10);
+  tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+}
+function hideTip() { if (tipEl) tipEl.style.display = 'none'; }
+let toastTimer = null;
+function toast(msg) {
+  let t = document.querySelector('.toast');
+  if (!t) { t = el('div', { class: 'toast', role: 'status' }); document.body.append(t); }
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
+}
+
+/* ---------------------------------------------------------------- persistence */
+function commit(msg) {
+  dirty = true;
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ base: baseRevision, at: Date.now(), data })); } catch (_) { /* storage unavailable */ }
+  render();
+  if (msg) toast(msg);
+}
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ } }
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    if (JSON.stringify(normalize(draft.data)) === JSON.stringify(data)) { clearDraft(); return null; }
+    return draft;
+  } catch (_) { return null; }
+}
+function userName() {
+  let n = '';
+  try { n = localStorage.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
+  if (!n) {
+    n = (prompt('Your name — recorded with each save so colleagues know who updated the file:') || '').trim();
+    if (!n) return null;
+    try { localStorage.setItem(NAME_KEY, n); } catch (_) { /* ignore */ }
+  }
+  return n;
+}
+function fileName() {
+  const f = decodeURIComponent(location.pathname.split('/').pop() || '');
+  return /\.html?$/i.test(f) ? f : 'student-leader-deployment.html';
+}
+function serialize(next) {
+  const root = document.documentElement.cloneNode(true);
+  for (const part of [root.querySelector('head'), root.querySelector('body')]) {
+    for (const c of [...part.children]) if (!c.hasAttribute('data-keep')) c.remove();
+  }
+  root.querySelector('#app').replaceChildren();
+  root.removeAttribute('data-theme');
+  root.querySelector('body').removeAttribute('class');
+  root.querySelector('#sld-data').textContent = JSON.stringify(next).replace(/</g, '\\u003c');
+  return '<!doctype html>\n' + root.outerHTML;
+}
+function readRevision(html) {
+  const m = html.match(/id="sld-data"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  try { const d = JSON.parse(m[1]); return { revision: Number(d.revision) || 0, savedBy: d.savedBy, savedAt: d.savedAt }; } catch (_) { return null; }
+}
+function download(text, name) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/html' }));
+  const a = el('a', { href: url, download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function afterSave(next, how) {
+  data = next; baseRevision = next.revision; dirty = false; pendingDraft = null;
+  clearDraft(); render(); toast(how);
+}
+async function save() {
+  const who = userName();
+  if (who === null) return;
+  const next = { ...data, revision: baseRevision + 1, savedAt: new Date().toISOString(), savedBy: who };
+  const html = serialize(next);
+  if (typeof window.showSaveFilePicker === 'function') {
+    try {
+      if (!fileHandle) {
+        if (!confirm(`A save window will open.\n\nSelect THIS file on the shared drive ("${fileName()}") and choose Replace / Yes.\nYou only need to do this once while the page is open.`)) return;
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: fileName(),
+          types: [{ description: 'Dashboard (HTML)', accept: { 'text/html': ['.html', '.htm'] } }],
+        });
+      }
+      const onDisk = readRevision(await (await fileHandle.getFile()).text());
+      if (onDisk && onDisk.revision !== baseRevision) {
+        const when = onDisk.savedAt ? ' on ' + fmtStamp(onDisk.savedAt) : '';
+        if (!confirm(`${onDisk.savedBy || 'Someone'} saved this file${when}, after you opened it.\n\nSaving now will overwrite their changes. Cancel, then reopen the file to get their version (your edits stay as a draft on this computer).\n\nOverwrite anyway?`)) return;
+      }
+      const w = await fileHandle.createWritable();
+      await w.write(html);
+      await w.close();
+      afterSave(next, 'Saved to ' + fileHandle.name);
+      return;
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      fileHandle = null;
+      alert('Could not save directly (' + (e && e.message ? e.message : e) + ').\nA copy will be downloaded instead — use it to replace the file on the shared drive.');
+    }
+  } else {
+    alert(`This browser can't write to the file directly, so an updated copy will be downloaded.\n\nMove it to the shared drive and replace "${fileName()}" with it.\n(Chrome or Edge on a computer can save straight to the file.)`);
+  }
+  download(html, fileName());
+  afterSave(next, 'Downloaded updated copy — replace the file on the shared drive');
+}
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------------------------------------------------------------- shell */
+const TABS = [['dashboard', 'Dashboard'], ['activities', 'Activities'], ['students', 'Students'], ['deployments', 'Deployments'], ['settings', 'Settings & Help']];
+function go(tab, extra = {}) {
+  Object.assign(state, { tab, activityId: null, studentId: null, editing: false, adding: false }, extra);
+  state.pick.selected = new Set();
+  render();
+  window.scrollTo(0, 0);
+}
+function render() {
+  hideTip();
+  document.title = data.settings.title || DEFAULT_SETTINGS.title;
+  const app = document.getElementById('app');
+  const saveText = dirty ? 'Unsaved changes — click Save'
+    : data.savedAt ? `Last saved ${fmtStamp(data.savedAt)}${data.savedBy ? ' by ' + data.savedBy : ''}` : 'Not saved yet';
+  const top = el('header', { class: 'topbar' }, el('div', { class: 'topbar-inner' }, [
+    el('div', { class: 'title-row' }, [
+      el('h1', { text: data.settings.title || DEFAULT_SETTINGS.title }),
+      el('span', { class: 'save-state' + (dirty ? ' dirty' : ''), text: saveText }),
+      el('div', { class: 'title-actions' }, [
+        el('button', { class: 'btn', onclick: () => window.print(), title: 'Print or save the dashboard as PDF' }, 'Print'),
+        el('button', { class: 'btn primary', onclick: save }, dirty ? 'Save changes' : 'Save'),
+      ]),
+    ]),
+    el('nav', { class: 'tabs', 'aria-label': 'Sections' }, TABS.map(([k, label]) =>
+      el('button', { class: state.tab === k ? 'active' : '', onclick: () => go(k), 'aria-current': state.tab === k ? 'page' : null }, label))),
+  ]));
+  const views = { dashboard: viewDashboard, activities: viewActivities, students: viewStudents, deployments: viewDeployments, settings: viewSettings };
+  const main = el('main', {}, [draftBanner(), views[state.tab]()]);
+  app.replaceChildren(top, main);
+}
+function draftBanner() {
+  if (!pendingDraft) return null;
+  const stale = pendingDraft.base !== baseRevision;
+  return el('div', { class: 'banner no-print' }, [
+    el('span', {}, [
+      el('b', { text: 'Unsaved changes found on this computer ' }),
+      `from ${fmtStamp(new Date(pendingDraft.at).toISOString())}.`,
+      stale ? ' The file has been saved by someone since then — restoring will replace their newer changes.' : '',
+    ]),
+    el('div', { class: 'right' }, [
+      el('button', { class: 'btn small', onclick: () => { data = normalize(pendingDraft.data); pendingDraft = null; commit('Draft restored — remember to Save'); } }, 'Restore draft'),
+      el('button', { class: 'btn small', onclick: () => { pendingDraft = null; clearDraft(); render(); } }, 'Discard'),
+    ]),
+  ]);
+}
+
+/* ---------------------------------------------------------------- small builders */
+function selectEl(options, value, onchange, placeholder) {
+  const s = el('select', { onchange: e => onchange(e.target.value) });
+  if (placeholder !== undefined) s.append(el('option', { value: '', text: placeholder }));
+  for (const o of options) {
+    const [v, label] = Array.isArray(o) ? o : [o, o];
+    s.append(el('option', { value: v, text: label }));
+  }
+  if (value && ![...s.options].some(o => o.value === value)) s.append(el('option', { value, text: value }));
+  s.value = value ?? '';
+  return s;
+}
+const field = (label, control, cls) => el('label', { class: 'field' + (cls ? ' ' + cls : '') }, [label, control]);
+function searchBox(value, placeholder, oninput) {
+  return el('input', { type: 'search', value, placeholder, oninput: e => oninput(e.target.value) });
+}
+function tableOf(headers, rows, emptyText) {
+  if (!rows.length) return el('div', { class: 'empty', text: emptyText });
+  return el('div', { class: 'table-wrap' }, el('table', {}, [
+    el('thead', {}, el('tr', {}, headers.map(h => {
+      const [label, cls] = Array.isArray(h) ? h : [h, ''];
+      return el('th', { class: cls, text: label });
+    }))),
+    el('tbody', {}, rows),
+  ]));
+}
+function hbar(rows, valueLabel) {
+  if (!rows.length) return el('div', { class: 'empty', text: 'No data for this selection yet.' });
+  const max = Math.max(1, ...rows.map(r => r.value));
+  const grid = el('div', { class: 'hbar' });
+  for (const r of rows) {
+    const track = el('div', {
+      class: 'track', role: 'img', 'aria-label': `${r.label}: ${r.value} ${valueLabel}`,
+      onmousemove: e => showTip(e, [el('b', { text: r.label }), `${r.value} ${valueLabel}`, ...(r.sub ? [el('br'), r.sub] : [])]),
+      onmouseleave: hideTip,
+    }, el('div', { class: 'bar', style: `width:${(r.value / max) * 100}%` }));
+    grid.append(el('div', { class: 'lbl', title: r.label, text: r.label }), track, el('div', { class: 'val', text: r.value }));
+  }
+  return grid;
+}
+function fillBar(fill) {
+  if (fill === null) return el('span', { class: 'muted', text: '—' });
+  return el('div', { class: 'fill' }, [el('div', { class: 't' }, el('span', { style: `width:${Math.min(1, fill) * 100}%` })), el('span', { class: 'p', text: Math.round(fill * 100) + '%' })]);
+}
+const studentLink = s => el('button', { class: 'btn link', onclick: e => { e.stopPropagation(); go('students', { studentId: s.id }); } }, s.name || s.fullName);
+const activityLink = a => el('button', { class: 'btn link', onclick: e => { e.stopPropagation(); go('activities', { activityId: a.id }); } }, a.name);
+function formClassOptions() { return uniqueSorted([...data.lists.formClasses, ...data.students.map(s => s.formClass)]); }
+
+/* ================================================================ DASHBOARD */
+function viewDashboard() {
+  const f = state.dash;
+  const S = computeStats(f);
+  const wrap = el('div');
+  if (!data.students.length && !data.activities.length) {
+    wrap.append(el('div', { class: 'panel' }, [
+      el('h2', { text: 'Welcome' }),
+      el('p', { class: 'sub', text: 'Nothing to show yet. Start by adding your student leaders and activities, then assign leaders to each activity.' }),
+      el('div', { class: 'form-actions' }, [
+        el('button', { class: 'btn primary', onclick: () => go('students', { adding: true }) }, 'Add student leaders'),
+        el('button', { class: 'btn', onclick: () => go('activities', { adding: true }) }, 'Add an activity'),
+        el('button', { class: 'btn', onclick: () => go('settings') }, 'Read how sharing works'),
+      ]),
+    ]));
+    return wrap;
+  }
+
+  // Filters (one row, above everything)
+  const from = el('input', { type: 'date', value: f.from, onchange: e => { f.from = e.target.value; render(); } });
+  const to = el('input', { type: 'date', value: f.to, onchange: e => { f.to = e.target.value; render(); } });
+  wrap.append(el('div', { class: 'toolbar' }, [
+    field('From', from), field('To', to),
+    field('Form class', selectEl(formClassOptions(), f.form, v => { f.form = v; render(); }, 'All form classes')),
+    (f.from || f.to || f.form) ? el('button', { class: 'btn small', onclick: () => { Object.assign(f, { from: '', to: '', form: '' }); render(); } }, 'Clear filters') : null,
+    el('span', { class: 'muted', style: 'margin-left:auto;font-size:12.5px', text: (f.from || f.to) ? `Counting deployments for activities ${f.from ? 'from ' + fmtDate(f.from) : ''} ${f.to ? 'to ' + fmtDate(f.to) : ''}` : 'Counting all activities' }),
+  ]));
+
+  // KPI tiles
+  const nStu = S.students.length;
+  const stuStats = S.students.map(s => S.stu.get(s.id));
+  const deployed = stuStats.filter(s => s.count > 0).length;
+  const notYet = nStu - deployed;
+  const highLoad = stuStats.filter(s => s.load === 'High load').length;
+  const actStats = S.acts.map(a => S.act.get(a.id));
+  const upcomingShort = S.acts.filter(a => { const s = S.act.get(a.id); return s.timing === 'Upcoming' && s.open > 0; });
+  const openSlots = actStats.filter(s => s.timing !== 'Past').reduce((n, s) => n + s.open, 0);
+  const formActive = S.active.filter(d => S.stu.has(d.studentId));
+  const totalHours = S.students.reduce((n, s) => n + S.stu.get(s.id).hours, 0);
+  const tile = (k, v, s, alert) => el('div', { class: 'tile' + (alert ? ' alert' : '') }, [el('div', { class: 'k', text: k }), el('div', { class: 'v', text: v }), el('div', { class: 's', text: s })]);
+  wrap.append(el('div', { class: 'tiles' }, [
+    tile('Student leaders', nStu, f.form || `${formClassOptions().length} form classes`),
+    tile('Deployed', deployed, `${pct(deployed, nStu)} of leaders, at least once`),
+    tile('Not yet deployed', notYet, `${pct(notYet, nStu)} of leaders`, notYet > 0),
+    tile('High load', highLoad, `${S.high}+ deployments each`),
+    tile('Activities', S.acts.length, `${actStats.filter(s => s.timing === 'Upcoming').length} in the next ${data.settings.upcomingDays} days`),
+    tile('Deployments', formActive.length, `${fmtHours(totalHours)} leader-hours`),
+    tile('Open slots', openSlots, 'still to fill, upcoming & later', openSlots > 0),
+    tile('Due soon & short', upcomingShort.length, `activities in the next ${data.settings.upcomingDays} days`, upcomingShort.length > 0),
+  ]));
+
+  // Charts
+  const buckets = [0, 1, 2, 3].map(n => ({ label: n === 0 ? 'None yet' : `${n} deployment${n > 1 ? 's' : ''}`, value: stuStats.filter(s => s.count === n).length }));
+  buckets.push({ label: '4 or more', value: stuStats.filter(s => s.count >= 4).length });
+  buckets.forEach(b => { b.sub = `${pct(b.value, nStu)} of leaders`; });
+  const cats = uniqueSorted([...data.lists.categories, ...S.acts.map(a => a.category)]).map(c => {
+    const ids = new Set(S.acts.filter(a => a.category === c).map(a => a.id));
+    const deps = formActive.filter(d => ids.has(d.activityId));
+    return { label: c, value: deps.length, n: ids.size, sub: `${ids.size} activit${ids.size === 1 ? 'y' : 'ies'} · ${fmtHours(deps.reduce((h, d) => h + depHours(d, S), 0))} leader-hours` };
+  }).filter(c => c.n > 0).sort((a, b) => b.value - a.value || byName(a.label, b.label));
+  wrap.append(el('div', { class: 'grid-2', style: 'margin-bottom:16px' }, [
+    el('section', { class: 'panel' }, [el('h2', { text: 'How evenly are leaders deployed?' }), el('p', { class: 'sub', text: 'Number of leaders by how many times they have been deployed' }), hbar(buckets, 'leaders')]),
+    el('section', { class: 'panel' }, [el('h2', { text: 'Deployments by category' }), el('p', { class: 'sub', text: 'Active deployments (withdrawals excluded)' }), hbar(cats, 'deployments')]),
+  ]));
+
+  // Activity staffing
+  const actsSorted = S.acts.slice().sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || byName(a.name, b.name))
+    .filter(a => !f.hidePast || S.act.get(a.id).timing !== 'Past');
+  wrap.append(el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [
+      el('h2', { text: 'Activity staffing' }),
+      el('span', { class: 'muted', style: 'font-size:12.5px', text: 'Sorted by date · click an activity to assign leaders' }),
+      el('div', { class: 'right' }, el('label', { class: 'check no-print' }, [el('input', { type: 'checkbox', checked: f.hidePast, onchange: e => { f.hidePast = e.target.checked; render(); } }), 'Hide past'])),
+    ]),
+    tableOf(['Date', 'Activity', 'Category', ['Needed', 'num'], ['Assigned', 'num'], ['Open', 'num'], 'Fill', 'Status'],
+      actsSorted.map(a => {
+        const s = S.act.get(a.id);
+        return el('tr', { class: 'click' + (s.timing === 'Past' ? ' past' : ''), onclick: () => go('activities', { activityId: a.id }) }, [
+          el('td', { class: 'nowrap' }, [fmtDate(a.date, false), s.timing === 'Upcoming' ? el('div', {}, timingTag('Upcoming')) : null]),
+          el('td', { text: a.name }), el('td', { text: a.category || '' }),
+          el('td', { class: 'num', text: s.needed || '—' }), el('td', { class: 'num', text: s.assigned }),
+          el('td', { class: 'num', text: s.open || '' }),
+          el('td', {}, fillBar(s.fill)), el('td', {}, chip(STAFF_CHIP, s.staffing)),
+        ]);
+      }), 'No activities in this period.'),
+  ]));
+
+  // By form class + most deployed
+  const forms = formClassOptions().filter(fc => !f.form || fc === f.form).map(fc => {
+    const list = S.students.filter(s => s.formClass === fc);
+    const st = list.map(s => S.stu.get(s.id));
+    const dep = st.filter(s => s.count > 0).length, total = st.reduce((n, s) => n + s.count, 0);
+    return { fc, n: list.length, dep, total };
+  }).filter(r => r.n > 0);
+  const top = S.students.filter(s => S.stu.get(s.id).count > 0)
+    .sort((a, b) => S.stu.get(b.id).count - S.stu.get(a.id).count || S.stu.get(b.id).hours - S.stu.get(a.id).hours || byName(a.fullName, b.fullName)).slice(0, 10);
+  wrap.append(el('div', { class: 'grid-2', style: 'margin-bottom:16px' }, [
+    el('section', { class: 'panel' }, [
+      el('h2', { text: 'By form class' }), el('p', { class: 'sub', text: 'Who has had a turn, per class' }),
+      tableOf(['Form class', ['Leaders', 'num'], ['Deployed', 'num'], ['Not yet', 'num'], ['Deployments', 'num'], ['Avg / leader', 'num']],
+        forms.map(r => el('tr', {}, [
+          el('td', { text: r.fc }), el('td', { class: 'num', text: r.n }), el('td', { class: 'num', text: r.dep }),
+          el('td', { class: 'num' }, r.n - r.dep ? el('b', { text: r.n - r.dep }) : '0'),
+          el('td', { class: 'num', text: r.total }), el('td', { class: 'num', text: (r.total / r.n).toFixed(1) }),
+        ])), 'No students yet.'),
+    ]),
+    el('section', { class: 'panel' }, [
+      el('h2', { text: 'Most deployed' }), el('p', { class: 'sub', text: 'Watch for over-reliance on the same leaders' }),
+      tableOf(['Leader', 'Form class', ['Deployments', 'num'], ['Hours', 'num'], ''],
+        top.map(s => {
+          const st = S.stu.get(s.id);
+          return el('tr', { class: 'click', onclick: () => go('students', { studentId: s.id }) }, [
+            el('td', {}, el('div', { class: 'stack-name' }, [s.name || s.fullName, el('small', { text: s.fullName })])),
+            el('td', { text: s.formClass }), el('td', { class: 'num', text: st.count }), el('td', { class: 'num', text: fmtHours(st.hours) }),
+            el('td', {}, st.load === 'High load' ? chip(LOAD_CHIP, 'High load') : null),
+          ]);
+        }), 'No deployments yet.'),
+    ]),
+  ]));
+
+  // Not yet deployed
+  const idle = S.students.filter(s => S.stu.get(s.id).count === 0).sort((a, b) => byName(a.formClass, b.formClass) || byName(a.fullName, b.fullName));
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: `Not yet deployed (${idle.length})` }), el('p', { class: 'sub', text: 'Give these leaders a turn — click a name to see their profile' }),
+    idle.length ? el('div', { class: 'name-chips' }, idle.map(s => el('button', { onclick: () => go('students', { studentId: s.id }) }, [s.name || s.fullName, el('small', { text: s.formClass })])))
+      : el('div', { class: 'empty', text: 'Every leader has been deployed at least once.' }),
+  ]));
+  return wrap;
+}
+
+/* ================================================================ ACTIVITIES */
+const ACT_FIELDS = [
+  ['name', 'Activity name', 'text', 'wide'], ['category', 'Category', 'category'], ['date', 'Date', 'date'],
+  ['start', 'Start time', 'time'], ['end', 'End time', 'time'], ['needed', 'Leaders needed', 'number'],
+  ['venue', 'Venue', 'text'], ['teacher', 'Teacher-in-charge', 'text'], ['notes', 'Notes', 'text', 'wide'],
+];
+const STU_FIELDS = [
+  ['fullName', 'Full name', 'text'], ['name', 'Preferred name', 'text'], ['formClass', 'Form class', 'formClass'],
+  ['group', 'Leadership group', 'group'], ['notes', 'Notes', 'text', 'wide'],
+];
+function recordForm(fields, record, onSubmit, onCancel, submitLabel) {
+  const inputs = {};
+  const grid = el('div', { class: 'form-grid' });
+  for (const [key, label, type, cls] of fields) {
+    let control;
+    if (type === 'category') control = selectEl(data.lists.categories, record[key] || '', () => {}, '—');
+    else if (type === 'group') control = selectEl(data.lists.groups, record[key] || '', () => {}, '—');
+    else if (type === 'formClass') {
+      const listId = 'fc-' + Math.random().toString(36).slice(2);
+      control = el('input', { type: 'text', list: listId, value: record[key] || '', autocomplete: 'off' });
+      grid.append(el('datalist', { id: listId }, formClassOptions().map(v => el('option', { value: v }))));
+    } else control = el('input', { type, value: record[key] ?? '', min: type === 'number' ? '0' : null, step: type === 'number' ? '1' : null });
+    inputs[key] = control;
+    grid.append(field(label, control, cls));
+  }
+  const err = el('div', { class: 'muted', style: 'color:var(--danger-ink);margin-top:8px' });
+  const form = el('form', {
+    onsubmit: e => {
+      e.preventDefault();
+      const values = Object.fromEntries(Object.entries(inputs).map(([k, c]) => [k, c.value.trim()]));
+      const problem = onSubmit(values);
+      if (problem) err.textContent = problem;
+    },
+  }, [grid, err, el('div', { class: 'form-actions' }, [
+    el('button', { class: 'btn primary', type: 'submit' }, submitLabel),
+    onCancel ? el('button', { class: 'btn', type: 'button', onclick: onCancel }, 'Cancel') : null,
+  ])]);
+  setTimeout(() => inputs[fields[0][0]].focus(), 0);
+  return form;
+}
+function saveActivity(existing, v) {
+  if (!v.name) return 'Activity name is required.';
+  if (v.start && v.end && v.end <= v.start) return 'End time must be after the start time.';
+  const rec = { ...(existing || { id: uid('a') }), ...v, needed: v.needed === '' ? 0 : Math.max(0, parseInt(v.needed, 10) || 0) };
+  if (existing) Object.assign(existing, rec); else data.activities.push(rec);
+  return rec;
+}
+
+function viewActivities() {
+  if (state.activityId) {
+    const a = data.activities.find(x => x.id === state.activityId);
+    if (a) return activityDetail(a);
+  }
+  const S = allStats();
+  const f = state.actFilter;
+  const wrap = el('div');
+  if (state.adding) {
+    wrap.append(el('section', { class: 'panel' }, [el('h2', { text: 'New activity' }), el('p', { class: 'sub', text: 'Hours are worked out from the start and end time.' }),
+      recordForm(ACT_FIELDS, { needed: '' }, v => {
+        const r = saveActivity(null, v);
+        if (typeof r === 'string') return r;
+        state.adding = false; state.activityId = r.id; commit('Activity added — now assign leaders');
+        return null;
+      }, () => { state.adding = false; render(); }, 'Add activity')]));
+  }
+  const body = el('div');
+  const refresh = () => {
+    const q = f.q.toLowerCase();
+    const list = data.activities.filter(a => {
+      const s = S.act.get(a.id);
+      return (!q || [a.name, a.venue, a.teacher, a.category].some(x => (x || '').toLowerCase().includes(q)))
+        && (!f.cat || a.category === f.cat)
+        && (!f.timing || (f.timing === 'Past' ? s.timing === 'Past' : s.timing !== 'Past'));
+    }).sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999') || byName(a.name, b.name));
+    body.replaceChildren(tableOf(['Date', 'Time', 'Activity', 'Category', 'Venue', 'Teacher-in-charge', ['Needed', 'num'], ['Assigned', 'num'], 'Status'],
+      list.map(a => {
+        const s = S.act.get(a.id);
+        return el('tr', { class: 'click' + (s.timing === 'Past' ? ' past' : ''), onclick: () => go('activities', { activityId: a.id }) }, [
+          el('td', { class: 'nowrap', text: fmtDate(a.date) }), el('td', { class: 'nowrap', text: a.start ? `${fmtTime(a.start)}–${fmtTime(a.end)}` : '' }),
+          el('td', {}, el('b', { text: a.name })), el('td', { text: a.category || '' }), el('td', { text: a.venue || '' }), el('td', { text: a.teacher || '' }),
+          el('td', { class: 'num', text: s.needed || '—' }), el('td', { class: 'num', text: s.assigned }), el('td', {}, chip(STAFF_CHIP, s.staffing)),
+        ]);
+      }), data.activities.length ? 'No activities match these filters.' : 'No activities yet — click “Add activity”.'));
+  };
+  wrap.append(el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h2', { text: `Activities (${data.activities.length})` }),
+      el('div', { class: 'right' }, state.adding ? null : el('button', { class: 'btn primary', onclick: () => { state.adding = true; render(); } }, '+ Add activity'))]),
+    el('div', { class: 'toolbar' }, [
+      el('div', { class: 'grow' }, field('Search', searchBox(f.q, 'Name, venue, teacher…', v => { f.q = v; refresh(); }))),
+      field('Category', selectEl(data.lists.categories, f.cat, v => { f.cat = v; refresh(); }, 'All')),
+      field('When', selectEl([['upcoming', 'Today & later'], ['Past', 'Past']], f.timing, v => { f.timing = v; refresh(); }, 'All dates')),
+    ]),
+    body,
+  ]));
+  refresh();
+  return wrap;
+}
+
+function activityDetail(a) {
+  const S = allStats();
+  const s = S.act.get(a.id);
+  const wrap = el('div');
+  wrap.append(el('div', { class: 'crumbs' }, el('button', { class: 'btn link', onclick: () => go('activities') }, '← All activities')));
+
+  const head = el('section', { class: 'panel' });
+  if (state.editing) {
+    appendAll(head, el('h2', { text: 'Edit activity' }), el('p', { class: 'sub' }, ''),
+      recordForm(ACT_FIELDS, a, v => {
+        const r = saveActivity(a, v);
+        if (typeof r === 'string') return r;
+        state.editing = false; commit('Activity updated');
+        return null;
+      }, () => { state.editing = false; render(); }, 'Save details'));
+  } else {
+    appendAll(head, 
+      el('div', { class: 'panel-head' }, [
+        el('h2', { style: 'font-size:18px', text: a.name }), chip(STAFF_CHIP, s.staffing), s.timing === 'Upcoming' ? timingTag('Upcoming') : null,
+        el('div', { class: 'right' }, [
+          el('button', { class: 'btn small', onclick: () => { state.editing = true; render(); } }, 'Edit details'),
+          el('button', { class: 'btn small danger', onclick: () => {
+            const n = data.deployments.filter(d => d.activityId === a.id).length;
+            if (!confirm(`Delete "${a.name}"${n ? ` and its ${n} deployment record${n > 1 ? 's' : ''}` : ''}?`)) return;
+            data.activities = data.activities.filter(x => x.id !== a.id);
+            data.deployments = data.deployments.filter(d => d.activityId !== a.id);
+            state.activityId = null; commit('Activity deleted');
+          } }, 'Delete'),
+        ]),
+      ]),
+      el('div', { class: 'detail-meta' }, [
+        el('span', {}, ['Date ', el('b', { text: fmtDate(a.date) })]),
+        a.start ? el('span', {}, ['Time ', el('b', { text: `${fmtTime(a.start)}–${fmtTime(a.end)} (${fmtHours(s.hours)} h)` })]) : null,
+        el('span', {}, ['Category ', el('b', { text: a.category || '—' })]),
+        el('span', {}, ['Venue ', el('b', { text: a.venue || '—' })]),
+        el('span', {}, ['Teacher-in-charge ', el('b', { text: a.teacher || '—' })]),
+        el('span', {}, ['Staffing ', el('b', { text: `${s.assigned} of ${s.needed || '—'} leaders` })]),
+      ]),
+      a.notes ? el('p', { class: 'muted', style: 'margin:8px 0 0', text: a.notes }) : null,
+    );
+  }
+  wrap.append(head);
+
+  // Roster
+  const roster = data.deployments.filter(d => d.activityId === a.id && S.stuById.has(d.studentId))
+    .sort((x, y) => (x.status === 'Withdrawn') - (y.status === 'Withdrawn') || byName(S.stuById.get(x.studentId).fullName, S.stuById.get(y.studentId).fullName));
+  wrap.append(el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h2', { text: `Assigned leaders (${s.assigned}${s.needed ? ' / ' + s.needed : ''})` }),
+      el('span', { class: 'muted', style: 'font-size:12.5px', text: 'Changes apply immediately — remember to Save' })]),
+    tableOf(['Leader', 'Form class', 'Role', 'Status', ['Hours', 'num'], 'Remarks', ''], roster.map(d => {
+      const st = S.stuById.get(d.studentId);
+      return el('tr', { class: d.status === 'Withdrawn' ? 'past' : '' }, [
+        el('td', {}, el('div', { class: 'stack-name' }, [studentLink(st), el('small', { text: st.fullName })])),
+        el('td', { text: st.formClass }),
+        el('td', {}, selectEl(data.lists.roles, d.role || '', v => { d.role = v; commit(); }, '—')),
+        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; commit(); })),
+        el('td', { class: 'num' }, el('input', { type: 'number', min: '0', step: '0.5', value: d.hours ?? '', placeholder: fmtHours(s.hours), title: 'Leave blank to credit the activity duration', onchange: e => { d.hours = e.target.value === '' ? null : Number(e.target.value); commit(); } })),
+        el('td', {}, el('input', { type: 'text', value: d.remarks || '', placeholder: '—', onchange: e => { d.remarks = e.target.value.trim(); commit(); } })),
+        el('td', {}, el('button', { class: 'btn small danger', title: 'Remove from this activity', onclick: () => {
+          if (!confirm(`Remove ${st.fullName} from this activity? (To keep a record, set the status to Withdrawn instead.)`)) return;
+          data.deployments = data.deployments.filter(x => x !== d); commit('Removed');
+        } }, 'Remove')),
+      ]);
+    }), 'Nobody assigned yet — pick leaders below.'),
+  ]));
+
+  wrap.append(assignPanel(a, S));
+  return wrap;
+}
+
+function assignPanel(a, S) {
+  const p = state.pick;
+  const assigned = new Set(data.deployments.filter(d => d.activityId === a.id && d.status !== 'Withdrawn').map(d => d.studentId));
+  // Same-day commitments, for clash warnings.
+  const busy = new Map();
+  if (a.date) {
+    for (const d of data.deployments) {
+      if (d.status === 'Withdrawn' || d.activityId === a.id) continue;
+      const other = S.actById.get(d.activityId);
+      if (other && other.date === a.date) busy.set(d.studentId, other.name);
+    }
+  }
+  const list = el('div', { class: 'pick-list' });
+  const countEl = el('span', { class: 'muted', style: 'font-size:12.5px' });
+  const assignBtn = el('button', { class: 'btn primary', type: 'button' }, 'Assign');
+  const sync = () => {
+    const n = p.selected.size;
+    assignBtn.textContent = n ? `Assign ${n} leader${n > 1 ? 's' : ''}` : 'Assign';
+    assignBtn.disabled = !n;
+  };
+  const refresh = () => {
+    const q = p.q.toLowerCase();
+    const cands = data.students.filter(s => !assigned.has(s.id)
+      && (!q || [s.fullName, s.name, s.formClass].some(x => (x || '').toLowerCase().includes(q)))
+      && (!p.form || s.formClass === p.form) && (!p.group || s.group === p.group))
+      .sort((x, y) => S.stu.get(x.id).count - S.stu.get(y.id).count || byName(x.fullName, y.fullName));
+    countEl.textContent = `${cands.length} available · fewest deployments first`;
+    list.replaceChildren(...(cands.length ? cands.map(s => {
+      const st = S.stu.get(s.id);
+      const cb = el('input', { type: 'checkbox', checked: p.selected.has(s.id), 'aria-label': 'Select ' + s.fullName });
+      const toggle = () => { if (cb.checked) p.selected.add(s.id); else p.selected.delete(s.id); sync(); };
+      cb.addEventListener('change', toggle);
+      return el('label', { class: 'pick-row' }, [cb,
+        el('span', { class: 'who' }, [el('b', { text: s.name || s.fullName }), el('small', { text: `${s.fullName} · ${s.formClass}${s.group ? ' · ' + s.group : ''}` })]),
+        el('span', { class: 'meta' }, [
+          busy.has(s.id) ? el('span', { class: 'chip warn', title: 'Already deployed to another activity that day' }, [el('span', { class: 'ic', text: '!' }), 'Busy: ' + busy.get(s.id)]) : null,
+          st.count >= S.high ? chip(LOAD_CHIP, 'High load') : null,
+          el('span', { class: 'count-pill', title: 'Deployments so far', text: `${st.count} so far` }),
+        ]),
+      ]);
+    }) : [el('div', { class: 'empty', text: data.students.length ? 'No one else matches — everyone suitable is assigned.' : 'Add students on the Students tab first.' })]));
+    sync();
+  };
+  assignBtn.addEventListener('click', () => {
+    let added = 0;
+    for (const id of p.selected) {
+      const existing = data.deployments.find(d => d.activityId === a.id && d.studentId === id);
+      if (existing) { existing.status = p.status; if (p.role) existing.role = p.role; }
+      else data.deployments.push({ id: uid('d'), activityId: a.id, studentId: id, role: p.role, status: p.status, hours: null, remarks: '' });
+      added++;
+    }
+    p.selected = new Set();
+    commit(`${added} leader${added > 1 ? 's' : ''} assigned`);
+  });
+  const panel = el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h2', { text: 'Assign leaders' }), countEl]),
+    el('div', { class: 'toolbar' }, [
+      el('div', { class: 'grow' }, field('Search', searchBox(p.q, 'Name or form class…', v => { p.q = v; refresh(); }))),
+      field('Form class', selectEl(formClassOptions(), p.form, v => { p.form = v; refresh(); }, 'All')),
+      field('Group', selectEl(data.lists.groups, p.group, v => { p.group = v; refresh(); }, 'All')),
+    ]),
+    list,
+    el('div', { class: 'toolbar', style: 'margin:14px 0 0' }, [
+      field('Role for selected', selectEl(data.lists.roles, p.role, v => { p.role = v; }, '—')),
+      field('Status', selectEl(STATUSES.filter(x => x !== 'Withdrawn'), p.status, v => { p.status = v; })),
+      assignBtn,
+    ]),
+  ]);
+  refresh();
+  return panel;
+}
+
+/* ================================================================ STUDENTS */
+function saveStudent(existing, v) {
+  if (!v.fullName) return 'Full name is required.';
+  if (!v.formClass) return 'Form class is required.';
+  const clash = data.students.find(s => s !== existing && s.fullName.toLowerCase() === v.fullName.toLowerCase() && s.formClass === v.formClass);
+  if (clash) return `${v.fullName} (${v.formClass}) is already on the list.`;
+  const rec = { ...(existing || { id: uid('s') }), ...v, name: v.name || v.fullName.split(' ')[0] };
+  if (existing) Object.assign(existing, rec); else data.students.push(rec);
+  if (!data.lists.formClasses.includes(v.formClass)) data.lists.formClasses.push(v.formClass);
+  return rec;
+}
+function viewStudents() {
+  if (state.studentId) {
+    const s = data.students.find(x => x.id === state.studentId);
+    if (s) return studentDetail(s);
+  }
+  const S = allStats();
+  const f = state.stuFilter;
+  const wrap = el('div');
+  if (state.adding) {
+    wrap.append(el('section', { class: 'panel' }, [el('h2', { text: 'New student leader' }), el('p', { class: 'sub', text: 'Add several in a row — the form stays open after each one. To add many at once, use Settings › Import students.' }),
+      recordForm(STU_FIELDS, {}, v => {
+        const r = saveStudent(null, v);
+        if (typeof r === 'string') return r;
+        commit(`Added ${r.fullName}`);
+        return null;
+      }, () => { state.adding = false; render(); }, 'Add student')]));
+  }
+  const body = el('div');
+  const refresh = () => {
+    const q = f.q.toLowerCase();
+    const list = data.students.filter(s => (!q || [s.fullName, s.name, s.notes].some(x => (x || '').toLowerCase().includes(q)))
+      && (!f.form || s.formClass === f.form) && (!f.group || s.group === f.group) && (!f.load || S.stu.get(s.id).load === f.load))
+      .sort((a, b) => byName(a.fullName, b.fullName));
+    body.replaceChildren(tableOf(['Leader', 'Form class', 'Group', ['Deployments', 'num'], ['Hours', 'num'], 'Latest activity', 'Load'],
+      list.map(s => {
+        const st = S.stu.get(s.id);
+        return el('tr', { class: 'click', onclick: () => go('students', { studentId: s.id }) }, [
+          el('td', {}, el('div', { class: 'stack-name' }, [el('b', { text: s.name || s.fullName }), el('small', { text: s.fullName })])),
+          el('td', { text: s.formClass }), el('td', { text: s.group || '' }),
+          el('td', { class: 'num', text: st.count }), el('td', { class: 'num', text: fmtHours(st.hours) }),
+          el('td', { class: 'nowrap', text: st.latest ? fmtDate(st.latest) : '—' }), el('td', {}, chip(LOAD_CHIP, st.load)),
+        ]);
+      }), data.students.length ? 'No students match these filters.' : 'No student leaders yet — click “Add student”.'));
+  };
+  wrap.append(el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h2', { text: `Student leaders (${data.students.length})` }),
+      el('div', { class: 'right' }, state.adding ? null : el('button', { class: 'btn primary', onclick: () => { state.adding = true; render(); } }, '+ Add student'))]),
+    el('div', { class: 'toolbar' }, [
+      el('div', { class: 'grow' }, field('Search', searchBox(f.q, 'Name…', v => { f.q = v; refresh(); }))),
+      field('Form class', selectEl(formClassOptions(), f.form, v => { f.form = v; refresh(); }, 'All')),
+      field('Group', selectEl(data.lists.groups, f.group, v => { f.group = v; refresh(); }, 'All')),
+      field('Load', selectEl(Object.keys(LOAD_CHIP), f.load, v => { f.load = v; refresh(); }, 'All')),
+    ]),
+    body,
+  ]));
+  refresh();
+  return wrap;
+}
+function studentDetail(s) {
+  const S = allStats();
+  const st = S.stu.get(s.id);
+  const wrap = el('div');
+  wrap.append(el('div', { class: 'crumbs' }, el('button', { class: 'btn link', onclick: () => go('students') }, '← All students')));
+  const head = el('section', { class: 'panel' });
+  if (state.editing) {
+    appendAll(head, el('h2', { text: 'Edit student' }), el('p', { class: 'sub' }, ''),
+      recordForm(STU_FIELDS, s, v => {
+        const r = saveStudent(s, v);
+        if (typeof r === 'string') return r;
+        state.editing = false; commit('Student updated');
+        return null;
+      }, () => { state.editing = false; render(); }, 'Save details'));
+  } else {
+    appendAll(head, 
+      el('div', { class: 'panel-head' }, [el('h2', { style: 'font-size:18px', text: s.fullName }), chip(LOAD_CHIP, st.load),
+        el('div', { class: 'right' }, [
+          el('button', { class: 'btn small', onclick: () => { state.editing = true; render(); } }, 'Edit details'),
+          el('button', { class: 'btn small danger', onclick: () => {
+            const n = data.deployments.filter(d => d.studentId === s.id).length;
+            if (!confirm(`Delete ${s.fullName}${n ? ` and their ${n} deployment record${n > 1 ? 's' : ''}` : ''}?`)) return;
+            data.students = data.students.filter(x => x.id !== s.id);
+            data.deployments = data.deployments.filter(d => d.studentId !== s.id);
+            state.studentId = null; commit('Student deleted');
+          } }, 'Delete'),
+        ])]),
+      el('div', { class: 'detail-meta' }, [
+        el('span', {}, ['Preferred name ', el('b', { text: s.name || '—' })]),
+        el('span', {}, ['Form class ', el('b', { text: s.formClass })]),
+        el('span', {}, ['Group ', el('b', { text: s.group || '—' })]),
+        el('span', {}, ['Deployments ', el('b', { text: st.count })]),
+        el('span', {}, ['Leader-hours ', el('b', { text: fmtHours(st.hours) })]),
+      ]),
+      s.notes ? el('p', { class: 'muted', style: 'margin:8px 0 0', text: s.notes }) : null);
+  }
+  wrap.append(head);
+  const deps = data.deployments.filter(d => d.studentId === s.id && S.actById.has(d.activityId))
+    .sort((x, y) => (S.actById.get(x.activityId).date || '').localeCompare(S.actById.get(y.activityId).date || ''));
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: 'Deployment history' }), el('p', { class: 'sub', text: 'To add one, open the activity and use “Assign leaders”.' }),
+    tableOf(['Date', 'Activity', 'Category', 'Role', 'Status', ['Hours', 'num'], 'Remarks'], deps.map(d => {
+      const a = S.actById.get(d.activityId);
+      return el('tr', { class: d.status === 'Withdrawn' ? 'past' : '' }, [
+        el('td', { class: 'nowrap', text: fmtDate(a.date) }), el('td', {}, activityLink(a)), el('td', { text: a.category || '' }),
+        el('td', { text: d.role || '—' }), el('td', {}, chip(DEP_CHIP, d.status)), el('td', { class: 'num', text: fmtHours(depHours(d, S)) }),
+        el('td', { class: 'muted', text: d.remarks || '' }),
+      ]);
+    }), 'Not deployed yet.'),
+  ]));
+  return wrap;
+}
+
+/* ================================================================ DEPLOYMENTS LOG */
+function deploymentRows(S, f) {
+  const q = (f.q || '').toLowerCase();
+  return data.deployments.filter(d => S.actById.has(d.activityId) && S.stuById.has(d.studentId)).filter(d => {
+    const a = S.actById.get(d.activityId), s = S.stuById.get(d.studentId);
+    return (!q || [a.name, s.fullName, s.name, d.role, d.remarks].some(x => (x || '').toLowerCase().includes(q)))
+      && (!f.status || d.status === f.status) && (!f.form || s.formClass === f.form) && (!f.cat || a.category === f.cat);
+  }).sort((x, y) => (S.actById.get(y.activityId).date || '').localeCompare(S.actById.get(x.activityId).date || '')
+    || byName(S.stuById.get(x.studentId).fullName, S.stuById.get(y.studentId).fullName));
+}
+function viewDeployments() {
+  const S = allStats();
+  const f = state.depFilter;
+  const body = el('div');
+  const countEl = el('span', { class: 'muted', style: 'font-size:12.5px' });
+  const refresh = () => {
+    const rows = deploymentRows(S, f);
+    countEl.textContent = `${rows.length} record${rows.length === 1 ? '' : 's'}`;
+    body.replaceChildren(tableOf(['Date', 'Activity', 'Leader', 'Form class', 'Role', 'Status', ['Hours', 'num'], 'Remarks'], rows.map(d => {
+      const a = S.actById.get(d.activityId), s = S.stuById.get(d.studentId);
+      return el('tr', { class: d.status === 'Withdrawn' ? 'past' : '' }, [
+        el('td', { class: 'nowrap', text: fmtDate(a.date) }), el('td', {}, activityLink(a)),
+        el('td', {}, el('div', { class: 'stack-name' }, [studentLink(s), el('small', { text: s.fullName })])), el('td', { text: s.formClass }),
+        el('td', { text: d.role || '—' }),
+        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; commit('Status updated'); })),
+        el('td', { class: 'num', text: fmtHours(depHours(d, S)) }), el('td', { class: 'muted', text: d.remarks || '' }),
+      ]);
+    }), data.deployments.length ? 'No records match these filters.' : 'No deployments yet. Open an activity and use “Assign leaders”.'));
+  };
+  const panel = el('section', { class: 'panel' }, [
+    el('div', { class: 'panel-head' }, [el('h2', { text: 'Deployment log' }), countEl,
+      el('div', { class: 'right' }, el('button', { class: 'btn small', onclick: () => exportCsv('deployments') }, 'Export CSV'))]),
+    el('p', { class: 'sub', text: 'Every assignment, newest first. Change a status here; add new deployments from an activity’s page.' }),
+    el('div', { class: 'toolbar' }, [
+      el('div', { class: 'grow' }, field('Search', searchBox(f.q, 'Leader, activity, role, remarks…', v => { f.q = v; refresh(); }))),
+      field('Status', selectEl(STATUSES, f.status, v => { f.status = v; refresh(); }, 'All')),
+      field('Form class', selectEl(formClassOptions(), f.form, v => { f.form = v; refresh(); }, 'All')),
+      field('Category', selectEl(data.lists.categories, f.cat, v => { f.cat = v; refresh(); }, 'All')),
+    ]),
+    body,
+  ]);
+  refresh();
+  return panel;
+}
+
+/* ================================================================ SETTINGS, IMPORT/EXPORT, HELP */
+function csvCell(v) { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function saveCsv(name, rows) {
+  const text = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
+  const a = el('a', { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function exportCsv(kind) {
+  const S = allStats();
+  if (kind === 'deployments') {
+    saveCsv('deployments.csv', [['Date', 'Activity', 'Category', 'Full name', 'Name', 'Form class', 'Role', 'Status', 'Hours', 'Remarks'],
+      ...deploymentRows(S, {}).map(d => { const a = S.actById.get(d.activityId), s = S.stuById.get(d.studentId);
+        return [a.date, a.name, a.category, s.fullName, s.name, s.formClass, d.role, d.status, depHours(d, S), d.remarks]; })]);
+  } else if (kind === 'students') {
+    saveCsv('students.csv', [['Full name', 'Name', 'Form class', 'Group', 'Deployments', 'Hours', 'Latest activity', 'Load', 'Notes'],
+      ...data.students.slice().sort((a, b) => byName(a.fullName, b.fullName)).map(s => { const st = S.stu.get(s.id);
+        return [s.fullName, s.name, s.formClass, s.group, st.count, fmtHours(st.hours), st.latest, st.load, s.notes]; })]);
+  } else {
+    saveCsv('activities.csv', [['Date', 'Start', 'End', 'Activity', 'Category', 'Venue', 'Teacher-in-charge', 'Needed', 'Assigned', 'Open', 'Status'],
+      ...data.activities.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(a => { const s = S.act.get(a.id);
+        return [a.date, a.start, a.end, a.name, a.category, a.venue, a.teacher, a.needed, s.assigned, s.open, s.staffing]; })]);
+  }
+}
+function parseRows(text) {
+  // Accepts tab-separated (pasted from Excel/Sheets) or simple comma-separated lines.
+  return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => (l.includes('\t') ? l.split('\t') : l.split(',')).map(c => c.trim().replace(/^"|"$/g, '')));
+}
+function viewSettings() {
+  const wrap = el('div', { class: 'stack' });
+  const st = data.settings;
+
+  const title = el('input', { type: 'text', value: st.title });
+  const high = el('input', { type: 'number', min: '1', value: st.highLoad });
+  const days = el('input', { type: 'number', min: '1', value: st.upcomingDays });
+  let myName = ''; try { myName = localStorage.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
+  const me = el('input', { type: 'text', value: myName, placeholder: 'e.g. Ms Tan' });
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: 'Settings' }), el('p', { class: 'sub', text: 'Stored in the file and shared with everyone, except “Your name”, which is kept on this computer.' }),
+    el('div', { class: 'form-grid' }, [
+      field('Dashboard title', title, 'wide'),
+      field('High load at (deployments)', high), field('“Upcoming” window (days)', days), field('Your name (this computer)', me),
+    ]),
+    el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
+      try { if (me.value.trim()) localStorage.setItem(NAME_KEY, me.value.trim()); else localStorage.removeItem(NAME_KEY); } catch (_) { /* ignore */ }
+      Object.assign(st, { title: title.value.trim() || DEFAULT_SETTINGS.title, highLoad: Math.max(1, parseInt(high.value, 10) || 4), upcomingDays: Math.max(1, parseInt(days.value, 10) || 14) });
+      commit('Settings updated');
+    } }, 'Apply settings')),
+  ]));
+
+  const listBoxes = {};
+  const listDefs = [['categories', 'Activity categories'], ['roles', 'Roles'], ['groups', 'Leadership groups'], ['formClasses', 'Form classes']];
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: 'Dropdown lists' }), el('p', { class: 'sub', text: 'One item per line. Renaming an item here does not change records that already use the old name.' }),
+    el('div', { class: 'form-grid' }, listDefs.map(([k, label]) => field(label, listBoxes[k] = el('textarea', { value: data.lists[k].join('\n') })))),
+    el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
+      for (const [k] of listDefs) data.lists[k] = [...new Set(listBoxes[k].value.split('\n').map(x => x.trim()).filter(Boolean))];
+      commit('Lists updated');
+    } }, 'Apply lists')),
+  ]));
+
+  const paste = el('textarea', { placeholder: 'Full name\tPreferred name\tForm class\tLeadership group\nTan Wei Ling\tWei Ling\t3 Amanah\tPrefect' });
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: 'Import students' }),
+    el('p', { class: 'sub', text: 'Copy columns from Excel or Google Sheets in this order — Full name, Preferred name, Form class, Leadership group — and paste below. A header row is skipped automatically; names already on the list are skipped.' }),
+    paste,
+    el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
+      let added = 0, skipped = 0;
+      for (const r of parseRows(paste.value)) {
+        if (/^full\s*name$/i.test(r[0] || '')) continue;
+        const res = r[0] && r[2] ? saveStudent(null, { fullName: r[0], name: r[1] || '', formClass: r[2], group: r[3] || '', notes: '' }) : 'invalid';
+        if (typeof res === 'string') skipped++; else added++;
+      }
+      paste.value = '';
+      commit(`Imported ${added} student${added === 1 ? '' : 's'}${skipped ? `, skipped ${skipped}` : ''}`);
+    } }, 'Import')),
+  ]));
+
+  const fileIn = el('input', { type: 'file', accept: '.json,application/json', style: 'display:none', onchange: async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const incoming = normalize(JSON.parse(await file.text()));
+      if (!confirm(`Replace ALL current data with this backup (${incoming.students.length} students, ${incoming.activities.length} activities, ${incoming.deployments.length} deployments)?`)) return;
+      data = { ...incoming, revision: data.revision, savedAt: data.savedAt, savedBy: data.savedBy };
+      commit('Backup loaded — click Save to keep it');
+    } catch (err) { alert('That file is not a valid backup: ' + err.message); }
+  } });
+  wrap.append(el('section', { class: 'panel' }, [
+    el('h2', { text: 'Export & housekeeping' }),
+    el('p', { class: 'sub', text: 'CSV files open in Excel or Google Sheets. A backup (.json) can be loaded back into any copy of this dashboard.' }),
+    el('div', { class: 'form-actions' }, [
+      el('button', { class: 'btn', onclick: () => exportCsv('deployments') }, 'Deployments CSV'),
+      el('button', { class: 'btn', onclick: () => exportCsv('activities') }, 'Activities CSV'),
+      el('button', { class: 'btn', onclick: () => exportCsv('students') }, 'Students CSV'),
+      el('button', { class: 'btn', onclick: () => { const u = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); const a = el('a', { href: u, download: 'student-leader-deployment-backup.json' }); document.body.append(a); a.click(); a.remove(); } }, 'Download backup'),
+      el('button', { class: 'btn', onclick: () => fileIn.click() }, 'Load backup…'), fileIn,
+    ]),
+    el('div', { class: 'form-actions' }, [
+      el('button', { class: 'btn danger', onclick: () => {
+        if (!confirm('Start a new year? This deletes all activities and deployments but keeps students, lists and settings.\n\nTip: first download a backup, or keep a copy of the file.')) return;
+        data.activities = []; data.deployments = []; commit('Activities and deployments cleared — click Save to keep');
+      } }, 'New year: clear activities & deployments'),
+      el('button', { class: 'btn danger', onclick: () => {
+        if (!confirm('Delete ALL students, activities and deployments? Lists and settings are kept.')) return;
+        data.students = []; data.activities = []; data.deployments = []; commit('All records cleared — click Save to keep');
+      } }, 'Clear all records'),
+    ]),
+  ]));
+
+  wrap.append(el('section', { class: 'panel help' }, [
+    el('h2', { text: 'How this file works' }),
+    el('p', {}, 'Everything — the dashboard and all its data — is inside this one .html file. There is nothing to install and no internet connection is needed.'),
+    el('h3', { text: 'Opening it' }),
+    el('ul', {}, [
+      el('li', {}, 'Open the file from the shared drive in File Explorer / Finder (a mapped drive, OneDrive or Google Drive for desktop). It opens in your web browser.'),
+      el('li', {}, 'The Google Drive or SharePoint website will only show it as code — download it or use the synced folder instead.'),
+    ]),
+    el('h3', { text: 'Saving changes' }),
+    el('ol', {}, [
+      el('li', {}, 'Make your changes, then click Save (top right).'),
+      el('li', {}, 'In Chrome or Edge on a computer, the first Save asks where to save — pick this same file on the shared drive and confirm Replace. Later saves in the same session go straight to the file.'),
+      el('li', {}, 'In other browsers (Safari, Firefox, phones) Save downloads an updated copy; move it to the shared drive and replace the old file.'),
+      el('li', {}, 'Unsaved changes are kept on your computer as a draft, so closing the tab by accident is recoverable.'),
+    ]),
+    el('h3', { text: 'Sharing with colleagues' }),
+    el('ul', {}, [
+      el('li', {}, 'Several people can view at once. When editing, the last save wins — Chrome/Edge will warn you if someone saved after you opened the file.'),
+      el('li', {}, 'Agree on one or two people per week who update deployments, or reopen the file before making changes.'),
+      el('li', {}, 'Each save records the editor’s name and time (shown at the top).'),
+    ]),
+    el('h3', { text: 'Counting rules' }),
+    el('ul', {}, [
+      el('li', {}, 'Confirmed, Tentative and Completed deployments all count. Withdrawn ones are kept for the record but excluded from every count and from hours.'),
+      el('li', {}, 'Leader-hours use the activity’s start/end time unless an hours override is entered for that leader.'),
+      el('li', {}, `A leader is “High load” at ${st.highLoad} or more deployments (change this above). The dashboard’s date filter counts only activities in that range — useful for a single term.`),
+    ]),
+  ]));
+  return wrap;
+}
+
+/* ---------------------------------------------------------------- start */
+pendingDraft = loadDraft();
+render();
+</script>
+</body>
+</html>
