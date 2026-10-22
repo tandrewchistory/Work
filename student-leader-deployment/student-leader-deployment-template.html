@@ -14,10 +14,14 @@
   --text: #0b0b0b;
   --text-2: #52514e;
   --muted: #74736e;
-  --accent: #2a78d6;
-  --accent-ink: #1c5cab;
-  --accent-soft: #e3eefb;
-  --series: #2a78d6;
+  --brand: #7a1c2a;          /* Damai maroon */
+  --brand-2: #5e1420;
+  --on-brand: #ffffff;
+  --on-brand-2: #f1d9dc;
+  --accent: #8c2232;
+  --accent-ink: #7a1c2a;
+  --accent-soft: #f6e6e8;
+  --series: #8c2232;
   --track: #ebeae6;
   --good: #0ca30c;
   --warn: #fab219;
@@ -32,16 +36,18 @@
     color-scheme: dark;
     --bg: #121211; --surface: #1a1a19; --surface-2: #242422; --border: #34342f;
     --text: #f0efec; --text-2: #c3c2b7; --muted: #94938b;
-    --accent: #3987e5; --accent-ink: #86b6ef; --accent-soft: #1d2a3b;
-    --series: #3987e5; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
+    --brand: #4a121b; --brand-2: #3a0e15; --on-brand: #fbeff1; --on-brand-2: #e3b9bf;
+    --accent: #b8404f; --accent-ink: #eb9aa5; --accent-soft: #3a1a1f;
+    --series: #d0606f; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #121211; --surface: #1a1a19; --surface-2: #242422; --border: #34342f;
   --text: #f0efec; --text-2: #c3c2b7; --muted: #94938b;
-  --accent: #3987e5; --accent-ink: #86b6ef; --accent-soft: #1d2a3b;
-  --series: #3987e5; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
+  --brand: #4a121b; --brand-2: #3a0e15; --on-brand: #fbeff1; --on-brand-2: #e3b9bf;
+  --accent: #b8404f; --accent-ink: #eb9aa5; --accent-soft: #3a1a1f;
+  --series: #d0606f; --track: #2b2b28; --danger-ink: #f08a8a; --shadow: none;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45; }
@@ -49,18 +55,26 @@ a { color: var(--accent-ink); }
 button, input, select, textarea { font: inherit; color: inherit; }
 
 /* ---------- header & nav ---------- */
-.topbar { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+.topbar { background: var(--brand); color: var(--on-brand); position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 rgba(0,0,0,.08); }
+.brand { display: flex; flex-direction: column; gap: 1px; }
+.brand .school { font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--on-brand-2); }
+.brand .motto { font-size: 11.5px; font-style: italic; color: var(--on-brand-2); letter-spacing: .02em; }
 .topbar-inner { max-width: 1180px; margin: 0 auto; padding: 12px 16px 0; }
 .title-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .title-row h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
-.save-state { font-size: 12.5px; color: var(--muted); }
-.save-state.dirty { color: var(--text); font-weight: 600; }
+.save-state { font-size: 12.5px; color: var(--on-brand-2); }
+.save-state.dirty { color: var(--on-brand); font-weight: 600; }
 .save-state.dirty::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); margin-right: 6px; vertical-align: 1px; }
 .title-actions { margin-left: auto; display: flex; gap: 8px; }
 nav.tabs { display: flex; gap: 2px; overflow-x: auto; margin-top: 8px; }
-nav.tabs button { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 12px 10px; cursor: pointer; color: var(--text-2); white-space: nowrap; font-weight: 500; }
-nav.tabs button:hover { color: var(--text); }
-nav.tabs button.active { color: var(--accent-ink); border-bottom-color: var(--accent); }
+nav.tabs button { background: none; border: none; border-bottom: 3px solid transparent; padding: 8px 12px 9px; cursor: pointer; color: var(--on-brand-2); white-space: nowrap; font-weight: 500; }
+nav.tabs button:hover { color: var(--on-brand); }
+nav.tabs button.active { color: var(--on-brand); border-bottom-color: var(--on-brand); font-weight: 600; }
+.topbar .btn { background: transparent; color: var(--on-brand); border-color: rgba(255,255,255,.45); }
+.topbar .btn:hover { background: rgba(255,255,255,.12); }
+.topbar .btn.primary { background: var(--on-brand); color: var(--brand); border-color: var(--on-brand); }
+.topbar .btn.primary:hover { filter: none; background: #f6e6e8; }
+.topbar button:focus-visible { outline-color: var(--on-brand); }
 main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 48px; }
 
 /* ---------- controls ---------- */
@@ -183,6 +197,8 @@ td input[type=number] { width: 70px; }
   .tile .v { font-size: 24px; }
 }
 @media print {
+  .topbar { background: none; color: #000; }
+  .brand .school, .brand .motto, .save-state { color: #555; }
   .topbar nav, .title-actions, .toolbar, .no-print, .banner { display: none !important; }
   .topbar { position: static; border: none; }
   body { background: #fff; }
@@ -193,7 +209,7 @@ td input[type=number] { width: 70px; }
 <body data-keep>
 <div id="app" data-keep></div>
 <noscript data-keep><p style="padding:20px">This dashboard needs JavaScript. Open the file in Chrome, Edge, Firefox or Safari.</p></noscript>
-<script type="application/json" id="sld-data" data-keep>{"version":1,"revision":0,"savedAt":null,"savedBy":null,"settings":{"title":"Student Leader Deployment","highLoad":4,"upcomingDays":14},"lists":{"categories":["Ceremony","School Event","Assembly","Sports","Community Service","Open House","Camp","External"],"roles":["Emcee","Usher","Marshal","Registration","Logistics","Facilitator","Group Leader","Photographer","Tech Crew"],"groups":["Prefect","Student Council","Class Chairperson","CCA Leader","Peer Support Leader","Sports Leader"],"formClasses":["301","302","303","304","305"],"ccas":["Badminton","Basketball","Football","Floorball","Track & Field","Choir","Concert Band","Chinese Orchestra","Malay Dance","Indian Dance","Drama Club","Scouts","Girl Guides","NCC (Land)","NPCC","St John Brigade","Red Cross Youth","Robotics Club","Media Club","Library Club"]},"students":[],"activities":[],"deployments":[]}</script>
+<script type="application/json" id="sld-data" data-keep>{"version":1,"revision":0,"savedAt":null,"savedBy":null,"settings":{"title":"Student Leader Deployment","highLoad":4,"upcomingDays":14},"lists":{"categories":["Ceremony","School Event","Assembly","Sports","Values in Action (VIA)","CCA Event","Open House","Camp","External"],"roles":["Emcee","Usher","Marshal","Registration","Logistics","Facilitator","Group Leader","Photographer","Tech Crew"],"groups":["Student Councillor","CCA Leader","Peer Support Leader","Class Chairperson","Class Vice-Chairperson"],"formClasses":["301","302","303","304","305"],"ccas":["Canoeing (Girls)","Dragon Boat (Boys)","Netball (Girls)","Rugby (Boys)","Choir","Drama","Ethnic Dance","Guzheng","Modern Dance","Symphonic Band","Art Club","Girl Guides","NCC (Land)","NPCC","Info-Comm Club"]},"students":[],"activities":[],"deployments":[]}</script>
 <script data-keep>
 'use strict';
 /* =====================================================================
@@ -204,15 +220,18 @@ td input[type=number] { width: 70px; }
 
 const STATUSES = ['Confirmed', 'Tentative', 'Completed', 'Withdrawn'];
 const DEFAULT_LISTS = {
-  categories: ['Ceremony', 'School Event', 'Assembly', 'Sports', 'Community Service', 'Open House', 'Camp', 'External'],
+  categories: ['Ceremony', 'School Event', 'Assembly', 'Sports', 'Values in Action (VIA)', 'CCA Event', 'Open House', 'Camp', 'External'],
   roles: ['Emcee', 'Usher', 'Marshal', 'Registration', 'Logistics', 'Facilitator', 'Group Leader', 'Photographer', 'Tech Crew'],
-  groups: ['Prefect', 'Student Council', 'Class Chairperson', 'CCA Leader', 'Peer Support Leader', 'Sports Leader'],
+  groups: ['Student Councillor', 'CCA Leader', 'Peer Support Leader', 'Class Chairperson', 'Class Vice-Chairperson'],
   formClasses: ['301', '302', '303', '304', '305'],
-  ccas: ['Badminton', 'Basketball', 'Football', 'Floorball', 'Track & Field', 'Choir', 'Concert Band', 'Chinese Orchestra',
-    'Malay Dance', 'Indian Dance', 'Drama Club', 'Scouts', 'Girl Guides', 'NCC (Land)', 'NPCC', "St John Brigade",
-    'Red Cross Youth', 'Robotics Club', 'Media Club', 'Library Club'],
+  ccas: [
+    'Canoeing (Girls)', 'Dragon Boat (Boys)', 'Netball (Girls)', 'Rugby (Boys)',                       // Sports & Games
+    'Choir', 'Drama', 'Ethnic Dance', 'Guzheng', 'Modern Dance', 'Symphonic Band', 'Art Club',       // Visual & Performing Arts
+    'Girl Guides', 'NCC (Land)', 'NPCC',                                                             // Uniformed Groups
+    'Info-Comm Club',                                                                                // Clubs & Societies
+  ],
 };
-const DEFAULT_SETTINGS = { title: 'Student Leader Deployment', highLoad: 4, upcomingDays: 14 };
+const DEFAULT_SETTINGS = { school: 'Damai Secondary School', motto: 'Aspire · Explore · Achieve', title: 'Student Leader Deployment', highLoad: 4, upcomingDays: 14 };
 const DRAFT_KEY = 'sld-draft:' + location.pathname;
 const NAME_KEY = 'sld-user-name';
 
@@ -483,13 +502,18 @@ function go(tab, extra = {}) {
 }
 function render() {
   hideTip();
-  document.title = data.settings.title || DEFAULT_SETTINGS.title;
+  const st = data.settings;
+  document.title = [st.title || DEFAULT_SETTINGS.title, st.school].filter(Boolean).join(' · ');
   const app = document.getElementById('app');
   const saveText = dirty ? 'Unsaved changes — click Save'
     : data.savedAt ? `Last saved ${fmtStamp(data.savedAt)}${data.savedBy ? ' by ' + data.savedBy : ''}` : 'Not saved yet';
   const top = el('header', { class: 'topbar' }, el('div', { class: 'topbar-inner' }, [
     el('div', { class: 'title-row' }, [
-      el('h1', { text: data.settings.title || DEFAULT_SETTINGS.title }),
+      el('div', { class: 'brand' }, [
+        st.school ? el('span', { class: 'school', text: st.school }) : null,
+        el('h1', { text: st.title || DEFAULT_SETTINGS.title }),
+        st.motto ? el('span', { class: 'motto', text: st.motto }) : null,
+      ]),
       el('span', { class: 'save-state' + (dirty ? ' dirty' : ''), text: saveText }),
       el('div', { class: 'title-actions' }, [
         el('button', { class: 'btn', onclick: () => window.print(), title: 'Print or save the dashboard as PDF' }, 'Print'),
@@ -1148,6 +1172,8 @@ function viewSettings() {
   const st = data.settings;
 
   const title = el('input', { type: 'text', value: st.title });
+  const school = el('input', { type: 'text', value: st.school || '' });
+  const motto = el('input', { type: 'text', value: st.motto || '' });
   const high = el('input', { type: 'number', min: '1', value: st.highLoad });
   const days = el('input', { type: 'number', min: '1', value: st.upcomingDays });
   let myName = ''; try { myName = localStorage.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
@@ -1155,12 +1181,12 @@ function viewSettings() {
   wrap.append(el('section', { class: 'panel' }, [
     el('h2', { text: 'Settings' }), el('p', { class: 'sub', text: 'Stored in the file and shared with everyone, except “Your name”, which is kept on this computer.' }),
     el('div', { class: 'form-grid' }, [
-      field('Dashboard title', title, 'wide'),
+      field('School name', school), field('Motto (shown under the title)', motto), field('Dashboard title', title),
       field('High load at (deployments)', high), field('“Upcoming” window (days)', days), field('Your name (this computer)', me),
     ]),
     el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
       try { if (me.value.trim()) localStorage.setItem(NAME_KEY, me.value.trim()); else localStorage.removeItem(NAME_KEY); } catch (_) { /* ignore */ }
-      Object.assign(st, { title: title.value.trim() || DEFAULT_SETTINGS.title, highLoad: Math.max(1, parseInt(high.value, 10) || 4), upcomingDays: Math.max(1, parseInt(days.value, 10) || 14) });
+      Object.assign(st, { school: school.value.trim(), motto: motto.value.trim(), title: title.value.trim() || DEFAULT_SETTINGS.title, highLoad: Math.max(1, parseInt(high.value, 10) || 4), upcomingDays: Math.max(1, parseInt(days.value, 10) || 14) });
       commit('Settings updated');
     } }, 'Apply settings')),
   ]));

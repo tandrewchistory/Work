@@ -44,3 +44,16 @@ Unsaved edits are kept as a draft in the browser in case the tab closes.
 Each save records the editor's name and the time. The file has to be
 opened from a synced folder or mapped drive: the Google Drive or
 SharePoint website shows HTML files as code instead of running them.
+
+## School details
+
+The defaults are set up for **Damai Secondary School**: the maroon-and-white
+school colours, the motto *Aspire · Explore · Achieve*, its CCAs (Sports &
+Games, Visual & Performing Arts, Uniformed Groups, Clubs & Societies), its
+student leadership bodies (Student Councillors, CCA Leaders, Peer Support
+Leaders, plus class leaders) and a Values in Action (VIA) activity category.
+The details come from the school's public pages (CCA page, Student
+Leaders' Investiture news, crest and handbook) as shown in web search
+results. The school name, motto, CCA list and leadership groups can all be
+edited under **Settings & Help**. The sample students, activities and
+deployments are made up.
