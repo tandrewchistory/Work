@@ -180,7 +180,7 @@ stu_headers = ["Full Name", "Name (preferred)", "Form Class", "Leadership Group"
                "Deployments", "Leader-Hours", "Latest Activity", "Load Status",
                "Rank key (auto)", "Undeployed # (auto)"]
 style_header(ws_stu, 1, stu_headers, calc_from=6, widths=[30, 16, 13, 20, 26, 13, 13, 15, 14, 11, 11])
-for r, (full, name, form, grp) in enumerate(STUDENTS, start=2):
+for r, (full, name, form, grp, *_ccas) in enumerate(STUDENTS, start=2):
     for col, v in enumerate((full, name, form, grp), start=1):
         ws_stu.cell(row=r, column=col, value=v)
 D_ACT, D_STU, D_STAT = (f"Deployments!${c}$2:${c}${DEP_END}" for c in "ABD")

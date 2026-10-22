@@ -25,9 +25,15 @@ Two versions of the same tracker, for a shared drive:
   fewest-deployments-first, with warnings for high load and same-day
   clashes.
 - **Students / Deployments**: searchable and filterable lists, student
-  profiles with deployment history, and CSV export.
+  profiles with deployment history, and CSV export. Each student has a
+  full name, preferred name, form class (301–305 by default), leadership
+  group and one or more **CCAs**, which you tick from a list. You can
+  filter by CCA on the dashboard, the Students tab and the Assign leaders
+  list, and the dashboard has a **By CCA** breakdown.
 - **Settings & Help**: title, high-load threshold, "upcoming" window and
-  dropdown lists. Also paste-import of students from Excel/Sheets,
+  dropdown lists (including form classes and CCAs). Also paste-import of
+  students from Excel/Sheets (Full name, Preferred name, Form class,
+  Leadership group, CCAs, with several CCAs separated by `;`),
   backup and restore (.json), clearing data for a new year, and
   instructions for colleagues.
 

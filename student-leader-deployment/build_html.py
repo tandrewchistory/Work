@@ -16,7 +16,7 @@ TEMPLATE_OUT = HERE / "student-leader-deployment-template.html"
 DATA_RE = re.compile(r'(<script type="application/json" id="sld-data"[^>]*>)(.*?)(</script>)', re.S)
 
 
-def base(lists_with_classes=True):
+def base():
     return {
         "version": 1, "revision": 0, "savedAt": None, "savedBy": None,
         "settings": {"title": "Student Leader Deployment", "highLoad": HIGH_LOAD, "upcomingDays": UPCOMING_DAYS},
@@ -24,7 +24,8 @@ def base(lists_with_classes=True):
             "categories": LISTS["Categories"],
             "roles": LISTS["Roles"],
             "groups": LISTS["Leadership Groups"],
-            "formClasses": LISTS["Form Classes"] if lists_with_classes else [],
+            "formClasses": LISTS["Form Classes"],
+            "ccas": LISTS["CCAs"],
         },
         "students": [], "activities": [], "deployments": [],
     }
@@ -33,9 +34,10 @@ def base(lists_with_classes=True):
 def sample():
     d = base()
     sid = {}
-    for i, (full, name, form, group) in enumerate(STUDENTS, start=1):
+    for i, (full, name, form, group, ccas) in enumerate(STUDENTS, start=1):
         sid[full] = f"s{i}"
-        d["students"].append({"id": f"s{i}", "fullName": full, "name": name, "formClass": form, "group": group, "notes": ""})
+        d["students"].append({"id": f"s{i}", "fullName": full, "name": name, "formClass": form, "group": group,
+                              "ccas": ccas, "notes": ""})
     aid = {}
     for i, (name, cat, date, start, end, venue, teacher, need) in enumerate(ACTIVITIES, start=1):
         aid[name] = f"a{i}"
@@ -63,4 +65,4 @@ def write(path, data):
 
 if __name__ == "__main__":
     write(SRC, sample())
-    write(TEMPLATE_OUT, base(lists_with_classes=False))
+    write(TEMPLATE_OUT, base())

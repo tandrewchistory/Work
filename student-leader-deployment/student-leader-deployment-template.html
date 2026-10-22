@@ -85,6 +85,9 @@ label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13
 .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .form-grid .wide { grid-column: 1 / -1; }
 .form-grid input, .form-grid select { width: 100%; }
+.cca-picks label { white-space: nowrap; justify-content: flex-start; }
+.form-grid .cca-picks input { width: auto; margin: 0; }
+.cca-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 6px 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); }
 .form-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 
 /* ---------- panels ---------- */
@@ -190,7 +193,7 @@ td input[type=number] { width: 70px; }
 <body data-keep>
 <div id="app" data-keep></div>
 <noscript data-keep><p style="padding:20px">This dashboard needs JavaScript. Open the file in Chrome, Edge, Firefox or Safari.</p></noscript>
-<script type="application/json" id="sld-data" data-keep>{"version":1,"revision":0,"savedAt":null,"savedBy":null,"settings":{"title":"Student Leader Deployment","highLoad":4,"upcomingDays":14},"lists":{"categories":["Ceremony","School Event","Assembly","Sports","Community Service","Open House","Camp","External"],"roles":["Emcee","Usher","Marshal","Registration","Logistics","Facilitator","Group Leader","Photographer","Tech Crew"],"groups":["Prefect","Student Council","Class Chairperson","CCA Leader","Peer Support Leader","Sports Leader"],"formClasses":[]},"students":[],"activities":[],"deployments":[]}</script>
+<script type="application/json" id="sld-data" data-keep>{"version":1,"revision":0,"savedAt":null,"savedBy":null,"settings":{"title":"Student Leader Deployment","highLoad":4,"upcomingDays":14},"lists":{"categories":["Ceremony","School Event","Assembly","Sports","Community Service","Open House","Camp","External"],"roles":["Emcee","Usher","Marshal","Registration","Logistics","Facilitator","Group Leader","Photographer","Tech Crew"],"groups":["Prefect","Student Council","Class Chairperson","CCA Leader","Peer Support Leader","Sports Leader"],"formClasses":["301","302","303","304","305"],"ccas":["Badminton","Basketball","Football","Floorball","Track & Field","Choir","Concert Band","Chinese Orchestra","Malay Dance","Indian Dance","Drama Club","Scouts","Girl Guides","NCC (Land)","NPCC","St John Brigade","Red Cross Youth","Robotics Club","Media Club","Library Club"]},"students":[],"activities":[],"deployments":[]}</script>
 <script data-keep>
 'use strict';
 /* =====================================================================
@@ -204,7 +207,10 @@ const DEFAULT_LISTS = {
   categories: ['Ceremony', 'School Event', 'Assembly', 'Sports', 'Community Service', 'Open House', 'Camp', 'External'],
   roles: ['Emcee', 'Usher', 'Marshal', 'Registration', 'Logistics', 'Facilitator', 'Group Leader', 'Photographer', 'Tech Crew'],
   groups: ['Prefect', 'Student Council', 'Class Chairperson', 'CCA Leader', 'Peer Support Leader', 'Sports Leader'],
-  formClasses: [],
+  formClasses: ['301', '302', '303', '304', '305'],
+  ccas: ['Badminton', 'Basketball', 'Football', 'Floorball', 'Track & Field', 'Choir', 'Concert Band', 'Chinese Orchestra',
+    'Malay Dance', 'Indian Dance', 'Drama Club', 'Scouts', 'Girl Guides', 'NCC (Land)', 'NPCC', "St John Brigade",
+    'Red Cross Youth', 'Robotics Club', 'Media Club', 'Library Club'],
 };
 const DEFAULT_SETTINGS = { title: 'Student Leader Deployment', highLoad: 4, upcomingDays: 14 };
 const DRAFT_KEY = 'sld-draft:' + location.pathname;
@@ -219,7 +225,7 @@ function normalize(raw) {
     savedBy: d.savedBy || null,
     settings: { ...DEFAULT_SETTINGS, ...(d.settings || {}) },
     lists: Object.fromEntries(Object.keys(DEFAULT_LISTS).map(k => [k, Array.isArray(d.lists?.[k]) ? d.lists[k] : DEFAULT_LISTS[k].slice()])),
-    students: Array.isArray(d.students) ? d.students : [],
+    students: (Array.isArray(d.students) ? d.students : []).map(s => ({ ...s, ccas: Array.isArray(s.ccas) ? s.ccas : [] })),
     activities: Array.isArray(d.activities) ? d.activities : [],
     deployments: Array.isArray(d.deployments) ? d.deployments : [],
   };
@@ -237,11 +243,11 @@ const state = {
   studentId: null,
   editing: false,
   adding: false,
-  dash: { from: '', to: '', form: '', hidePast: false },
+  dash: { from: '', to: '', form: '', cca: '', hidePast: false },
   actFilter: { q: '', cat: '', timing: '' },
-  stuFilter: { q: '', form: '', group: '', load: '' },
+  stuFilter: { q: '', form: '', group: '', cca: '', load: '' },
   depFilter: { q: '', status: '', form: '', cat: '' },
-  pick: { q: '', form: '', group: '', role: '', status: 'Confirmed', selected: new Set() },
+  pick: { q: '', form: '', group: '', cca: '', role: '', status: 'Confirmed', selected: new Set() },
 };
 
 /* ---------------------------------------------------------------- utils */
@@ -279,6 +285,7 @@ function fmtDate(iso, withYear = true) {
 function fmtTime(t) { if (!t) return ''; const [h, m] = t.split(':').map(Number); return `${((h + 11) % 12) + 1}:${pad(m)}${h < 12 ? 'am' : 'pm'}`; }
 function fmtStamp(iso) { const d = new Date(iso); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${fmtTime(pad(d.getHours()) + ':' + pad(d.getMinutes()))}`; }
 const fmtHours = h => (Math.round(h * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 });
+const ccaText = s => (s.ccas || []).join(', ');
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
 function hoursOf(a) {
   if (!a || !a.start || !a.end) return 0;
@@ -291,7 +298,7 @@ function uniqueSorted(values) { return [...new Set(values.filter(Boolean))].sort
 
 /* ---------------------------------------------------------------- derived data */
 function computeStats(opts = {}) {
-  const { from = '', to = '', form = '' } = opts;
+  const { from = '', to = '', form = '', cca = '' } = opts;
   const today = todayStr(), soon = addDays(today, Number(data.settings.upcomingDays) || 14);
   const inRange = a => (!from || (a.date && a.date >= from)) && (!to || (a.date && a.date <= to));
   const acts = data.activities.filter(inRange);
@@ -316,7 +323,7 @@ function computeStats(opts = {}) {
     s.timing = !a.date ? 'No date' : a.date < today ? 'Past' : a.date <= soon ? 'Upcoming' : 'Later';
   }
 
-  const students = data.students.filter(s => !form || s.formClass === form);
+  const students = data.students.filter(s => (!form || s.formClass === form) && (!cca || s.ccas.includes(cca)));
   const stu = new Map(students.map(s => [s.id, { count: 0, hours: 0, latest: '' }]));
   for (const d of active) {
     const s = stu.get(d.studentId);
@@ -559,6 +566,7 @@ function fillBar(fill) {
 const studentLink = s => el('button', { class: 'btn link', onclick: e => { e.stopPropagation(); go('students', { studentId: s.id }); } }, s.name || s.fullName);
 const activityLink = a => el('button', { class: 'btn link', onclick: e => { e.stopPropagation(); go('activities', { activityId: a.id }); } }, a.name);
 function formClassOptions() { return uniqueSorted([...data.lists.formClasses, ...data.students.map(s => s.formClass)]); }
+function ccaOptions() { return uniqueSorted([...data.lists.ccas, ...data.students.flatMap(s => s.ccas)]); }
 
 /* ================================================================ DASHBOARD */
 function viewDashboard() {
@@ -584,7 +592,8 @@ function viewDashboard() {
   wrap.append(el('div', { class: 'toolbar' }, [
     field('From', from), field('To', to),
     field('Form class', selectEl(formClassOptions(), f.form, v => { f.form = v; render(); }, 'All form classes')),
-    (f.from || f.to || f.form) ? el('button', { class: 'btn small', onclick: () => { Object.assign(f, { from: '', to: '', form: '' }); render(); } }, 'Clear filters') : null,
+    field('CCA', selectEl(ccaOptions(), f.cca, v => { f.cca = v; render(); }, 'All CCAs')),
+    (f.from || f.to || f.form || f.cca) ? el('button', { class: 'btn small', onclick: () => { Object.assign(f, { from: '', to: '', form: '', cca: '' }); render(); } }, 'Clear filters') : null,
     el('span', { class: 'muted', style: 'margin-left:auto;font-size:12.5px', text: (f.from || f.to) ? `Counting deployments for activities ${f.from ? 'from ' + fmtDate(f.from) : ''} ${f.to ? 'to ' + fmtDate(f.to) : ''}` : 'Counting all activities' }),
   ]));
 
@@ -601,7 +610,7 @@ function viewDashboard() {
   const totalHours = S.students.reduce((n, s) => n + S.stu.get(s.id).hours, 0);
   const tile = (k, v, s, alert) => el('div', { class: 'tile' + (alert ? ' alert' : '') }, [el('div', { class: 'k', text: k }), el('div', { class: 'v', text: v }), el('div', { class: 's', text: s })]);
   wrap.append(el('div', { class: 'tiles' }, [
-    tile('Student leaders', nStu, f.form || `${formClassOptions().length} form classes`),
+    tile('Student leaders', nStu, [f.form, f.cca].filter(Boolean).join(' · ') || `${formClassOptions().length} form classes`),
     tile('Deployed', deployed, `${pct(deployed, nStu)} of leaders, at least once`),
     tile('Not yet deployed', notYet, `${pct(notYet, nStu)} of leaders`, notYet > 0),
     tile('High load', highLoad, `${S.high}+ deployments each`),
@@ -647,45 +656,57 @@ function viewDashboard() {
       }), 'No activities in this period.'),
   ]));
 
-  // By form class + most deployed
-  const forms = formClassOptions().filter(fc => !f.form || fc === f.form).map(fc => {
-    const list = S.students.filter(s => s.formClass === fc);
-    const st = list.map(s => S.stu.get(s.id));
-    const dep = st.filter(s => s.count > 0).length, total = st.reduce((n, s) => n + s.count, 0);
-    return { fc, n: list.length, dep, total };
-  }).filter(r => r.n > 0);
-  const top = S.students.filter(s => S.stu.get(s.id).count > 0)
-    .sort((a, b) => S.stu.get(b.id).count - S.stu.get(a.id).count || S.stu.get(b.id).hours - S.stu.get(a.id).hours || byName(a.fullName, b.fullName)).slice(0, 10);
+  // Breakdown helper: leaders / deployed / not yet / deployments for a subset of students.
+  const breakdown = list => {
+    const st = list.map(x => S.stu.get(x.id));
+    const dep = st.filter(x => x.count > 0).length, total = st.reduce((n, x) => n + x.count, 0);
+    return { n: list.length, dep, total };
+  };
+  const breakdownRows = rows => rows.map(r => el('tr', {}, [
+    el('td', { text: r.key }), el('td', { class: 'num', text: r.n }), el('td', { class: 'num', text: r.dep }),
+    el('td', { class: 'num' }, r.n - r.dep ? el('b', { text: r.n - r.dep }) : '0'),
+    el('td', { class: 'num', text: r.total }), el('td', { class: 'num', text: (r.total / r.n).toFixed(1) }),
+  ]));
+  const BD_HEAD = [['Leaders', 'num'], ['Deployed', 'num'], ['Not yet', 'num'], ['Deployments', 'num'], ['Avg / leader', 'num']];
+  const forms = formClassOptions().filter(fc => !f.form || fc === f.form)
+    .map(fc => ({ key: fc, ...breakdown(S.students.filter(x => x.formClass === fc)) })).filter(r => r.n > 0);
+  const ccaRows = ccaOptions().filter(c => !f.cca || c === f.cca)
+    .map(c => ({ key: c, ...breakdown(S.students.filter(x => x.ccas.includes(c))) })).filter(r => r.n > 0)
+    .sort((a, b) => b.n - a.n || byName(a.key, b.key));
+  const noCca = S.students.filter(x => !x.ccas.length);
+  if (noCca.length && !f.cca) ccaRows.push({ key: 'No CCA recorded', ...breakdown(noCca) });
   wrap.append(el('div', { class: 'grid-2', style: 'margin-bottom:16px' }, [
     el('section', { class: 'panel' }, [
       el('h2', { text: 'By form class' }), el('p', { class: 'sub', text: 'Who has had a turn, per class' }),
-      tableOf(['Form class', ['Leaders', 'num'], ['Deployed', 'num'], ['Not yet', 'num'], ['Deployments', 'num'], ['Avg / leader', 'num']],
-        forms.map(r => el('tr', {}, [
-          el('td', { text: r.fc }), el('td', { class: 'num', text: r.n }), el('td', { class: 'num', text: r.dep }),
-          el('td', { class: 'num' }, r.n - r.dep ? el('b', { text: r.n - r.dep }) : '0'),
-          el('td', { class: 'num', text: r.total }), el('td', { class: 'num', text: (r.total / r.n).toFixed(1) }),
-        ])), 'No students yet.'),
+      tableOf([['Form class', '']].concat(BD_HEAD), breakdownRows(forms), 'No students yet.'),
     ]),
     el('section', { class: 'panel' }, [
+      el('h2', { text: 'By CCA' }), el('p', { class: 'sub', text: 'Leaders with more than one CCA are counted under each' }),
+      tableOf([['CCA', '']].concat(BD_HEAD), breakdownRows(ccaRows), 'No CCAs recorded yet.'),
+    ]),
+  ]));
+
+  const top = S.students.filter(x => S.stu.get(x.id).count > 0)
+    .sort((a, b) => S.stu.get(b.id).count - S.stu.get(a.id).count || S.stu.get(b.id).hours - S.stu.get(a.id).hours || byName(a.fullName, b.fullName)).slice(0, 10);
+  const idle = S.students.filter(x => S.stu.get(x.id).count === 0).sort((a, b) => byName(a.formClass, b.formClass) || byName(a.fullName, b.fullName));
+  wrap.append(el('div', { class: 'grid-2' }, [
+    el('section', { class: 'panel' }, [
       el('h2', { text: 'Most deployed' }), el('p', { class: 'sub', text: 'Watch for over-reliance on the same leaders' }),
-      tableOf(['Leader', 'Form class', ['Deployments', 'num'], ['Hours', 'num'], ''],
-        top.map(s => {
-          const st = S.stu.get(s.id);
-          return el('tr', { class: 'click', onclick: () => go('students', { studentId: s.id }) }, [
-            el('td', {}, el('div', { class: 'stack-name' }, [s.name || s.fullName, el('small', { text: s.fullName })])),
-            el('td', { text: s.formClass }), el('td', { class: 'num', text: st.count }), el('td', { class: 'num', text: fmtHours(st.hours) }),
+      tableOf(['Leader', 'Class', ['Deployments', 'num'], ['Hours', 'num'], ''],
+        top.map(x => {
+          const st = S.stu.get(x.id);
+          return el('tr', { class: 'click', onclick: () => go('students', { studentId: x.id }) }, [
+            el('td', {}, el('div', { class: 'stack-name' }, [x.name || x.fullName, el('small', { text: x.fullName })])),
+            el('td', { text: x.formClass }), el('td', { class: 'num', text: st.count }), el('td', { class: 'num', text: fmtHours(st.hours) }),
             el('td', {}, st.load === 'High load' ? chip(LOAD_CHIP, 'High load') : null),
           ]);
         }), 'No deployments yet.'),
     ]),
-  ]));
-
-  // Not yet deployed
-  const idle = S.students.filter(s => S.stu.get(s.id).count === 0).sort((a, b) => byName(a.formClass, b.formClass) || byName(a.fullName, b.fullName));
-  wrap.append(el('section', { class: 'panel' }, [
-    el('h2', { text: `Not yet deployed (${idle.length})` }), el('p', { class: 'sub', text: 'Give these leaders a turn — click a name to see their profile' }),
-    idle.length ? el('div', { class: 'name-chips' }, idle.map(s => el('button', { onclick: () => go('students', { studentId: s.id }) }, [s.name || s.fullName, el('small', { text: s.formClass })])))
-      : el('div', { class: 'empty', text: 'Every leader has been deployed at least once.' }),
+    el('section', { class: 'panel' }, [
+      el('h2', { text: `Not yet deployed (${idle.length})` }), el('p', { class: 'sub', text: 'Give these leaders a turn — click a name to see their profile' }),
+      idle.length ? el('div', { class: 'name-chips' }, idle.map(x => el('button', { title: [x.fullName, ccaText(x)].filter(Boolean).join(' · '), onclick: () => go('students', { studentId: x.id }) }, [x.name || x.fullName, el('small', { text: x.formClass })])))
+        : el('div', { class: 'empty', text: 'Every leader has been deployed at least once.' }),
+    ]),
   ]));
   return wrap;
 }
@@ -698,7 +719,7 @@ const ACT_FIELDS = [
 ];
 const STU_FIELDS = [
   ['fullName', 'Full name', 'text'], ['name', 'Preferred name', 'text'], ['formClass', 'Form class', 'formClass'],
-  ['group', 'Leadership group', 'group'], ['notes', 'Notes', 'text', 'wide'],
+  ['group', 'Leadership group', 'group'], ['ccas', 'CCAs (tick all that apply)', 'ccas', 'wide'], ['notes', 'Notes', 'text', 'wide'],
 ];
 function recordForm(fields, record, onSubmit, onCancel, submitLabel) {
   const inputs = {};
@@ -707,10 +728,12 @@ function recordForm(fields, record, onSubmit, onCancel, submitLabel) {
     let control;
     if (type === 'category') control = selectEl(data.lists.categories, record[key] || '', () => {}, '—');
     else if (type === 'group') control = selectEl(data.lists.groups, record[key] || '', () => {}, '—');
-    else if (type === 'formClass') {
-      const listId = 'fc-' + Math.random().toString(36).slice(2);
-      control = el('input', { type: 'text', list: listId, value: record[key] || '', autocomplete: 'off' });
-      grid.append(el('datalist', { id: listId }, formClassOptions().map(v => el('option', { value: v }))));
+    else if (type === 'formClass') control = selectEl(formClassOptions(), record[key] || '', () => {}, '—');
+    else if (type === 'ccas') {
+      const chosen = new Set(record[key] || []);
+      const boxes = ccaOptions().map(c => el('label', { class: 'check' }, [el('input', { type: 'checkbox', value: c, checked: chosen.has(c) }), c]));
+      control = el('div', { class: 'cca-picks' }, boxes.length ? boxes : el('span', { class: 'muted', text: 'Add CCAs under Settings › Dropdown lists.' }));
+      control.getValue = () => [...control.querySelectorAll('input:checked')].map(b => b.value);
     } else control = el('input', { type, value: record[key] ?? '', min: type === 'number' ? '0' : null, step: type === 'number' ? '1' : null });
     inputs[key] = control;
     grid.append(field(label, control, cls));
@@ -719,7 +742,7 @@ function recordForm(fields, record, onSubmit, onCancel, submitLabel) {
   const form = el('form', {
     onsubmit: e => {
       e.preventDefault();
-      const values = Object.fromEntries(Object.entries(inputs).map(([k, c]) => [k, c.value.trim()]));
+      const values = Object.fromEntries(Object.entries(inputs).map(([k, c]) => [k, c.getValue ? c.getValue() : c.value.trim()]));
       const problem = onSubmit(values);
       if (problem) err.textContent = problem;
     },
@@ -727,7 +750,7 @@ function recordForm(fields, record, onSubmit, onCancel, submitLabel) {
     el('button', { class: 'btn primary', type: 'submit' }, submitLabel),
     onCancel ? el('button', { class: 'btn', type: 'button', onclick: onCancel }, 'Cancel') : null,
   ])]);
-  setTimeout(() => inputs[fields[0][0]].focus(), 0);
+  setTimeout(() => inputs[fields[0][0]].focus?.(), 0);
   return form;
 }
 function saveActivity(existing, v) {
@@ -882,7 +905,7 @@ function assignPanel(a, S) {
     const q = p.q.toLowerCase();
     const cands = data.students.filter(s => !assigned.has(s.id)
       && (!q || [s.fullName, s.name, s.formClass].some(x => (x || '').toLowerCase().includes(q)))
-      && (!p.form || s.formClass === p.form) && (!p.group || s.group === p.group))
+      && (!p.form || s.formClass === p.form) && (!p.group || s.group === p.group) && (!p.cca || s.ccas.includes(p.cca)))
       .sort((x, y) => S.stu.get(x.id).count - S.stu.get(y.id).count || byName(x.fullName, y.fullName));
     countEl.textContent = `${cands.length} available · fewest deployments first`;
     list.replaceChildren(...(cands.length ? cands.map(s => {
@@ -891,7 +914,7 @@ function assignPanel(a, S) {
       const toggle = () => { if (cb.checked) p.selected.add(s.id); else p.selected.delete(s.id); sync(); };
       cb.addEventListener('change', toggle);
       return el('label', { class: 'pick-row' }, [cb,
-        el('span', { class: 'who' }, [el('b', { text: s.name || s.fullName }), el('small', { text: `${s.fullName} · ${s.formClass}${s.group ? ' · ' + s.group : ''}` })]),
+        el('span', { class: 'who' }, [el('b', { text: s.name || s.fullName }), el('small', { text: [s.fullName, s.formClass, s.group, ccaText(s)].filter(Boolean).join(' · ') })]),
         el('span', { class: 'meta' }, [
           busy.has(s.id) ? el('span', { class: 'chip warn', title: 'Already deployed to another activity that day' }, [el('span', { class: 'ic', text: '!' }), 'Busy: ' + busy.get(s.id)]) : null,
           st.count >= S.high ? chip(LOAD_CHIP, 'High load') : null,
@@ -918,6 +941,7 @@ function assignPanel(a, S) {
       el('div', { class: 'grow' }, field('Search', searchBox(p.q, 'Name or form class…', v => { p.q = v; refresh(); }))),
       field('Form class', selectEl(formClassOptions(), p.form, v => { p.form = v; refresh(); }, 'All')),
       field('Group', selectEl(data.lists.groups, p.group, v => { p.group = v; refresh(); }, 'All')),
+      field('CCA', selectEl(ccaOptions(), p.cca, v => { p.cca = v; refresh(); }, 'All')),
     ]),
     list,
     el('div', { class: 'toolbar', style: 'margin:14px 0 0' }, [
@@ -936,9 +960,10 @@ function saveStudent(existing, v) {
   if (!v.formClass) return 'Form class is required.';
   const clash = data.students.find(s => s !== existing && s.fullName.toLowerCase() === v.fullName.toLowerCase() && s.formClass === v.formClass);
   if (clash) return `${v.fullName} (${v.formClass}) is already on the list.`;
-  const rec = { ...(existing || { id: uid('s') }), ...v, name: v.name || v.fullName.split(' ')[0] };
+  const rec = { ...(existing || { id: uid('s') }), ...v, ccas: [...new Set(v.ccas || [])], name: v.name || v.fullName.split(' ')[0] };
   if (existing) Object.assign(existing, rec); else data.students.push(rec);
   if (!data.lists.formClasses.includes(v.formClass)) data.lists.formClasses.push(v.formClass);
+  for (const c of rec.ccas || []) if (!data.lists.ccas.includes(c)) data.lists.ccas.push(c);
   return rec;
 }
 function viewStudents() {
@@ -961,15 +986,16 @@ function viewStudents() {
   const body = el('div');
   const refresh = () => {
     const q = f.q.toLowerCase();
-    const list = data.students.filter(s => (!q || [s.fullName, s.name, s.notes].some(x => (x || '').toLowerCase().includes(q)))
-      && (!f.form || s.formClass === f.form) && (!f.group || s.group === f.group) && (!f.load || S.stu.get(s.id).load === f.load))
+    const list = data.students.filter(s => (!q || [s.fullName, s.name, s.notes, ccaText(s)].some(x => (x || '').toLowerCase().includes(q)))
+      && (!f.form || s.formClass === f.form) && (!f.group || s.group === f.group) && (!f.cca || s.ccas.includes(f.cca))
+      && (!f.load || S.stu.get(s.id).load === f.load))
       .sort((a, b) => byName(a.fullName, b.fullName));
-    body.replaceChildren(tableOf(['Leader', 'Form class', 'Group', ['Deployments', 'num'], ['Hours', 'num'], 'Latest activity', 'Load'],
+    body.replaceChildren(tableOf(['Leader', 'Form class', 'Group', 'CCA', ['Deployments', 'num'], ['Hours', 'num'], 'Latest activity', 'Load'],
       list.map(s => {
         const st = S.stu.get(s.id);
         return el('tr', { class: 'click', onclick: () => go('students', { studentId: s.id }) }, [
           el('td', {}, el('div', { class: 'stack-name' }, [el('b', { text: s.name || s.fullName }), el('small', { text: s.fullName })])),
-          el('td', { text: s.formClass }), el('td', { text: s.group || '' }),
+          el('td', { text: s.formClass }), el('td', { text: s.group || '' }), el('td', { text: ccaText(s) || '—' }),
           el('td', { class: 'num', text: st.count }), el('td', { class: 'num', text: fmtHours(st.hours) }),
           el('td', { class: 'nowrap', text: st.latest ? fmtDate(st.latest) : '—' }), el('td', {}, chip(LOAD_CHIP, st.load)),
         ]);
@@ -979,9 +1005,10 @@ function viewStudents() {
     el('div', { class: 'panel-head' }, [el('h2', { text: `Student leaders (${data.students.length})` }),
       el('div', { class: 'right' }, state.adding ? null : el('button', { class: 'btn primary', onclick: () => { state.adding = true; render(); } }, '+ Add student'))]),
     el('div', { class: 'toolbar' }, [
-      el('div', { class: 'grow' }, field('Search', searchBox(f.q, 'Name…', v => { f.q = v; refresh(); }))),
+      el('div', { class: 'grow' }, field('Search', searchBox(f.q, 'Name or CCA…', v => { f.q = v; refresh(); }))),
       field('Form class', selectEl(formClassOptions(), f.form, v => { f.form = v; refresh(); }, 'All')),
       field('Group', selectEl(data.lists.groups, f.group, v => { f.group = v; refresh(); }, 'All')),
+      field('CCA', selectEl(ccaOptions(), f.cca, v => { f.cca = v; refresh(); }, 'All')),
       field('Load', selectEl(Object.keys(LOAD_CHIP), f.load, v => { f.load = v; refresh(); }, 'All')),
     ]),
     body,
@@ -1020,6 +1047,7 @@ function studentDetail(s) {
         el('span', {}, ['Preferred name ', el('b', { text: s.name || '—' })]),
         el('span', {}, ['Form class ', el('b', { text: s.formClass })]),
         el('span', {}, ['Group ', el('b', { text: s.group || '—' })]),
+        el('span', {}, [s.ccas.length > 1 ? 'CCAs ' : 'CCA ', el('b', { text: ccaText(s) || '—' })]),
         el('span', {}, ['Deployments ', el('b', { text: st.count })]),
         el('span', {}, ['Leader-hours ', el('b', { text: fmtHours(st.hours) })]),
       ]),
@@ -1098,13 +1126,13 @@ function saveCsv(name, rows) {
 function exportCsv(kind) {
   const S = allStats();
   if (kind === 'deployments') {
-    saveCsv('deployments.csv', [['Date', 'Activity', 'Category', 'Full name', 'Name', 'Form class', 'Role', 'Status', 'Hours', 'Remarks'],
+    saveCsv('deployments.csv', [['Date', 'Activity', 'Category', 'Full name', 'Name', 'Form class', 'CCAs', 'Role', 'Status', 'Hours', 'Remarks'],
       ...deploymentRows(S, {}).map(d => { const a = S.actById.get(d.activityId), s = S.stuById.get(d.studentId);
-        return [a.date, a.name, a.category, s.fullName, s.name, s.formClass, d.role, d.status, depHours(d, S), d.remarks]; })]);
+        return [a.date, a.name, a.category, s.fullName, s.name, s.formClass, s.ccas.join('; '), d.role, d.status, depHours(d, S), d.remarks]; })]);
   } else if (kind === 'students') {
-    saveCsv('students.csv', [['Full name', 'Name', 'Form class', 'Group', 'Deployments', 'Hours', 'Latest activity', 'Load', 'Notes'],
+    saveCsv('students.csv', [['Full name', 'Name', 'Form class', 'Group', 'CCAs', 'Deployments', 'Hours', 'Latest activity', 'Load', 'Notes'],
       ...data.students.slice().sort((a, b) => byName(a.fullName, b.fullName)).map(s => { const st = S.stu.get(s.id);
-        return [s.fullName, s.name, s.formClass, s.group, st.count, fmtHours(st.hours), st.latest, st.load, s.notes]; })]);
+        return [s.fullName, s.name, s.formClass, s.group, s.ccas.join('; '), st.count, fmtHours(st.hours), st.latest, st.load, s.notes]; })]);
   } else {
     saveCsv('activities.csv', [['Date', 'Start', 'End', 'Activity', 'Category', 'Venue', 'Teacher-in-charge', 'Needed', 'Assigned', 'Open', 'Status'],
       ...data.activities.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(a => { const s = S.act.get(a.id);
@@ -1138,7 +1166,7 @@ function viewSettings() {
   ]));
 
   const listBoxes = {};
-  const listDefs = [['categories', 'Activity categories'], ['roles', 'Roles'], ['groups', 'Leadership groups'], ['formClasses', 'Form classes']];
+  const listDefs = [['categories', 'Activity categories'], ['roles', 'Roles'], ['groups', 'Leadership groups'], ['formClasses', 'Form classes'], ['ccas', 'CCAs']];
   wrap.append(el('section', { class: 'panel' }, [
     el('h2', { text: 'Dropdown lists' }), el('p', { class: 'sub', text: 'One item per line. Renaming an item here does not change records that already use the old name.' }),
     el('div', { class: 'form-grid' }, listDefs.map(([k, label]) => field(label, listBoxes[k] = el('textarea', { value: data.lists[k].join('\n') })))),
@@ -1148,16 +1176,16 @@ function viewSettings() {
     } }, 'Apply lists')),
   ]));
 
-  const paste = el('textarea', { placeholder: 'Full name\tPreferred name\tForm class\tLeadership group\nTan Wei Ling\tWei Ling\t3 Amanah\tPrefect' });
+  const paste = el('textarea', { placeholder: 'Full name\tPreferred name\tForm class\tLeadership group\tCCAs\nTan Wei Ling\tWei Ling\t303\tPrefect\tChoir; Media Club' });
   wrap.append(el('section', { class: 'panel' }, [
     el('h2', { text: 'Import students' }),
-    el('p', { class: 'sub', text: 'Copy columns from Excel or Google Sheets in this order — Full name, Preferred name, Form class, Leadership group — and paste below. A header row is skipped automatically; names already on the list are skipped.' }),
+    el('p', { class: 'sub', text: 'Copy columns from Excel or Google Sheets in this order — Full name, Preferred name, Form class, Leadership group, CCAs — and paste below. Separate several CCAs with “;” or “/”. A header row is skipped automatically; names already on the list are skipped.' }),
     paste,
     el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
       let added = 0, skipped = 0;
       for (const r of parseRows(paste.value)) {
         if (/^full\s*name$/i.test(r[0] || '')) continue;
-        const res = r[0] && r[2] ? saveStudent(null, { fullName: r[0], name: r[1] || '', formClass: r[2], group: r[3] || '', notes: '' }) : 'invalid';
+        const res = r[0] && r[2] ? saveStudent(null, { fullName: r[0], name: r[1] || '', formClass: r[2], group: r[3] || '', ccas: (r[4] || '').split(/[;/]/).map(x => x.trim()).filter(Boolean), notes: '' }) : 'invalid';
         if (typeof res === 'string') skipped++; else added++;
       }
       paste.value = '';
