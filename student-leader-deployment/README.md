@@ -34,16 +34,37 @@ file itself.
   backup and restore (.json), clearing data for a new year, and
   instructions for colleagues.
 
-**How saving works.** Clicking **Save** writes a copy of the page,
-with the updated data inside it, back to the file. In Chrome or Edge on a
-computer, the first save asks you to pick the file on the shared drive;
-after that it saves straight to the file. Before overwriting, it warns if
-someone else saved after you opened the file. Other browsers download
-the updated file, which you then use to replace the copy on the drive.
-Unsaved edits are kept as a draft in the browser in case the tab closes.
-Each save records the editor's name and the time. The file has to be
-opened from a synced folder or mapped drive: the Google Drive or
-SharePoint website shows HTML files as code instead of running them.
+**How saving works.** Clicking **Save** writes a copy of the page, with
+the updated data inside it, back to the file on the shared drive.
+
+- **Chrome or Edge on a computer:** the first Save (or **Get latest**)
+  asks you to select the file on the shared drive. After that, the page
+  saves straight to the file. It also checks the file every 20 seconds
+  and shows a notice when a colleague saves.
+- **Other browsers:** Save asks you to select the current file on the
+  drive, merges it, then downloads an updated copy, which you use to
+  replace the old file. Get latest reopens the file.
+- Unsaved edits are kept as a draft in the browser. **Restore my
+  changes** merges them back into the latest file.
+
+**Several teachers at once.** Saving never overwrites a colleague's
+work: the page reads the latest file first and merges both sets of
+changes.
+
+- Every student, activity and deployment records when it was last
+  changed and by whom. If two teachers change the same record, the most
+  recent change wins.
+- Deletions leave a dated marker for a year, so an older copy can't
+  bring a deleted record back.
+- Duplicate assignments (the same leader added to the same activity by
+  two teachers) are collapsed into one.
+- Settings and each dropdown list merge the same way, newest change wins.
+- `tests/test_merge.js` simulates several teachers saving to the same
+  file and checks all of the above.
+
+The file has to be opened from a synced folder or mapped drive: the
+Google Drive or SharePoint website shows HTML files as code instead of
+running them.
 
 ## School details
 

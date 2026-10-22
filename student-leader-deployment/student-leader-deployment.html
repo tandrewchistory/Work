@@ -116,6 +116,7 @@ label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 13
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .banner { border: 1px solid var(--border); border-left: 4px solid var(--warn); background: var(--surface); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .banner .right { margin-left: auto; display: flex; gap: 8px; }
+.banner.info { border-left-color: var(--accent); }
 .empty { color: var(--muted); padding: 18px 4px; text-align: center; }
 .muted { color: var(--muted); }
 .crumbs { margin-bottom: 12px; font-size: 13px; }
@@ -247,6 +248,8 @@ function normalize(raw) {
     students: (Array.isArray(d.students) ? d.students : []).map(s => ({ ...s, ccas: Array.isArray(s.ccas) ? s.ccas : [] })),
     activities: Array.isArray(d.activities) ? d.activities : [],
     deployments: Array.isArray(d.deployments) ? d.deployments : [],
+    deleted: Object.fromEntries(['students', 'activities', 'deployments'].map(k => [k, { ...(d.deleted?.[k] || {}) }])),
+    meta: { settingsAt: d.meta?.settingsAt || '', listsAt: { ...(d.meta?.listsAt || {}) } },
   };
 }
 
@@ -398,7 +401,88 @@ function toast(msg) {
   toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2600);
 }
 
+/* ---------------------------------------------------------------- change tracking
+   Every student, activity and deployment carries `updatedAt` (and `updatedBy`).
+   Deletions leave a dated "tombstone" in data.deleted so a colleague's older copy
+   cannot bring a deleted record back. This is what lets two copies be merged. */
+const COLLECTIONS = ['students', 'activities', 'deployments'];
+const TOMBSTONE_DAYS = 365;
+const nowIso = () => new Date().toISOString();
+function myName() { try { return localStorage.getItem(NAME_KEY) || ''; } catch (_) { return ''; } }
+function touch(rec) {
+  rec.updatedAt = nowIso();
+  const who = myName();
+  if (who) rec.updatedBy = who;
+  return rec;
+}
+function removeRecords(kind, pred) {
+  const t = nowIso();
+  data[kind] = data[kind].filter(r => {
+    if (!pred(r)) return true;
+    data.deleted[kind][r.id] = t;
+    return false;
+  });
+}
+const touchSettings = () => { data.meta.settingsAt = nowIso(); };
+const touchList = k => { data.meta.listsAt[k] = nowIso(); };
+
+/* Merge `theirs` (the copy on disk) into `mine` (this page): newest edit wins per record. */
+function mergeData(mine, theirs) {
+  const out = normalize(JSON.parse(JSON.stringify(mine)));
+  const t = normalize(JSON.parse(JSON.stringify(theirs)));
+  let incoming = 0;
+  for (const k of COLLECTIONS) {
+    const del = { ...t.deleted[k] };
+    for (const [id, when] of Object.entries(out.deleted[k])) if (!del[id] || when > del[id]) del[id] = when;
+    const byId = new Map(out[k].map(r => [r.id, r]));
+    for (const r of t[k]) {
+      const m = byId.get(r.id);
+      if (!m || (r.updatedAt || '') > (m.updatedAt || '')) { byId.set(r.id, r); if (!out.deleted[k][r.id]) incoming++; }
+    }
+    const kept = [];
+    for (const r of byId.values()) {
+      const when = del[r.id];
+      if (when && when >= (r.updatedAt || '')) continue;
+      if (when) delete del[r.id]; // edited after it was deleted elsewhere: the edit wins
+      kept.push(r);
+    }
+    const keptIds = new Set(kept.map(r => r.id));
+    incoming += out[k].filter(r => !keptIds.has(r.id)).length; // deleted by a colleague
+    out[k] = kept;
+    out.deleted[k] = del;
+  }
+  // Keep deployments consistent: drop ones whose student or activity is gone, and
+  // collapse duplicates (two teachers assigning the same leader to the same activity).
+  const stuIds = new Set(out.students.map(s => s.id)), actIds = new Set(out.activities.map(a => a.id));
+  const latest = new Map();
+  const stamp = nowIso();
+  for (const d of out.deployments) {
+    if (!stuIds.has(d.studentId) || !actIds.has(d.activityId)) { out.deleted.deployments[d.id] = stamp; continue; }
+    const key = d.activityId + '|' + d.studentId, prev = latest.get(key);
+    if (!prev) latest.set(key, d);
+    else {
+      const [keep, drop] = (d.updatedAt || '') > (prev.updatedAt || '') ? [d, prev] : [prev, d];
+      latest.set(key, keep);
+      out.deleted.deployments[drop.id] = stamp;
+    }
+  }
+  out.deployments = out.deployments.filter(d => latest.get(d.activityId + '|' + d.studentId) === d);
+  if ((t.meta.settingsAt || '') > (out.meta.settingsAt || '')) { out.settings = t.settings; out.meta.settingsAt = t.meta.settingsAt; incoming++; }
+  for (const k of Object.keys(DEFAULT_LISTS)) {
+    if ((t.meta.listsAt[k] || '') > (out.meta.listsAt[k] || '')) { out.lists[k] = t.lists[k]; out.meta.listsAt[k] = t.meta.listsAt[k]; incoming++; }
+  }
+  const cutoff = new Date(Date.now() - TOMBSTONE_DAYS * 864e5).toISOString();
+  for (const k of COLLECTIONS) for (const [id, when] of Object.entries(out.deleted[k])) if (when < cutoff) delete out.deleted[k][id];
+  return { data: out, incoming };
+}
+
 /* ---------------------------------------------------------------- persistence */
+const CAN_PICK = typeof window.showOpenFilePicker === 'function';
+const POLL_MS = 20000;
+let lastFileStamp = 0;
+let remoteNotice = null;
+let leaving = false;
+
 function commit(msg) {
   dirty = true;
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ base: baseRevision, at: Date.now(), data })); } catch (_) { /* storage unavailable */ }
@@ -416,10 +500,9 @@ function loadDraft() {
   } catch (_) { return null; }
 }
 function userName() {
-  let n = '';
-  try { n = localStorage.getItem(NAME_KEY) || ''; } catch (_) { /* ignore */ }
+  let n = myName();
   if (!n) {
-    n = (prompt('Your name — recorded with each save so colleagues know who updated the file:') || '').trim();
+    n = (prompt('Your name — recorded with your changes so colleagues know who updated what:') || '').trim();
     if (!n) return null;
     try { localStorage.setItem(NAME_KEY, n); } catch (_) { /* ignore */ }
   }
@@ -440,10 +523,11 @@ function serialize(next) {
   root.querySelector('#sld-data').textContent = JSON.stringify(next).replace(/</g, '\\u003c');
   return '<!doctype html>\n' + root.outerHTML;
 }
-function readRevision(html) {
+/* Pull the data out of a saved copy of this page; null if it isn't one. */
+function dataFromHtml(html) {
   const m = html.match(/id="sld-data"[^>]*>([\s\S]*?)<\/script>/);
   if (!m) return null;
-  try { const d = JSON.parse(m[1]); return { revision: Number(d.revision) || 0, savedBy: d.savedBy, savedAt: d.savedAt }; } catch (_) { return null; }
+  try { return normalize(JSON.parse(m[1])); } catch (_) { return null; }
 }
 function download(text, name) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/html' }));
@@ -451,46 +535,142 @@ function download(text, name) {
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
+function pickFileText() {
+  return new Promise(resolve => {
+    const inp = el('input', { type: 'file', accept: '.html,.htm,text/html', style: 'display:none' });
+    inp.addEventListener('change', async () => { const f = inp.files[0]; inp.remove(); resolve(f ? await f.text() : null); });
+    inp.addEventListener('cancel', () => { inp.remove(); resolve(null); });
+    document.body.append(inp);
+    inp.click();
+  });
+}
+const changesText = n => `${n} change${n === 1 ? '' : 's'}`;
+
+/* Chrome/Edge: link this page to the file on the shared drive (once per visit). */
+async function connectFile(purpose) {
+  const why = purpose === 'save' ? 'save your changes to it' : 'check it for colleagues’ changes';
+  if (!confirm(`In the next window, select THIS file on the shared drive ("${fileName()}") so the page can ${why}.\n\nYou only need to do this once while the page is open.`)) return false;
+  const [h] = await window.showOpenFilePicker({ multiple: false, types: [{ description: 'Dashboard (HTML)', accept: { 'text/html': ['.html', '.htm'] } }] });
+  const d = dataFromHtml(await (await h.getFile()).text());
+  if (!d) { alert('That file is not a copy of this dashboard. Please choose the dashboard file on the shared drive.'); return false; }
+  fileHandle = h;
+  lastFileStamp = 0;
+  startPolling();
+  return true;
+}
+async function ensurePermission(handle, mode) {
+  if (!handle.queryPermission) return true;
+  if ((await handle.queryPermission({ mode })) === 'granted') return true;
+  return (await handle.requestPermission({ mode })) === 'granted';
+}
+async function readDisk() {
+  const f = await fileHandle.getFile();
+  return { stamp: f.lastModified, data: dataFromHtml(await f.text()) };
+}
+/* Bring a colleague's saved copy into this page, keeping our own unsaved edits. */
+function applyIncoming(disk) {
+  const { data: merged, incoming } = mergeData(data, disk);
+  data = { ...merged, revision: disk.revision, savedAt: disk.savedAt, savedBy: disk.savedBy };
+  baseRevision = disk.revision;
+  remoteNotice = null;
+  if (dirty) { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ base: baseRevision, at: Date.now(), data })); } catch (_) { /* ignore */ } }
+  render();
+  return incoming;
+}
+async function checkForUpdates() {
+  if (!CAN_PICK) {
+    // Other browsers can't read the file in place: reopen it. Unsaved edits are kept as a draft and merged back in.
+    if (!confirm('Reopen the file to get the latest version?' + (dirty ? '\n\nYour unsaved changes are kept on this computer — choose “Restore my changes” after it reopens.' : ''))) return;
+    leaving = true;
+    location.reload();
+    return;
+  }
+  try {
+    if (!fileHandle && !(await connectFile('check'))) return;
+    const disk = await readDisk();
+    lastFileStamp = disk.stamp;
+    if (!disk.data) throw new Error('the file no longer contains dashboard data');
+    if (disk.data.revision === baseRevision) { remoteNotice = null; render(); toast('You have the latest version'); return; }
+    const n = applyIncoming(disk.data);
+    toast(n ? `Brought in ${changesText(n)} from ${disk.data.savedBy || 'a colleague'}` : 'Up to date');
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    alert('Could not read the file: ' + (e && e.message ? e.message : e));
+  }
+}
+let pollTimer = null;
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(async () => {
+    if (!fileHandle || document.visibilityState !== 'visible') return;
+    try {
+      const f = await fileHandle.getFile();
+      if (f.lastModified === lastFileStamp) return;
+      lastFileStamp = f.lastModified;
+      const d = dataFromHtml(await f.text());
+      if (!d || d.revision === baseRevision) return;
+      remoteNotice = { savedBy: d.savedBy, savedAt: d.savedAt };
+      showRemoteNotice();
+    } catch (_) { /* file temporarily unavailable (e.g. drive syncing) */ }
+  }, POLL_MS);
+}
+function remoteBanner() {
+  if (!remoteNotice) return null;
+  return el('div', { class: 'banner info no-print', id: 'remote-notice' }, [
+    el('span', {}, [el('b', { text: `${remoteNotice.savedBy || 'A colleague'} saved changes` }),
+      remoteNotice.savedAt ? ` at ${fmtStamp(remoteNotice.savedAt)}.` : '.', ' Your own unsaved edits will be kept.']),
+    el('div', { class: 'right' }, el('button', { class: 'btn small primary', onclick: checkForUpdates }, 'Get their changes')),
+  ]);
+}
+/* Insert the notice without re-rendering, so a half-filled form isn't lost. */
+function showRemoteNotice() {
+  document.getElementById('remote-notice')?.remove();
+  const b = remoteBanner();
+  if (b) document.querySelector('main')?.prepend(b);
+}
 function afterSave(next, how) {
-  data = next; baseRevision = next.revision; dirty = false; pendingDraft = null;
+  data = next; baseRevision = next.revision; dirty = false; pendingDraft = null; remoteNotice = null;
   clearDraft(); render(); toast(how);
 }
 async function save() {
   const who = userName();
   if (who === null) return;
-  const next = { ...data, revision: baseRevision + 1, savedAt: new Date().toISOString(), savedBy: who };
-  const html = serialize(next);
-  if (typeof window.showSaveFilePicker === 'function') {
+  const finalize = (base, disk) => ({ ...base, revision: Math.max(baseRevision, disk ? disk.revision : 0) + 1, savedAt: nowIso(), savedBy: who });
+  if (CAN_PICK) {
     try {
-      if (!fileHandle) {
-        if (!confirm(`A save window will open.\n\nSelect THIS file on the shared drive ("${fileName()}") and choose Replace / Yes.\nYou only need to do this once while the page is open.`)) return;
-        fileHandle = await window.showSaveFilePicker({
-          suggestedName: fileName(),
-          types: [{ description: 'Dashboard (HTML)', accept: { 'text/html': ['.html', '.htm'] } }],
-        });
-      }
-      const onDisk = readRevision(await (await fileHandle.getFile()).text());
-      if (onDisk && onDisk.revision !== baseRevision) {
-        const when = onDisk.savedAt ? ' on ' + fmtStamp(onDisk.savedAt) : '';
-        if (!confirm(`${onDisk.savedBy || 'Someone'} saved this file${when}, after you opened it.\n\nSaving now will overwrite their changes. Cancel, then reopen the file to get their version (your edits stay as a draft on this computer).\n\nOverwrite anyway?`)) return;
-      }
+      if (!fileHandle && !(await connectFile('save'))) return;
+      if (!(await ensurePermission(fileHandle, 'readwrite'))) throw new Error('permission to save was not given');
+      const disk = await readDisk();
+      if (!disk.data) throw new Error('the selected file is not a copy of this dashboard');
+      const { data: merged, incoming } = mergeData(data, disk.data);
+      const next = finalize(merged, disk.data);
       const w = await fileHandle.createWritable();
-      await w.write(html);
+      await w.write(serialize(next));
       await w.close();
-      afterSave(next, 'Saved to ' + fileHandle.name);
+      lastFileStamp = (await fileHandle.getFile()).lastModified;
+      afterSave(next, incoming ? `Saved — and brought in ${changesText(incoming)} from colleagues` : 'Saved to ' + fileHandle.name);
       return;
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       fileHandle = null;
-      alert('Could not save directly (' + (e && e.message ? e.message : e) + ').\nA copy will be downloaded instead — use it to replace the file on the shared drive.');
+      alert('Could not save directly (' + (e && e.message ? e.message : e) + ').\nYou can still save by downloading an updated copy.');
     }
-  } else {
-    alert(`This browser can't write to the file directly, so an updated copy will be downloaded.\n\nMove it to the shared drive and replace "${fileName()}" with it.\n(Chrome or Edge on a computer can save straight to the file.)`);
   }
-  download(html, fileName());
-  afterSave(next, 'Downloaded updated copy — replace the file on the shared drive');
+  // Other browsers: merge with the current file (picked by the teacher), then download the result.
+  let disk = null;
+  if (confirm(`This browser saves by downloading an updated copy.\n\nStep 1 — OK: select the CURRENT file on the shared drive ("${fileName()}") so colleagues’ changes are merged in.\nStep 2 — move the downloaded file to the shared drive, replacing the old one.\n\n(Cancel downloads your copy without merging.)`)) {
+    const text = await pickFileText();
+    if (text) {
+      disk = dataFromHtml(text);
+      if (!disk) { alert('That file is not a copy of this dashboard, so nothing was merged.'); }
+    }
+  }
+  const { data: merged, incoming } = disk ? mergeData(data, disk) : { data, incoming: 0 };
+  const next = finalize(merged, disk);
+  download(serialize(next), fileName());
+  afterSave(next, `Downloaded updated copy${incoming ? ` (with ${changesText(incoming)} from colleagues)` : ''} — replace the file on the shared drive`);
 }
-window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (dirty && !leaving) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------------------------------------------------------------- shell */
 const TABS = [['dashboard', 'Dashboard'], ['activities', 'Activities'], ['students', 'Students'], ['deployments', 'Deployments'], ['settings', 'Settings & Help']];
@@ -516,6 +696,7 @@ function render() {
       ]),
       el('span', { class: 'save-state' + (dirty ? ' dirty' : ''), text: saveText }),
       el('div', { class: 'title-actions' }, [
+        el('button', { class: 'btn', onclick: checkForUpdates, title: 'Check the shared file for changes saved by colleagues' }, 'Get latest'),
         el('button', { class: 'btn', onclick: () => window.print(), title: 'Print or save the dashboard as PDF' }, 'Print'),
         el('button', { class: 'btn primary', onclick: save }, dirty ? 'Save changes' : 'Save'),
       ]),
@@ -524,7 +705,7 @@ function render() {
       el('button', { class: state.tab === k ? 'active' : '', onclick: () => go(k), 'aria-current': state.tab === k ? 'page' : null }, label))),
   ]));
   const views = { dashboard: viewDashboard, activities: viewActivities, students: viewStudents, deployments: viewDeployments, settings: viewSettings };
-  const main = el('main', {}, [draftBanner(), views[state.tab]()]);
+  const main = el('main', {}, [remoteBanner(), draftBanner(), views[state.tab]()]);
   app.replaceChildren(top, main);
 }
 function draftBanner() {
@@ -532,13 +713,17 @@ function draftBanner() {
   const stale = pendingDraft.base !== baseRevision;
   return el('div', { class: 'banner no-print' }, [
     el('span', {}, [
-      el('b', { text: 'Unsaved changes found on this computer ' }),
+      el('b', { text: 'You have unsaved changes on this computer ' }),
       `from ${fmtStamp(new Date(pendingDraft.at).toISOString())}.`,
-      stale ? ' The file has been saved by someone since then — restoring will replace their newer changes.' : '',
+      stale ? ' Colleagues have saved since then — restoring merges your changes with theirs.' : '',
     ]),
     el('div', { class: 'right' }, [
-      el('button', { class: 'btn small', onclick: () => { data = normalize(pendingDraft.data); pendingDraft = null; commit('Draft restored — remember to Save'); } }, 'Restore draft'),
-      el('button', { class: 'btn small', onclick: () => { pendingDraft = null; clearDraft(); render(); } }, 'Discard'),
+      el('button', { class: 'btn small primary', onclick: () => {
+        const merged = mergeData(normalize(pendingDraft.data), data).data;
+        data = { ...merged, revision: data.revision, savedAt: data.savedAt, savedBy: data.savedBy };
+        pendingDraft = null; commit('Your changes are back — remember to Save');
+      } }, 'Restore my changes'),
+      el('button', { class: 'btn small', onclick: () => { if (!confirm('Throw away your unsaved changes?')) return; pendingDraft = null; clearDraft(); render(); } }, 'Discard'),
     ]),
   ]);
 }
@@ -781,8 +966,8 @@ function saveActivity(existing, v) {
   if (!v.name) return 'Activity name is required.';
   if (v.start && v.end && v.end <= v.start) return 'End time must be after the start time.';
   const rec = { ...(existing || { id: uid('a') }), ...v, needed: v.needed === '' ? 0 : Math.max(0, parseInt(v.needed, 10) || 0) };
-  if (existing) Object.assign(existing, rec); else data.activities.push(rec);
-  return rec;
+  const target = existing ? Object.assign(existing, rec) : (data.activities.push(rec), rec);
+  return touch(target);
 }
 
 function viewActivities() {
@@ -859,8 +1044,8 @@ function activityDetail(a) {
           el('button', { class: 'btn small danger', onclick: () => {
             const n = data.deployments.filter(d => d.activityId === a.id).length;
             if (!confirm(`Delete "${a.name}"${n ? ` and its ${n} deployment record${n > 1 ? 's' : ''}` : ''}?`)) return;
-            data.activities = data.activities.filter(x => x.id !== a.id);
-            data.deployments = data.deployments.filter(d => d.activityId !== a.id);
+            removeRecords('activities', x => x.id === a.id);
+            removeRecords('deployments', d => d.activityId === a.id);
             state.activityId = null; commit('Activity deleted');
           } }, 'Delete'),
         ]),
@@ -889,13 +1074,13 @@ function activityDetail(a) {
       return el('tr', { class: d.status === 'Withdrawn' ? 'past' : '' }, [
         el('td', {}, el('div', { class: 'stack-name' }, [studentLink(st), el('small', { text: st.fullName })])),
         el('td', { text: st.formClass }),
-        el('td', {}, selectEl(data.lists.roles, d.role || '', v => { d.role = v; commit(); }, '—')),
-        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; commit(); })),
-        el('td', { class: 'num' }, el('input', { type: 'number', min: '0', step: '0.5', value: d.hours ?? '', placeholder: fmtHours(s.hours), title: 'Leave blank to credit the activity duration', onchange: e => { d.hours = e.target.value === '' ? null : Number(e.target.value); commit(); } })),
-        el('td', {}, el('input', { type: 'text', value: d.remarks || '', placeholder: '—', onchange: e => { d.remarks = e.target.value.trim(); commit(); } })),
+        el('td', {}, selectEl(data.lists.roles, d.role || '', v => { d.role = v; touch(d); commit(); }, '—')),
+        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; touch(d); commit(); })),
+        el('td', { class: 'num' }, el('input', { type: 'number', min: '0', step: '0.5', value: d.hours ?? '', placeholder: fmtHours(s.hours), title: 'Leave blank to credit the activity duration', onchange: e => { d.hours = e.target.value === '' ? null : Number(e.target.value); touch(d); commit(); } })),
+        el('td', {}, el('input', { type: 'text', value: d.remarks || '', placeholder: '—', onchange: e => { d.remarks = e.target.value.trim(); touch(d); commit(); } })),
         el('td', {}, el('button', { class: 'btn small danger', title: 'Remove from this activity', onclick: () => {
           if (!confirm(`Remove ${st.fullName} from this activity? (To keep a record, set the status to Withdrawn instead.)`)) return;
-          data.deployments = data.deployments.filter(x => x !== d); commit('Removed');
+          removeRecords('deployments', x => x === d); commit('Removed');
         } }, 'Remove')),
       ]);
     }), 'Nobody assigned yet — pick leaders below.'),
@@ -952,8 +1137,8 @@ function assignPanel(a, S) {
     let added = 0;
     for (const id of p.selected) {
       const existing = data.deployments.find(d => d.activityId === a.id && d.studentId === id);
-      if (existing) { existing.status = p.status; if (p.role) existing.role = p.role; }
-      else data.deployments.push({ id: uid('d'), activityId: a.id, studentId: id, role: p.role, status: p.status, hours: null, remarks: '' });
+      if (existing) { existing.status = p.status; if (p.role) existing.role = p.role; touch(existing); }
+      else data.deployments.push(touch({ id: uid('d'), activityId: a.id, studentId: id, role: p.role, status: p.status, hours: null, remarks: '' }));
       added++;
     }
     p.selected = new Set();
@@ -985,10 +1170,10 @@ function saveStudent(existing, v) {
   const clash = data.students.find(s => s !== existing && s.fullName.toLowerCase() === v.fullName.toLowerCase() && s.formClass === v.formClass);
   if (clash) return `${v.fullName} (${v.formClass}) is already on the list.`;
   const rec = { ...(existing || { id: uid('s') }), ...v, ccas: [...new Set(v.ccas || [])], name: v.name || v.fullName.split(' ')[0] };
-  if (existing) Object.assign(existing, rec); else data.students.push(rec);
-  if (!data.lists.formClasses.includes(v.formClass)) data.lists.formClasses.push(v.formClass);
-  for (const c of rec.ccas || []) if (!data.lists.ccas.includes(c)) data.lists.ccas.push(c);
-  return rec;
+  const target = existing ? Object.assign(existing, rec) : (data.students.push(rec), rec);
+  if (!data.lists.formClasses.includes(v.formClass)) { data.lists.formClasses.push(v.formClass); touchList('formClasses'); }
+  for (const c of rec.ccas || []) if (!data.lists.ccas.includes(c)) { data.lists.ccas.push(c); touchList('ccas'); }
+  return touch(target);
 }
 function viewStudents() {
   if (state.studentId) {
@@ -1062,8 +1247,8 @@ function studentDetail(s) {
           el('button', { class: 'btn small danger', onclick: () => {
             const n = data.deployments.filter(d => d.studentId === s.id).length;
             if (!confirm(`Delete ${s.fullName}${n ? ` and their ${n} deployment record${n > 1 ? 's' : ''}` : ''}?`)) return;
-            data.students = data.students.filter(x => x.id !== s.id);
-            data.deployments = data.deployments.filter(d => d.studentId !== s.id);
+            removeRecords('students', x => x.id === s.id);
+            removeRecords('deployments', d => d.studentId === s.id);
             state.studentId = null; commit('Student deleted');
           } }, 'Delete'),
         ])]),
@@ -1118,7 +1303,7 @@ function viewDeployments() {
         el('td', { class: 'nowrap', text: fmtDate(a.date) }), el('td', {}, activityLink(a)),
         el('td', {}, el('div', { class: 'stack-name' }, [studentLink(s), el('small', { text: s.fullName })])), el('td', { text: s.formClass }),
         el('td', { text: d.role || '—' }),
-        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; commit('Status updated'); })),
+        el('td', {}, selectEl(STATUSES, d.status, v => { d.status = v; touch(d); commit('Status updated'); })),
         el('td', { class: 'num', text: fmtHours(depHours(d, S)) }), el('td', { class: 'muted', text: d.remarks || '' }),
       ]);
     }), data.deployments.length ? 'No records match these filters.' : 'No deployments yet. Open an activity and use “Assign leaders”.'));
@@ -1187,6 +1372,7 @@ function viewSettings() {
     el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
       try { if (me.value.trim()) localStorage.setItem(NAME_KEY, me.value.trim()); else localStorage.removeItem(NAME_KEY); } catch (_) { /* ignore */ }
       Object.assign(st, { school: school.value.trim(), motto: motto.value.trim(), title: title.value.trim() || DEFAULT_SETTINGS.title, highLoad: Math.max(1, parseInt(high.value, 10) || 4), upcomingDays: Math.max(1, parseInt(days.value, 10) || 14) });
+      touchSettings();
       commit('Settings updated');
     } }, 'Apply settings')),
   ]));
@@ -1197,7 +1383,10 @@ function viewSettings() {
     el('h2', { text: 'Dropdown lists' }), el('p', { class: 'sub', text: 'One item per line. Renaming an item here does not change records that already use the old name.' }),
     el('div', { class: 'form-grid' }, listDefs.map(([k, label]) => field(label, listBoxes[k] = el('textarea', { value: data.lists[k].join('\n') })))),
     el('div', { class: 'form-actions' }, el('button', { class: 'btn primary', onclick: () => {
-      for (const [k] of listDefs) data.lists[k] = [...new Set(listBoxes[k].value.split('\n').map(x => x.trim()).filter(Boolean))];
+      for (const [k] of listDefs) {
+        const next = [...new Set(listBoxes[k].value.split('\n').map(x => x.trim()).filter(Boolean))];
+        if (JSON.stringify(next) !== JSON.stringify(data.lists[k])) { data.lists[k] = next; touchList(k); }
+      }
       commit('Lists updated');
     } }, 'Apply lists')),
   ]));
@@ -1224,6 +1413,13 @@ function viewSettings() {
     try {
       const incoming = normalize(JSON.parse(await file.text()));
       if (!confirm(`Replace ALL current data with this backup (${incoming.students.length} students, ${incoming.activities.length} activities, ${incoming.deployments.length} deployments)?`)) return;
+      const t = nowIso();
+      for (const k of COLLECTIONS) {
+        const ids = new Set(incoming[k].map(r => r.id));
+        for (const r of data[k]) if (!ids.has(r.id)) incoming.deleted[k][r.id] = t;
+        for (const r of incoming[k]) r.updatedAt = t;
+      }
+      incoming.meta = { settingsAt: t, listsAt: Object.fromEntries(Object.keys(DEFAULT_LISTS).map(k => [k, t])) };
       data = { ...incoming, revision: data.revision, savedAt: data.savedAt, savedBy: data.savedBy };
       commit('Backup loaded — click Save to keep it');
     } catch (err) { alert('That file is not a valid backup: ' + err.message); }
@@ -1241,11 +1437,12 @@ function viewSettings() {
     el('div', { class: 'form-actions' }, [
       el('button', { class: 'btn danger', onclick: () => {
         if (!confirm('Start a new year? This deletes all activities and deployments but keeps students, lists and settings.\n\nTip: first download a backup, or keep a copy of the file.')) return;
-        data.activities = []; data.deployments = []; commit('Activities and deployments cleared — click Save to keep');
+        removeRecords('activities', () => true); removeRecords('deployments', () => true); commit('Activities and deployments cleared — click Save to keep');
       } }, 'New year: clear activities & deployments'),
       el('button', { class: 'btn danger', onclick: () => {
         if (!confirm('Delete ALL students, activities and deployments? Lists and settings are kept.')) return;
-        data.students = []; data.activities = []; data.deployments = []; commit('All records cleared — click Save to keep');
+        for (const k of COLLECTIONS) removeRecords(k, () => true);
+        commit('All records cleared — click Save to keep');
       } }, 'Clear all records'),
     ]),
   ]));
@@ -1261,15 +1458,17 @@ function viewSettings() {
     el('h3', { text: 'Saving changes' }),
     el('ol', {}, [
       el('li', {}, 'Make your changes, then click Save (top right).'),
-      el('li', {}, 'In Chrome or Edge on a computer, the first Save asks where to save — pick this same file on the shared drive and confirm Replace. Later saves in the same session go straight to the file.'),
-      el('li', {}, 'In other browsers (Safari, Firefox, phones) Save downloads an updated copy; move it to the shared drive and replace the old file.'),
+      el('li', {}, 'In Chrome or Edge on a computer, the first Save asks you to select this same file on the shared drive (and to allow saving). Later saves in the same visit go straight to the file.'),
+      el('li', {}, 'In other browsers (Safari, Firefox, phones) Save first asks for the current file on the shared drive, merges it, then downloads an updated copy — move it to the shared drive, replacing the old file.'),
       el('li', {}, 'Unsaved changes are kept on your computer as a draft, so closing the tab by accident is recoverable.'),
     ]),
     el('h3', { text: 'Sharing with colleagues' }),
     el('ul', {}, [
-      el('li', {}, 'Several people can view at once. When editing, the last save wins — Chrome/Edge will warn you if someone saved after you opened the file.'),
-      el('li', {}, 'Agree on one or two people per week who update deployments, or reopen the file before making changes.'),
-      el('li', {}, 'Each save records the editor’s name and time (shown at the top).'),
+      el('li', {}, 'Several teachers can work on the file in the same week, each on their own computer. Saving never wipes out a colleague’s work: the page reads the latest file first and merges both sets of changes.'),
+      el('li', {}, 'If two people change the same student, activity or deployment, the most recent change is kept. Deleted records stay deleted.'),
+      el('li', {}, 'Click “Get latest” to bring in colleagues’ changes without closing the page. In Chrome/Edge, once the page is linked to the file it checks every 20 seconds and shows a notice when someone saves.'),
+      el('li', {}, 'Each change records who made it, and each save records the editor’s name and time (shown at the top).'),
+      el('li', {}, 'If the drive ever shows a “conflict copy” (two saves in the same few seconds), open the copy, click Save and select the main file — the two are merged. Then delete the copy.'),
     ]),
     el('h3', { text: 'Counting rules' }),
     el('ul', {}, [
