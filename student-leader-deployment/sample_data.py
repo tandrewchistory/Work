@@ -1,4 +1,4 @@
-"""Sample data shared by build_workbook.py and build_html.py."""
+"""Sample data used by build_html.py."""
 import datetime as dt
 import random
 
