@@ -749,12 +749,21 @@ footer{
   margin:0 0 14px;
   color:var(--ink);
 }
-#howto-card ol{
+#howto-card h3{
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+  color:var(--accent);
+  margin:20px 0 8px;
+}
+#howto-card ol,
+#howto-card ul{
   margin:0;
   padding-left:20px;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:8px;
   font-size:14.5px;
   line-height:1.5;
   color:var(--ink);
@@ -763,6 +772,8 @@ footer{
   font-family:"Board Numeral", sans-serif;
   color:var(--accent);
 }
+#howto-card ul{ list-style:disc; }
+#howto-card ul li::marker{ color:var(--accent); }
 #howto-close{ margin-top:22px; }
 
 /* ---------------------------------- victory screen ---------------------------------- */
@@ -1762,22 +1773,22 @@ footer{
   </div>
 
   <div id="controls">
-    <button class="btn primary" id="edit-board-btn">&#9998; Edit Board</button>
-    <button class="btn" id="team-builder-btn">&#128101; Team Builder</button>
-    <button class="btn" id="add-team-btn">+ Add Team</button>
+    <button class="btn primary" id="edit-board-btn" title="Rewrite the title, categories, and every clue">&#9998; Edit Board</button>
+    <button class="btn" id="team-builder-btn" title="Build teams from a class list, with drag-and-drop and banned pairings">&#128101; Team Builder</button>
+    <button class="btn" id="add-team-btn" title="Add another team to the scoreboard (up to 10)">+ Add Team</button>
 
-    <button class="btn info" id="random-clue-btn">&#127922; Random Clue</button>
-    <button class="btn info" id="random-team-btn">&#128587; Random Team</button>
-    <button class="btn" id="undo-btn" disabled>&#8630; Undo</button>
+    <button class="btn info" id="random-clue-btn" title="Open a random unplayed tile">&#127922; Random Clue</button>
+    <button class="btn info" id="random-team-btn" title="Pick a random team to answer">&#128587; Random Team</button>
+    <button class="btn" id="undo-btn" disabled title="Undo the last score change">&#8630; Undo</button>
 
-    <button class="btn" id="buzzer-btn">&#128276; Buzzer</button>
-    <button class="btn" id="student-buzzer-btn">&#128241; Student Buzzer</button>
+    <button class="btn" id="buzzer-btn" title="Connect a Firebase room so students can buzz in from their own devices">&#128276; Buzzer</button>
+    <button class="btn" id="student-buzzer-btn" title="Show the join code/QR for students to buzz in">&#128241; Student Buzzer</button>
 
-    <button class="btn" id="rules-btn">&#128220; Game Rules</button>
-    <button class="btn" id="how-to-btn">How to Play</button>
-    <button class="btn" id="end-game-btn">End Game</button>
-    <button class="btn" id="reset-board-btn">Reset Board</button>
-    <button class="btn danger" id="reset-btn">Reset Game</button>
+    <button class="btn" id="rules-btn" title="Shown to the class — explains the rules in plain language">&#128220; Game Rules</button>
+    <button class="btn" id="how-to-btn" title="For you — a reference covering every feature, never shown to students">&#127891; How to Play</button>
+    <button class="btn" id="end-game-btn" title="Finish early and show the current standings as the winner">End Game</button>
+    <button class="btn" id="reset-board-btn" title="Clear scores and played tiles, but keep the current teams">Reset Board</button>
+    <button class="btn danger" id="reset-btn" title="Reset everything, including teams, back to Team 1 / Team 2">Reset Game</button>
   </div>
 
   <footer>Pick a dollar value to reveal a clue, then reveal the response and award points to the team that got it.</footer>
@@ -1840,19 +1851,64 @@ footer{
 <div id="howto-overlay" class="modal-overlay">
   <div id="howto-card">
     <h2>How to Play</h2>
+    <p class="editor-sub">This is your reference &mdash; it's never shown to students. Click &ldquo;Game Rules&rdquo; instead to show the class a simpler, editable explanation.</p>
+
+    <h3>Running a Round</h3>
     <ol>
       <li>Split the class into 2&ndash;10 teams and give each one a name.</li>
       <li>A team picks a category and dollar value from the board.</li>
       <li>Read the clue aloud. Teams race to answer.</li>
       <li>Click &ldquo;Reveal Response&rdquo; to check the answer (and its explainer, if you wrote one), then award points to whichever team got it (or dock points for a wrong guess).</li>
-      <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or just click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue as done with no points awarded.</li>
-      <li>Watch for the hidden Daily Double &mdash; only one team answers, and every wager locks in before the clue itself is shown, so nobody can bet after seeing it.</li>
-      <li>When every tile is gone, the highest score wins &mdash; or click &ldquo;End Game&rdquo; any time to finish early and see the winner.</li>
-      <li>Teaching a different topic? Click &ldquo;Edit Board&rdquo; to rewrite the title, categories, and every clue &mdash; add or remove categories and rows to fit your subject, no code required.</li>
-      <li>Want students to buzz in from their own devices? Click &ldquo;Buzzer&rdquo; to connect a free Firebase project &mdash; it&rsquo;s entirely optional, and the board works exactly the same without it.</li>
-      <li>Nobody volunteering, or no clear winner of the buzz-in? &ldquo;Random Clue&rdquo; opens a random unplayed tile, and &ldquo;Random Team&rdquo; picks who answers.</li>
-      <li>Running the game from a clicker instead of the mouse? Space or Enter reveals the response, 1&ndash;6 awards the clue to that team, Shift+1&ndash;6 docks it instead, and U undoes the last action.</li>
+      <li>Opened the wrong tile by mistake? Click &ldquo;Return to Board&rdquo; (or click outside the card, or press Escape) to back out &mdash; the tile stays unplayed. &ldquo;Close (No Award)&rdquo; is different: it marks the clue done with no points given.</li>
     </ol>
+
+    <h3>Daily Double</h3>
+    <ul>
+      <li>One hidden clue is a Daily Double &mdash; only the team that picks it answers, and every wager locks in before the clue itself is shown, so nobody can bet after seeing it.</li>
+      <li>Don't want this mechanic? Turn it off from &ldquo;Edit Board&rdquo; &mdash; an &ldquo;Enable Daily Double&rdquo; checkbox sits above the location picker.</li>
+    </ul>
+
+    <h3>Per-Clue Timer</h3>
+    <ul>
+      <li>Set an optional countdown for any clue in &ldquo;Edit Board.&rdquo; It loads when the clue opens but waits for you to click Start, so students aren't caught off guard by a clock nobody asked to begin.</li>
+      <li>Once running: Pause/Resume freezes and continues it, Restart jumps back to the full time, and Stop cancels it without closing the clue.</li>
+    </ul>
+
+    <h3>Teams &amp; Groupings</h3>
+    <ul>
+      <li>&ldquo;+ Add Team&rdquo; adds one more to the scoreboard (up to 10). Click a team's name to rename it.</li>
+      <li>&ldquo;Team Builder&rdquo; turns a pasted or imported (.txt) class list into teams &mdash; drag names between teams, shuffle at random, list students who shouldn't be grouped together, then send the result to the scoreboard.</li>
+      <li>No clear volunteer? &ldquo;Random Clue&rdquo; opens a random unplayed tile, and &ldquo;Random Team&rdquo; picks who answers.</li>
+    </ul>
+
+    <h3>Customizing the Board</h3>
+    <ul>
+      <li>&ldquo;Edit Board&rdquo; rewrites the title, categories, and every clue &mdash; add or remove categories and rows, pick a color palette, and set a background image.</li>
+      <li>Prefer a spreadsheet? Download the CSV template, fill it in, and import it back &mdash; handy for writing a board offline or sharing one with a colleague.</li>
+    </ul>
+
+    <h3>Resetting</h3>
+    <ul>
+      <li><strong>Reset Board</strong> clears scores and played tiles but keeps your current teams and rosters &mdash; use this to replay the same board with the same class.</li>
+      <li><strong>Reset Game</strong> clears everything, including teams, back to the default Team 1 / Team 2 &mdash; use this to hand the board to a different class.</li>
+    </ul>
+
+    <h3>After the Game</h3>
+    <ul>
+      <li>When every tile is gone the highest score wins, or click &ldquo;End Game&rdquo; any time to finish early.</li>
+      <li>From the winner screen: &ldquo;Play Again&rdquo; keeps your teams and starts a fresh round, &ldquo;Review All Clues&rdquo; lets you reveal every answer at your own pace, and you can download final scores as a CSV.</li>
+    </ul>
+
+    <h3>Buzzer (Optional)</h3>
+    <ul>
+      <li>Click &ldquo;Buzzer&rdquo; to let students buzz in from their own devices &mdash; needs a free Firebase project you control. The board works exactly the same without it; full setup steps are in that dialog.</li>
+    </ul>
+
+    <h3>Keyboard Shortcuts</h3>
+    <ul>
+      <li>Space or Enter reveals the response. Digits 1&ndash;9 award the clue to that team, 0 awards the 10th; Shift+digit docks it instead. U undoes the last action.</li>
+    </ul>
+
     <button class="btn primary" id="howto-close">Got it</button>
   </div>
 </div>
@@ -1912,7 +1968,7 @@ footer{
 <div id="editor-overlay" class="modal-overlay" role="dialog" aria-labelledby="editor-title">
   <div id="editor-card">
     <h2 id="editor-title">Edit Board</h2>
-    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, pick a color palette (or customize every color yourself), and set a background image to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue — as a picture-round prompt or alongside the text — and add an optional explainer for extra context shown after the answer. A separate Teacher Note field stays private to you and is never shown on the board. Saving resets scores and board progress.</p>
+    <p class="editor-sub">Rewrite the title, categories, and every clue for your subject — add or remove categories and rows to resize the board, pick a color palette (or customize every color yourself), and set a background image to match your class or school. Or download a spreadsheet template, fill it in, and import it back. Attach an image to any clue, set an optional per-clue countdown timer, and add an optional explainer shown after the answer. A separate Teacher Note field stays private to you and is never shown on the board. Choose where the Daily Double sits, or turn it off entirely. Saving resets scores and board progress — your teams and their rosters are left untouched.</p>
     <div id="editor-io-row">
       <button class="btn" id="editor-download-btn" type="button">&#8681; Download Template (.csv)</button>
       <button class="btn" id="editor-import-btn" type="button">&#8679; Import Template (.csv)</button>
@@ -2047,7 +2103,7 @@ footer{
 <div id="student-buzzer-overlay" class="modal-overlay" role="dialog" aria-labelledby="student-buzzer-title">
   <div id="student-buzzer-card">
     <h2 id="student-buzzer-title">Student Buzzer</h2>
-    <p class="editor-sub">Scan this with your PLD, or go to <a href="https://www.multibuzz.app" target="_blank" rel="noopener">multibuzz.app</a>, to join the buzzer for this game.</p>
+    <p class="editor-sub">Scan this with a phone or tablet, or go to <a href="https://www.multibuzz.app" target="_blank" rel="noopener">multibuzz.app</a>, to join the buzzer for this game.</p>
     <div id="student-buzzer-qr">
       <svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code linking to multibuzz.app"><rect width="29" height="29" fill="#ffffff"/><path d="M2,2H3V3H2zM3,2H4V3H3zM4,2H5V3H4zM5,2H6V3H5zM6,2H7V3H6zM7,2H8V3H7zM8,2H9V3H8zM10,2H11V3H10zM13,2H14V3H13zM14,2H15V3H14zM15,2H16V3H15zM16,2H17V3H16zM20,2H21V3H20zM21,2H22V3H21zM22,2H23V3H22zM23,2H24V3H23zM24,2H25V3H24zM25,2H26V3H25zM26,2H27V3H26zM2,3H3V4H2zM8,3H9V4H8zM10,3H11V4H10zM11,3H12V4H11zM16,3H17V4H16zM18,3H19V4H18zM20,3H21V4H20zM26,3H27V4H26zM2,4H3V5H2zM4,4H5V5H4zM5,4H6V5H5zM6,4H7V5H6zM8,4H9V5H8zM10,4H11V5H10zM11,4H12V5H11zM12,4H13V5H12zM15,4H16V5H15zM17,4H18V5H17zM18,4H19V5H18zM20,4H21V5H20zM22,4H23V5H22zM23,4H24V5H23zM24,4H25V5H24zM26,4H27V5H26zM2,5H3V6H2zM4,5H5V6H4zM5,5H6V6H5zM6,5H7V6H6zM8,5H9V6H8zM11,5H12V6H11zM15,5H16V6H15zM17,5H18V6H17zM18,5H19V6H18zM20,5H21V6H20zM22,5H23V6H22zM23,5H24V6H23zM24,5H25V6H24zM26,5H27V6H26zM2,6H3V7H2zM4,6H5V7H4zM5,6H6V7H5zM6,6H7V7H6zM8,6H9V7H8zM10,6H11V7H10zM11,6H12V7H11zM13,6H14V7H13zM14,6H15V7H14zM18,6H19V7H18zM20,6H21V7H20zM22,6H23V7H22zM23,6H24V7H23zM24,6H25V7H24zM26,6H27V7H26zM2,7H3V8H2zM8,7H9V8H8zM11,7H12V8H11zM12,7H13V8H12zM16,7H17V8H16zM18,7H19V8H18zM20,7H21V8H20zM26,7H27V8H26zM2,8H3V9H2zM3,8H4V9H3zM4,8H5V9H4zM5,8H6V9H5zM6,8H7V9H6zM7,8H8V9H7zM8,8H9V9H8zM10,8H11V9H10zM12,8H13V9H12zM14,8H15V9H14zM16,8H17V9H16zM18,8H19V9H18zM20,8H21V9H20zM21,8H22V9H21zM22,8H23V9H22zM23,8H24V9H23zM24,8H25V9H24zM25,8H26V9H25zM26,8H27V9H26zM13,9H14V10H13zM15,9H16V10H15zM18,9H19V10H18zM2,10H3V11H2zM5,10H6V11H5zM6,10H7V11H6zM7,10H8V11H7zM8,10H9V11H8zM9,10H10V11H9zM10,10H11V11H10zM11,10H12V11H11zM12,10H13V11H12zM13,10H14V11H13zM16,10H17V11H16zM17,10H18V11H17zM19,10H20V11H19zM22,10H23V11H22zM24,10H25V11H24zM25,10H26V11H25zM26,10H27V11H26zM2,11H3V12H2zM4,11H5V12H4zM6,11H7V12H6zM7,11H8V12H7zM9,11H10V12H9zM11,11H12V12H11zM12,11H13V12H12zM13,11H14V12H13zM14,11H15V12H14zM15,11H16V12H15zM17,11H18V12H17zM19,11H20V12H19zM21,11H22V12H21zM22,11H23V12H22zM23,11H24V12H23zM24,11H25V12H24zM25,11H26V12H25zM2,12H3V13H2zM4,12H5V13H4zM8,12H9V13H8zM9,12H10V13H9zM13,12H14V13H13zM14,12H15V13H14zM15,12H16V13H15zM16,12H17V13H16zM17,12H18V13H17zM20,12H21V13H20zM21,12H22V13H21zM23,12H24V13H23zM26,12H27V13H26zM3,13H4V14H3zM6,13H7V14H6zM7,13H8V14H7zM10,13H11V14H10zM11,13H12V14H11zM13,13H14V14H13zM21,13H22V14H21zM23,13H24V14H23zM24,13H25V14H24zM25,13H26V14H25zM26,13H27V14H26zM4,14H5V15H4zM6,14H7V15H6zM7,14H8V15H7zM8,14H9V15H8zM9,14H10V15H9zM12,14H13V15H12zM14,14H15V15H14zM18,14H19V15H18zM20,14H21V15H20zM26,14H27V15H26zM2,15H3V16H2zM3,15H4V16H3zM4,15H5V16H4zM5,15H6V16H5zM9,15H10V16H9zM10,15H11V16H10zM11,15H12V16H11zM17,15H18V16H17zM18,15H19V16H18zM19,15H20V16H19zM22,15H23V16H22zM25,15H26V16H25zM2,16H3V17H2zM3,16H4V17H3zM4,16H5V17H4zM7,16H8V17H7zM8,16H9V17H8zM11,16H12V17H11zM13,16H14V17H13zM14,16H15V17H14zM17,16H18V17H17zM19,16H20V17H19zM20,16H21V17H20zM22,16H23V17H22zM23,16H24V17H23zM24,16H25V17H24zM25,16H26V17H25zM26,16H27V17H26zM2,17H3V18H2zM5,17H6V18H5zM6,17H7V18H6zM9,17H10V18H9zM10,17H11V18H10zM12,17H13V18H12zM13,17H14V18H13zM16,17H17V18H16zM19,17H20V18H19zM21,17H22V18H21zM23,17H24V18H23zM24,17H25V18H24zM26,17H27V18H26zM2,18H3V19H2zM4,18H5V19H4zM5,18H6V19H5zM8,18H9V19H8zM11,18H12V19H11zM14,18H15V19H14zM15,18H16V19H15zM16,18H17V19H16zM17,18H18V19H17zM18,18H19V19H18zM19,18H20V19H19zM20,18H21V19H20zM21,18H22V19H21zM22,18H23V19H22zM24,18H25V19H24zM25,18H26V19H25zM10,19H11V20H10zM13,19H14V20H13zM14,19H15V20H14zM15,19H16V20H15zM17,19H18V20H17zM18,19H19V20H18zM22,19H23V20H22zM24,19H25V20H24zM25,19H26V20H25zM2,20H3V21H2zM3,20H4V21H3zM4,20H5V21H4zM5,20H6V21H5zM6,20H7V21H6zM7,20H8V21H7zM8,20H9V21H8zM10,20H11V21H10zM11,20H12V21H11zM13,20H14V21H13zM14,20H15V21H14zM18,20H19V21H18zM20,20H21V21H20zM22,20H23V21H22zM26,20H27V21H26zM2,21H3V22H2zM8,21H9V22H8zM10,21H11V22H10zM11,21H12V22H11zM14,21H15V22H14zM15,21H16V22H15zM16,21H17V22H16zM17,21H18V22H17zM18,21H19V22H18zM22,21H23V22H22zM25,21H26V22H25zM26,21H27V22H26zM2,22H3V23H2zM4,22H5V23H4zM5,22H6V23H5zM6,22H7V23H6zM8,22H9V23H8zM10,22H11V23H10zM12,22H13V23H12zM16,22H17V23H16zM17,22H18V23H17zM18,22H19V23H18zM19,22H20V23H19zM20,22H21V23H20zM21,22H22V23H21zM22,22H23V23H22zM2,23H3V24H2zM4,23H5V24H4zM5,23H6V24H5zM6,23H7V24H6zM8,23H9V24H8zM10,23H11V24H10zM12,23H13V24H12zM13,23H14V24H13zM16,23H17V24H16zM17,23H18V24H17zM18,23H19V24H18zM20,23H21V24H20zM25,23H26V24H25zM26,23H27V24H26zM2,24H3V25H2zM4,24H5V25H4zM5,24H6V25H5zM6,24H7V25H6zM8,24H9V25H8zM11,24H12V25H11zM12,24H13V25H12zM13,24H14V25H13zM14,24H15V25H14zM16,24H17V25H16zM18,24H19V25H18zM19,24H20V25H19zM22,24H23V25H22zM23,24H24V25H23zM24,24H25V25H24zM25,24H26V25H25zM26,24H27V25H26zM2,25H3V26H2zM8,25H9V26H8zM13,25H14V26H13zM14,25H15V26H14zM16,25H17V26H16zM21,25H22V26H21zM22,25H23V26H22zM24,25H25V26H24zM25,25H26V26H25zM26,25H27V26H26zM2,26H3V27H2zM3,26H4V27H3zM4,26H5V27H4zM5,26H6V27H5zM6,26H7V27H6zM7,26H8V27H7zM8,26H9V27H8zM10,26H11V27H10zM12,26H13V27H12zM13,26H14V27H13zM18,26H19V27H18zM19,26H20V27H19zM23,26H24V27H23zM26,26H27V27H26z" id="qr-path" fill="#000000" fill-opacity="1" fill-rule="nonzero" stroke="none"/></svg>
     </div>
