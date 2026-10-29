@@ -2030,6 +2030,22 @@ footer{
     "5. Watch out for the Daily Double — it's hidden in one clue, and only the team that picked it gets to answer (no buzzing this time). Their wager locks in before the clue itself is shown, so choose wisely!\n" +
     "6. Whoever has the most points when the board is cleared wins. Good luck!";
 
+  /* The immediately previous shipped default, before the rules text was
+     corrected to describe buzzing in rather than turn-based play. A board
+     already saved to localStorage keeps whatever rules text it has — that's
+     correct when a teacher wrote their own, but a board that was simply
+     never customized would otherwise be stuck on stale default text
+     forever, with no code update ever able to reach it. Detecting this
+     one exact prior string (not a partial match — a real edit should never
+     be touched) lets a fresh load upgrade it automatically. */
+  var LEGACY_DEFAULT_RULES = "Here's how we'll play:\n" +
+    "1. Pick a category and a dollar value from the board.\n" +
+    "2. Talk it over with your team — you've got a few seconds to agree on an answer.\n" +
+    "3. When it's your team's turn, say your answer out loud.\n" +
+    "4. Get it right and your team earns the points. Get it wrong, and another team might get a chance to steal!\n" +
+    "5. Watch out for the Daily Double — it's hidden in one clue. The team that finds it wagers points before hearing the clue, so choose wisely!\n" +
+    "6. Whoever has the most points when the board is cleared wins. Good luck!";
+
   function makeDefaultContent(){
     var categories = [];
     for (var c = 0; c < DEFAULT_CATS; c++){
@@ -2132,7 +2148,7 @@ footer{
       parsed.palette = normalizePalette(parsed.palette, parsed.accentColor);
       delete parsed.accentColor;
       if (typeof parsed.backgroundImage !== "string") parsed.backgroundImage = "";
-      if (typeof parsed.rules !== "string" || !parsed.rules.trim()) parsed.rules = DEFAULT_RULES;
+      if (typeof parsed.rules !== "string" || !parsed.rules.trim() || parsed.rules === LEGACY_DEFAULT_RULES) parsed.rules = DEFAULT_RULES;
       if (typeof parsed.dailyDoubleEnabled !== "boolean") parsed.dailyDoubleEnabled = true;
       return parsed;
     } catch (err) {
