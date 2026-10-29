@@ -36,6 +36,38 @@
 }
 
 :root{
+  --wall:            #131a15;
+  --wall-grain:      rgba(255,255,255,0.03);
+  --board:           #1a2b20;
+  --board-line:      rgba(244,241,228,0.10);
+  --frame:           #3c3327;
+  --frame-shadow:    #0c0a06;
+  --ink:             #f2efe1;
+  --ink-soft:        #b9c0ae;
+  --paper:           #223327;
+  --paper-edge:      #34432f;
+  --accent:          #f0b93e;
+  --accent-ink:      #3a2a00;
+  --accent-soft:     #4a3c15;
+  --info:            #86b3ff;
+  --info-soft:       #26314f;
+  --danger:          #ff9e88;
+  --danger-soft:     #4a2820;
+  --good:            #8fe0a0;
+  --good-soft:       #1f3d26;
+  --focus:           #9cc6ff;
+  --shadow-color:    rgba(0,0,0,0.55);
+}
+
+/* The dark/chalkboard look above is the shipped default for every viewer —
+   deliberately NOT tied to prefers-color-scheme, since real browsers treat
+   "(prefers-color-scheme: light)" as matching whenever there's no explicit
+   OS dark preference (confirmed in testing), which would make a media-
+   query-based switch show light for most viewers by default. An explicit
+   data-theme="light"/"dark" override (e.g. from a host that manages
+   theming, such as the Claude Artifacts viewer) still switches it either
+   way — see isDarkThemeActive() in the script below, which this mirrors. */
+:root[data-theme="light"]{
   --wall:            #efeade;
   --wall-grain:      rgba(90,84,60,0.05);
   --board:           #fbfaf5;
@@ -57,32 +89,6 @@
   --good-soft:       #dcf0df;
   --focus:           #1c66c9;
   --shadow-color:    rgba(35,30,10,0.28);
-}
-
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --wall:            #131a15;
-    --wall-grain:      rgba(255,255,255,0.03);
-    --board:           #1a2b20;
-    --board-line:      rgba(244,241,228,0.10);
-    --frame:           #3c3327;
-    --frame-shadow:    #0c0a06;
-    --ink:             #f2efe1;
-    --ink-soft:        #b9c0ae;
-    --paper:           #223327;
-    --paper-edge:      #34432f;
-    --accent:          #f0b93e;
-    --accent-ink:      #3a2a00;
-    --accent-soft:     #4a3c15;
-    --info:            #86b3ff;
-    --info-soft:       #26314f;
-    --danger:          #ff9e88;
-    --danger-soft:     #4a2820;
-    --good:            #8fe0a0;
-    --good-soft:       #1f3d26;
-    --focus:           #9cc6ff;
-    --shadow-color:    rgba(0,0,0,0.55);
-  }
 }
 :root[data-theme="dark"]{
   --wall:            #131a15;
@@ -3296,9 +3302,11 @@ footer{
 
   function isDarkThemeActive(){
     var explicit = document.documentElement.getAttribute("data-theme");
-    if (explicit === "dark") return true;
     if (explicit === "light") return false;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    /* Dark is the shipped default (see the :root block up top), independent
+       of system preference — only an explicit data-theme="light" switches
+       it, matching the CSS (no prefers-color-scheme query drives this). */
+    return true;
   }
 
   /* A user picks one hue per surface/text slot; the actual lightness and a
@@ -3377,7 +3385,6 @@ footer{
       }
     });
   }
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyPalette);
 
   function applyBackgroundImage(){
     var url = content.backgroundImage;
